@@ -10,11 +10,14 @@
   --color-site-stone: #f5f5f5;
   --color-site-neongreen: #ebff0a;
   --color-site-darkyellow: #7e8900;
+  --color-site-saffron: #ffbb00;
+  --color-site-skin: #ffe18d;
 
   --spacing-8xl: 90rem;
   --spacing-9xl: 120rem;
 
   --font-pp-neue: var(--font-ppneue);
+  --font-spline-sans: var(--font-spline-sans);
 
   --breakpoint-xlg: 90rem;
   --breakpoint-xxl: 120rem;
