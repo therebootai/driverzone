@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Spline_Sans } from "next/font/google";
 
 const pp_neue = localFont({
   src: [
@@ -43,8 +44,14 @@ const pp_neue = localFont({
   variable: "--font-ppneue",
 });
 
+const spline_sans = Spline_Sans({
+  display: "swap",
+  variable: "--font-spline-sans",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "Your Journey, Elevated.  Drive with Driver Zone.",
+  title: "Your Journey, Elevated. Drive with Driver Zone.",
   description:
     "DriverZone is your trusted partner for professional Driver Hire in Siliguri and Car Driver Hire in Siliguri. We specialize in providing skilled, punctual, and verified drivers for local commutes, outstation trips, and long-distance journeys. Our mission is to make every ride safe, comfortable, and hassle-free, ensuring peace of mind for all our customers.",
 };
@@ -56,7 +63,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${pp_neue.variable} antialiased`}>{children}</body>
+      <body
+        className={`${pp_neue.variable} ${spline_sans.variable} antialiased`}
+      >
+        {children}
+      </body>
     </html>
   );
 }
