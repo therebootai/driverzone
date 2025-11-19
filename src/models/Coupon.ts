@@ -8,7 +8,7 @@ export type UserNameType ={
 
 export interface couponDocument extends Document {
   coupon_id: string;
-  coupon_titile: string;
+  coupon_title: string;
   coupon_code: string;
   coupon_type: string;
   coupon_startDate: string;
@@ -32,7 +32,7 @@ const userNameSchema = new Schema<UserNameType>({
 const couponSchema = new Schema<couponDocument>(
   {
     coupon_id: { type: String, required: true, unique: true, index: true },
-    coupon_titile:{
+    coupon_title:{
         type:String,
         unique:true,
         required:true
