@@ -61,8 +61,11 @@ export default function AdminHeader() {
       path: "/admin/result",
     },
     {
-      label: "Study Material",
-      path: "/admin/study-material",
+      label: "Master",
+      path: "/admin/master",
+      dropdown: [
+        { label: "User Management", path: "/admin/exam/add-question" },
+      ],
     },
   ];
 
