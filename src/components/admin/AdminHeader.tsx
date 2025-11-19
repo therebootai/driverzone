@@ -23,22 +23,27 @@ export default function AdminHeader() {
     path: string;
     dropdown?: { label: string; path: string }[];
   }[] = [
-  
     {
       label: "Dashboard",
       path: "/admin/dashboard",
     },
-     {
+    {
       label: "Customer Management",
       path: "/admin/customer-management",
     },
-     {
+    {
       label: "Coupon",
       path: "/admin/coupon",
     },
     {
-      label: "Study Material",
-      path: "/admin/study-material",
+      label: "Masters",
+      path: "",
+      dropdown: [
+        {
+          label: "User Management",
+          path: "/admin/masters/user-management",
+        },
+      ],
     },
   ];
 
@@ -80,12 +85,12 @@ export default function AdminHeader() {
                   {link.label}
                   <IoIosArrowDown />
                 </h3>
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-[12rem] bg-site-yellow/70 hidden group-hover:flex p-2 rounded-md flex-col gap-2 z-10 backdrop-blur">
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-[12rem] bg-linear-90 from-site-saffron to-site-skin hidden group-hover:flex p-2 rounded-md flex-col gap-2 z-10 backdrop-blur">
                   {link.dropdown.map((item, index) => (
                     <Link
                       key={index}
                       href={item.path + "?page=1"}
-                      className="flex gap-4 items-center font-medium text-sm lg:text-lg text-site-darkgreen border-b border-transparent hover:border-site-darkgreen"
+                      className="flex gap-4 items-center font-medium text-sm text-site-black border-b border-transparent hover:border-site-darkgreen"
                     >
                       {item.label}
                     </Link>

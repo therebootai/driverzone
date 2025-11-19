@@ -3,7 +3,7 @@ export default function TableComponent({
   TABLE_ROWS,
 }: {
   TABLE_HEAD: string[];
-  TABLE_ROWS: React.HTMLAttributes<HTMLTableCellElement>[];
+  TABLE_ROWS: React.ReactElement[];
 }) {
   return (
     <table className="w-full min-w-max table-auto text-left">
@@ -12,20 +12,14 @@ export default function TableComponent({
           {TABLE_HEAD.map((head) => (
             <th
               key={head}
-              className="font-medium text-site-black text-base pb-4 pt-10"
+              className="text-site-black text-base py-4 font-semibold"
             >
               {head}
             </th>
           ))}
         </tr>
       </thead>
-      <tbody>
-        {TABLE_ROWS.map((row, rowIndex) => (
-          <tr key={rowIndex} className="even:bg-neutral-50">
-            <td {...row} />
-          </tr>
-        ))}
-      </tbody>
+      <tbody>{TABLE_ROWS}</tbody>
     </table>
   );
 }
