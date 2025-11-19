@@ -79,7 +79,7 @@ customerSchema.methods.matchPassword = async function (
 };
 
 const Customers: Model<customerDocument> =
-  mongoose.models.User ||
+  mongoose.models.Customers ||
   mongoose.model<customerDocument>("Customers", customerSchema);
 
 export default Customers;
