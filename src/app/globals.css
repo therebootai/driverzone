@@ -12,7 +12,7 @@
   --color-site-darkyellow: #7e8900;
   --color-site-saffron: #ffbb00;
   --color-site-skin: #ffe18d;
-  --color-custom-gray:#EEEEEE;
+  --color-custom-gray: #eeeeee;
 
   --spacing-8xl: 90rem;
   --spacing-9xl: 120rem;
@@ -41,5 +41,17 @@
 
   button {
     @apply cursor-pointer;
+  }
+}
+
+@layer components {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
   }
 }
