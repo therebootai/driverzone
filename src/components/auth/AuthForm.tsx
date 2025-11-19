@@ -90,7 +90,7 @@ function AuthFormButton(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
     <button
       className={cn(
         "rounded-lg px-5 py-4 font-semibold text-center text-base",
-        props.className ?? ""
+        props.className
       )}
       {...props}
     >
