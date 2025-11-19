@@ -17,7 +17,7 @@ const SidePopUpSlider = ({
 
   return (
     <div
-      className={`fixed z-[1000] top-0 right-0 h-screen ${clsprops} w-[80%] md:w-[60%] overflow-hidden overflow-y-scroll no-scrollbar bg-sky-50 shadow-lg transform transition-transform duration-300 ease-in-out ${
+      className={`fixed z-[1000] top-0 right-0 h-screen ${clsprops} w-[80%] md:w-[60%] overflow-hidden overflow-y-scroll no-scrollbar bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${
         showPopUp ? "translate-x-0" : "translate-x-full"
       }`}
       ref={popUpRef}
