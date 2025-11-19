@@ -24,53 +24,31 @@ export default function AdminHeader() {
     dropdown?: { label: string; path: string }[];
   }[] = [
     {
-      label: "Students",
-      path: "/admin/student-management",
+      label: "Dashboard",
+      path: "/admin/dashboard",
+    },
+    {
+      label: "Customer Management",
+      path: "/admin/customer-management",
+    },
+    {
+      label: "Coupon",
+      path: "/admin/coupon",
+    },
+    {
+      label: "Masters",
+      path: "",
       dropdown: [
-        { label: "Batches", path: "/admin/student-management/batches" },
-        { label: "Courses", path: "/admin/student-management/courses" },
-        { label: "Students", path: "/admin/student-management/students" },
-      ],
-    },
-    {
-      label: "Fees",
-      path: "/admin/fees",
-    },
-    {
-      label: "Exam",
-      path: "/admin/fees",
-      dropdown: [
-        { label: "Add Question", path: "/admin/exam/add-question" },
-        { label: "Generate Question", path: "/admin/exam/ganerate-questions" },
-      ],
-    },
-    {
-      label: "Slider",
-      path: "/admin",
-    },
-    {
-      label: "Notices",
-      path: "/admin/notices",
-    },
-    {
-      label: "Media",
-      path: "/admin/media",
-    },
-    {
-      label: "Result",
-      path: "/admin/result",
-    },
-    {
-      label: "Master",
-      path: "/admin/master",
-      dropdown: [
-        { label: "User Management", path: "/admin/exam/add-question" },
+        {
+          label: "User Management",
+          path: "/admin/masters/user-management",
+        },
       ],
     },
   ];
 
   return (
-    <nav className="bg-white flex flex-row justify-between items-center px-4 xl:px-8 gap-8 py-2 lg:py-4">
+    <nav className="bg-white border-b border-gray-400 flex flex-row justify-between items-center px-4 xl:px-8 gap-8 py-2 lg:py-4">
       <Link href={"/admin/dashboard"}>
         <Image
           src={"/logo.png"}
@@ -89,7 +67,7 @@ export default function AdminHeader() {
                 href={link.path + "?page=1"}
                 className={`inline-flex gap-2 items-center group text-site-black font-medium text-xs lg:text-sm xlg:text-sm xl:text-base ${
                   isActive(link.path)
-                    ? "bg-linear-90 from-site-saffron to-site-skin"
+                    ? "bg-linear-90 from-site-saffron to-site-skin px-2 rounded-md h-[2rem]"
                     : ""
                 }`}
               >
@@ -107,12 +85,12 @@ export default function AdminHeader() {
                   {link.label}
                   <IoIosArrowDown />
                 </h3>
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-[12rem] bg-site-yellow/70 hidden group-hover:flex p-2 rounded-md flex-col gap-2 z-10 backdrop-blur">
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-[12rem] bg-linear-90 from-site-saffron to-site-skin hidden group-hover:flex p-2 rounded-md flex-col gap-2 z-10 backdrop-blur">
                   {link.dropdown.map((item, index) => (
                     <Link
                       key={index}
                       href={item.path + "?page=1"}
-                      className="flex gap-4 items-center font-medium text-sm lg:text-lg text-site-darkgreen border-b border-transparent hover:border-site-darkgreen"
+                      className="flex gap-4 items-center font-medium text-sm text-site-black border-b border-transparent hover:border-site-darkgreen"
                     >
                       {item.label}
                     </Link>
