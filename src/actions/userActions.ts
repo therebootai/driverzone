@@ -1,6 +1,6 @@
 "use server";
 
-import connectToDataBase from "@/db";
+import connectToDataBase from "@/db/connection";
 import Users from "@/models/Users";
 import { generateCustomId } from "@/utils/generateCustomId";
 import mongoose from "mongoose";
