@@ -11,7 +11,7 @@ export default function AdminTemplate({
   return (
     <>
       <AdminHeader />
-      <main className={cn(" px-8", className)}>{children}</main>
+      <main className={cn("px-8", className)}>{children}</main>
     </>
   );
 }
