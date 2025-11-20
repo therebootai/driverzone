@@ -74,7 +74,12 @@ export default function UserManagementHeader() {
         showPopUp={showAddForm}
         handleClose={() => setShowAddForm(false)}
       >
-        <UserForm />
+        <div className="flex flex-col gap-4 p-4">
+          <h2 className="font-semibold text-site-navyblue xl:text-4xl md:text-2xl text-lg">
+            User Create
+          </h2>
+          <UserForm />
+        </div>
       </SidePopup>
     </>
   );
