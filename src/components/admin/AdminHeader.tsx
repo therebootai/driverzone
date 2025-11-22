@@ -27,6 +27,10 @@ export default function AdminHeader() {
       label: "Dashboard",
       path: "/admin/dashboard",
     },
+     {
+      label: "Driver Management",
+      path: "/admin/driver-management",
+    },
     {
       label: "Customer Management",
       path: "/admin/customer-management",
