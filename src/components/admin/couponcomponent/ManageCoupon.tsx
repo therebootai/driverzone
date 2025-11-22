@@ -4,6 +4,7 @@ import SidePopUpSlider from "../SidePopup";
 import ViewCoupon from "./ViewCoupon";
 import { deleteCoupon, updateCouponStatus } from "@/actions/couponActions";
 import AddCoupon from "./AddCoupon";
+import PaginationBox from "../PaginationBox";
 
 const ManageCoupon = ({
   allCoupon,
@@ -124,6 +125,8 @@ const ManageCoupon = ({
           </div>
         ))}
       </div>
+      <PaginationBox pagination={pagination} prefix="/coupon" />
+
       {showView && (
         <SidePopUpSlider
           showPopUp={showView}
