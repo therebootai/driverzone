@@ -2,8 +2,8 @@
 import React, { useState } from "react";
 import { AiOutlinePlusCircle } from "react-icons/ai";
 import { IoSearch } from "react-icons/io5";
-import SidePopUpSlider from "../SidePopup";
 import AddCoupon from "./AddCoupon";
+import SidePopup from "@/ui/SidePopup";
 
 const CouponPageHeader = ({
   setSearchTerm,
@@ -73,7 +73,7 @@ const CouponPageHeader = ({
         </button>
       </div>
 
-      <SidePopUpSlider
+      <SidePopup
         showPopUp={showPopUp}
         handleClose={() => setShowPopUp(false)}
       >
@@ -83,7 +83,7 @@ const CouponPageHeader = ({
           onSuccess={() => setShowPopUp(false)}
           fetchData={fetchData}
         />
-      </SidePopUpSlider>
+      </SidePopup>
     </div>
   );
 };

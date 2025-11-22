@@ -12,7 +12,7 @@ export default function TableComponent({
           {TABLE_HEAD.map((head) => (
             <th
               key={head}
-              className="text-site-black text-base py-4 font-semibold"
+              className="text-site-black text-base py-4 px-2.5 font-semibold"
             >
               {head}
             </th>
