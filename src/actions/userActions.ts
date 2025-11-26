@@ -3,7 +3,7 @@
 import connectToDataBase from "@/db/connection";
 import Users from "@/models/Users";
 import { generateCustomId } from "@/utils/generateCustomId";
-import { generateToken } from "@/utils/jwt";
+import { generateToken, verifyToken } from "@/utils/jwt";
 import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
@@ -43,15 +43,13 @@ export async function CREATEUSER(data: any) {
 export async function GETALLUSERS({
   page = 1,
   limit = 20,
-  name,
-  mobile_number,
+  search,
   role,
   status,
 }: {
   page?: number;
   limit?: number;
-  name?: string;
-  mobile_number?: string;
+  search?: string;
   role?: "admin" | "staff";
   status?: boolean;
 }) {
@@ -60,12 +58,11 @@ export async function GETALLUSERS({
 
     const query: any = {};
 
-    if (name) {
-      query.name = { $regex: name, $options: "i" };
+    if (search) {
+      query.name = { $regex: search, $options: "i" };
+      query.mobile_number = { $regex: search, $options: "i" };
     }
-    if (mobile_number) {
-      query.mobile_number = { $regex: mobile_number, $options: "i" };
-    }
+
     if (role) {
       query.role = role;
     }
@@ -214,6 +211,13 @@ export async function LOGIN({
       return { success: false, message: "Invalid password" };
     }
 
+    if (!user.status) {
+      return {
+        success: false,
+        message: "Account is disabled. Contact with Admin",
+      };
+    }
+
     const token = generateToken({ userId: user._id });
     if (!token) {
       return { success: false, message: "Failed to generate token" };
@@ -235,6 +239,33 @@ export async function LOGIN({
       success: true,
       message: "Login successful",
       data: JSON.parse(JSON.stringify(loggedUser)),
+    };
+  } catch (error: any) {
+    console.error("Error logging in:", error);
+    return { success: false, message: error.message || "Unknown error" };
+  }
+}
+
+export async function VERIFY_AUTHORIZATION() {
+  try {
+    await connectToDataBase();
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token");
+
+    if (!token) {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    const user = await verifyToken(token.value);
+
+    if (!user) {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    return {
+      success: true,
+      message: "Authorized",
+      data: JSON.parse(JSON.stringify(user)),
     };
   } catch (error: any) {
     console.error("Error logging in:", error);

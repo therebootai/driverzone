@@ -1,4 +1,3 @@
-import { AuthProvider } from "@/context/AuthContext";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -10,8 +9,8 @@ export default async function ProtectedLayout({
   const cookieStore = await cookies();
 
   if (!cookieStore.has("token")) {
-    return redirect("/");
+    return redirect("/reboots");
   }
 
-  return <AuthProvider>{children}</AuthProvider>;
+  return children;
 }
