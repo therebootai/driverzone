@@ -3,7 +3,10 @@
 import connectToDataBase from "@/db/connection";
 import Users from "@/models/Users";
 import { generateCustomId } from "@/utils/generateCustomId";
+import { generateToken, verifyToken } from "@/utils/jwt";
 import mongoose from "mongoose";
+import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 export async function CREATEUSER(data: any) {
   try {
@@ -29,7 +32,7 @@ export async function CREATEUSER(data: any) {
 
     const savedUser = await newUser.save();
 
-    // revalidatePath("/user-managment");
+    revalidatePath("/admin/masters/user-managment");
     return { success: true, user: JSON.parse(JSON.stringify(savedUser)) };
   } catch (error: any) {
     console.error("Error creating User:", error);
@@ -40,15 +43,13 @@ export async function CREATEUSER(data: any) {
 export async function GETALLUSERS({
   page = 1,
   limit = 20,
-  name,
-  mobile_number,
+  search,
   role,
   status,
 }: {
-  page: number;
-  limit: number;
-  name?: string;
-  mobile_number?: string;
+  page?: number;
+  limit?: number;
+  search?: string;
   role?: "admin" | "staff";
   status?: boolean;
 }) {
@@ -57,12 +58,11 @@ export async function GETALLUSERS({
 
     const query: any = {};
 
-    if (name) {
-      query.name = { $regex: name, $options: "i" };
+    if (search) {
+      query.name = { $regex: search, $options: "i" };
+      query.mobile_number = { $regex: search, $options: "i" };
     }
-    if (mobile_number) {
-      query.mobile_number = { $regex: mobile_number, $options: "i" };
-    }
+
     if (role) {
       query.role = role;
     }
@@ -144,6 +144,7 @@ export async function UPDATEUSER(userId: string, data: any) {
 
     const updatedUser = await existingUser.save();
 
+    revalidatePath("/admin/masters/user-managment");
     return { success: true, user: JSON.parse(JSON.stringify(updatedUser)) };
   } catch (error: any) {
     console.error("Error updating User:", error);
@@ -170,9 +171,115 @@ export async function DELETEUSER(userId: string) {
       return { success: false, error: "User not found" };
     }
 
+    revalidatePath("/admin/masters/user-managment");
+
     return { success: true };
   } catch (error: any) {
     console.error("Error deleting User:", error);
     return { success: false, error: error.message || "Unknown error" };
+  }
+}
+
+export async function LOGIN({
+  emailOrPhone,
+  password,
+}: {
+  emailOrPhone: string;
+  password: string;
+}) {
+  try {
+    if (!emailOrPhone || !password) {
+      return {
+        success: false,
+        message: "Email or Mobile number and password are required",
+      };
+    }
+
+    await connectToDataBase();
+
+    const user = await Users.findOne({
+      $or: [{ email: emailOrPhone }, { mobile_number: emailOrPhone }],
+    });
+
+    if (!user) {
+      return { success: false, message: "User not found" };
+    }
+
+    const isPasswordMatch = await user.matchPassword(password);
+
+    if (!isPasswordMatch) {
+      return { success: false, message: "Invalid password" };
+    }
+
+    if (!user.status) {
+      return {
+        success: false,
+        message: "Account is disabled. Contact with Admin",
+      };
+    }
+
+    const token = generateToken({ userId: user._id });
+    if (!token) {
+      return { success: false, message: "Failed to generate token" };
+    }
+
+    const cookieStore = await cookies();
+
+    cookieStore.set("token", token, {
+      maxAge: 60 * 60 * 24 * 30,
+      path: "/",
+      httpOnly: true,
+    });
+
+    const loggedUser = await Users.findById(user._id)
+      .select("-password")
+      .lean();
+
+    return {
+      success: true,
+      message: "Login successful",
+      data: JSON.parse(JSON.stringify(loggedUser)),
+    };
+  } catch (error: any) {
+    console.error("Error logging in:", error);
+    return { success: false, message: error.message || "Unknown error" };
+  }
+}
+
+export async function VERIFY_AUTHORIZATION() {
+  try {
+    await connectToDataBase();
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token");
+
+    if (!token) {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    const user = await verifyToken(token.value);
+
+    if (!user) {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    return {
+      success: true,
+      message: "Authorized",
+      data: JSON.parse(JSON.stringify(user)),
+    };
+  } catch (error: any) {
+    console.error("Error logging in:", error);
+    return { success: false, message: error.message || "Unknown error" };
+  }
+}
+
+export async function LOGOUT() {
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete("token");
+    return { success: true, message: "Logout successful" };
+  } catch (error: any) {
+    console.error("Error logging out:", error);
+    return { success: false, message: "Internal server error" };
   }
 }

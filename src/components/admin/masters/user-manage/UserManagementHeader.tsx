@@ -5,22 +5,48 @@ import { FiPlusCircle } from "react-icons/fi";
 import { IoSearch } from "react-icons/io5";
 import SidePopup from "../../../../ui/SidePopup";
 import UserForm from "./UserForm";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function UserManagementHeader() {
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Function to update searchParams
+  const updateFilters = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (value && value.trim() !== "") {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+
+    // Update URL without page reload
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
+
+  // Function to handle search input with debounce
+  const handleSearch = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (value && value.trim() !== "") {
+      params.set("search", value);
+    } else {
+      params.delete("search");
+    }
+
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
+
   return (
     <>
       <div className="w-full flex flex-row justify-between items-center">
         <div className="flex flex-row gap-4">
           <select
-            //   value={status === undefined ? "" : status ? "Active" : "Inactive"}
-            //   onChange={(e) => {
-            //     const val = e.target.value;
-            //     if (val === "Active") setStatus(true);
-            //     else if (val === "Inactive") setStatus(false);
-            //     else setStatus(undefined);
-            //   }}
             className="w-fit px-4 rounded-md h-[2.5rem] bg-custom-gray text-site-black font-semibold text-sm flex justify-center items-center"
+            onChange={(e) => updateFilters("status", e.target.value)}
           >
             <option value="" className=" text-site-black">
               By Status
@@ -33,14 +59,8 @@ export default function UserManagementHeader() {
             </option>
           </select>
           <select
-            //   value={status === undefined ? "" : status ? "Active" : "Inactive"}
-            //   onChange={(e) => {
-            //     const val = e.target.value;
-            //     if (val === "Active") setStatus(true);
-            //     else if (val === "Inactive") setStatus(false);
-            //     else setStatus(undefined);
-            //   }}
             className="w-fit px-4 rounded-md h-[2.5rem] bg-custom-gray text-site-black font-semibold text-sm flex justify-center items-center"
+            onChange={(e) => updateFilters("role", e.target.value)}
           >
             <option value="" className=" text-site-black">
               By Role
@@ -56,9 +76,8 @@ export default function UserManagementHeader() {
             <IoSearch className="text-site-black size-5" />
             <input
               type="text"
+              onChange={(e) => handleSearch(e.target.value)}
               placeholder="Search by name/mobile"
-              //   value={searchTerm}
-              //   onChange={(e) => setSearchTerm(e.target.value)}
               className="h-[2.5rem] text-sm outline-none placeholder:text-site-black flex-1 capitalize placeholder:capitalize"
             />
           </div>

@@ -2,6 +2,8 @@
 @import "swiper/css";
 @import "swiper/css/bundle";
 @import "react-datepicker/dist/react-datepicker.css";
+@import "leaflet/dist/leaflet.css";
+@import "leaflet-draw/dist/leaflet.draw.css";
 
 @theme inline {
   --color-site-black: #1c1b1f;

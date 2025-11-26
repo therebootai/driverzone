@@ -2,6 +2,8 @@ import "./globals.css";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Spline_Sans } from "next/font/google";
+import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "@/context/AuthContext";
 
 const pp_neue = localFont({
   src: [
@@ -66,7 +68,8 @@ export default function RootLayout({
       <body
         className={`${pp_neue.variable} ${spline_sans.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
+        <Toaster position="top-center" reverseOrder={false} gutter={8} />
       </body>
     </html>
   );
