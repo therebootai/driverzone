@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, JSX, useReducer } from "react";
+import { VERIFY_AUTHORIZATION } from "@/actions/userActions";
+import React, { createContext, JSX, useEffect, useReducer } from "react";
 
 export const AuthContext = createContext({});
 
@@ -44,6 +45,24 @@ export function AuthProvider({
   const login = (user: any) => dispatch({ type: "LOGIN", payload: user });
 
   const logout = () => dispatch({ type: "LOGOUT" });
+
+  async function fetchUser() {
+    try {
+      const { data, success, message } = await VERIFY_AUTHORIZATION();
+      if (!success) {
+        throw new Error(message);
+      }
+
+      login(data);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      logout();
+    }
+  }
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
 
   return (
     <AuthContext.Provider value={{ ...state, login, logout }}>

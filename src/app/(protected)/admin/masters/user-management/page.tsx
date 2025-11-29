@@ -9,9 +9,13 @@ export default async function UserManagementPage({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
-  const { page } = await searchParams;
+  const { page, search, role, status } = await searchParams;
   const { data, paginations } = await GETALLUSERS({
     page: parseInt(page ?? "1"),
+    search,
+    role: role === "admin" || role === "staff" ? role : undefined,
+    status:
+      status === "active" ? true : status === "inactive" ? false : undefined,
   });
   return (
     <AdminTemplate className="py-6 flex flex-col gap-6">

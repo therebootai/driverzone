@@ -1,9 +1,12 @@
 "use client";
 
+import { LOGOUT } from "@/actions/userActions";
+import useAuth from "@/hooks/useAuth";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { IoIosArrowDown } from "react-icons/io";
+import toast from "react-hot-toast";
+import { IoIosArrowDown, IoIosLogOut } from "react-icons/io";
 import { PiUserCircleFill } from "react-icons/pi";
 
 export default function AdminHeader() {
@@ -11,7 +14,7 @@ export default function AdminHeader() {
 
   const router = useRouter();
 
-  //   const { user, logout } = useContext(AuthContext);
+  const { user, logout } = useAuth();
 
   const isActive = (path: string) => {
     if (path === "/admin") return pathname === "/admin";
@@ -26,6 +29,14 @@ export default function AdminHeader() {
     {
       label: "Dashboard",
       path: "/admin/dashboard",
+    },
+    {
+      label: "Zone Management",
+      path: "/admin/zone-management",
+    },
+    {
+      label: "Driver Management",
+      path: "/admin/driver-management",
     },
     {
       label: "Customer Management",
@@ -46,6 +57,17 @@ export default function AdminHeader() {
       ],
     },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await LOGOUT();
+      logout();
+      router.push("/");
+    } catch (error: any) {
+      console.error("Error logging out:", error);
+      toast.error(error.message || "Unknown error");
+    }
+  };
 
   return (
     <nav className="bg-white border-b border-gray-400 flex flex-row justify-between items-center px-4 xl:px-8 gap-8 py-2 lg:py-4">
@@ -106,24 +128,24 @@ export default function AdminHeader() {
           <button type="button" className="text-custom-black text-2xl">
             <PiUserCircleFill />
           </button>
-          {/* <div className="absolute top-full right-0 w-[10vmax] bg-site-yellow hidden group-hover:flex p-2 rounded-md flex-col gap-4 z-50">
-              {user && (
-                <div className="flex flex-col gap-2">
-                  <h1 className="text-white text-base font-bold lg:text-xl">
-                    {user.name}
-                  </h1>
-                </div>
-              )}
-              <div className="h-0.5 w-full bg-custom-border" />
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="flex gap-2 items-center font-medium text-sm lg:text-lg text-white whitespace-nowrap"
-              >
-                <IoIosLogOut />
-                <span>Log Out</span>
-              </button>
-            </div> */}
+          <div className="absolute top-full right-0 w-[10vmax] bg-site-saffron hidden group-hover:flex p-2 rounded-md flex-col gap-4 z-50">
+            {user && (
+              <div className="flex flex-col gap-2">
+                <h1 className="text-site-black text-base font-bold lg:text-xl">
+                  {user.name}
+                </h1>
+              </div>
+            )}
+            <div className="h-0.5 w-full bg-custom-gray" />
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex gap-2 items-center font-medium text-sm lg:text-lg text-site-black whitespace-nowrap"
+            >
+              <IoIosLogOut />
+              <span>Log Out</span>
+            </button>
+          </div>
         </div>
       </div>
     </nav>

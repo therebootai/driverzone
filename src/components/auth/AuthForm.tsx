@@ -1,17 +1,57 @@
 "use client";
 
+import { LOGIN } from "@/actions/userActions";
+import useAuth from "@/hooks/useAuth";
 import { cn } from "@/utils/cn";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useActionState } from "react";
+import toast from "react-hot-toast";
 import { FaFacebook } from "react-icons/fa";
 import { IoLogoInstagram } from "react-icons/io";
 import { IoLogoLinkedin } from "react-icons/io5";
 
 export default function AuthForm() {
+  const { login } = useAuth();
+
+  const router = useRouter();
+
+  async function handleLogin(prevState: any, formData: FormData) {
+    const emailOrPhone = formData.get("emailOrPhone") as string;
+    const password = formData.get("password") as string;
+    try {
+      const { success, message, data } = await LOGIN({
+        emailOrPhone,
+        password,
+      });
+      if (!success) {
+        alert(message);
+        return;
+      }
+      login(data);
+      router.push("/admin/dashboard");
+      return prevState;
+    } catch (error: any) {
+      console.error("Error logging in:", error);
+      toast.error(error.message || "Unknown error");
+      return { ...prevState, emailOrPhone: emailOrPhone };
+    }
+  }
+
+  const [state, formAction, isPending] = useActionState(handleLogin, {});
+
   return (
     <>
-      <form action="" className="flex flex-col gap-5">
-        <AuthFormInput placeholder="Enter your mobile or email address" />
-        <AuthFormInput placeholder="Enter your password" />
+      <form action={formAction} className="flex flex-col gap-5">
+        <AuthFormInput
+          placeholder="Enter your mobile or email address"
+          name="emailOrPhone"
+        />
+        <AuthFormInput
+          placeholder="Enter your password"
+          type="password"
+          name="password"
+        />
         <AuthFormButton
           type="submit"
           className="bg-linear-90 from-site-saffron to-site-skin text-site-black mt-5"
