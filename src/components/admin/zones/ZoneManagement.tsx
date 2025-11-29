@@ -1,13 +1,35 @@
 "use client";
 
+import { useGeolocation } from "@/hooks/useGeolocation";
 import ZoneMap from "@/ui/Zonemap";
+import { useState } from "react";
+import { CiLocationOn } from "react-icons/ci";
 
 export default function ZoneManagement({}) {
+  const [coordinates, setCoordinates] = useState({
+    lat: 26.7271,
+    lng: 88.3953,
+  });
+
   const handleZoneCreate = (zone: any) => {};
 
   const handleZoneDelete = (zone: any) => {};
 
   const handleZoneUpdate = (zone: any) => {};
+
+  const { getCoordinates } = useGeolocation();
+
+  const handleGetLocation = async () => {
+    try {
+      const coords = await getCoordinates();
+      setCoordinates({ lat: coords.lat, lng: coords.lng });
+      console.log("Coordinates:", coords);
+      // Use the coordinates
+    } catch (error) {
+      console.error("Error getting location:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -22,41 +44,9 @@ export default function ZoneManagement({}) {
           </p>
         </div>
 
-        {/* Mobile Tabs */}
-        <div className="lg:hidden mb-6">
-          <div className="border-b border-gray-200">
-            {/* <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => setActiveTab("map")}
-                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "map"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                Map View
-              </button>
-              <button
-                onClick={() => setActiveTab("zones")}
-                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "zones"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                Your Zones ({zones.length})
-              </button>
-            </nav> */}
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 gap-8">
           {/* Map Section */}
-          <div
-          // className={`lg:col-span-2 ${
-          //   activeTab === "zones" ? "hidden lg:block" : "block"
-          // }`}
-          >
+          <div>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 relative overflow-hidden">
               <div className="flex items-center justify-between mb-6 relative">
                 <h2 className="text-xl font-semibold text-gray-900">
@@ -64,28 +54,10 @@ export default function ZoneManagement({}) {
                 </h2>
                 <div className="flex space-x-3">
                   <button
-                    onClick={() => checkPointInZone(51.505, -0.09)}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                    onClick={() => handleGetLocation()}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 gap-2"
                   >
-                    <svg
-                      className="w-4 h-4 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
+                    <CiLocationOn />
                     Check Location
                   </button>
                 </div>
@@ -95,6 +67,10 @@ export default function ZoneManagement({}) {
                 onZoneCreate={handleZoneCreate}
                 onZoneUpdate={handleZoneUpdate}
                 onZoneDelete={handleZoneDelete}
+                defaultCenter={[
+                  Number(coordinates?.lat),
+                  Number(coordinates?.lng),
+                ]}
                 // existingZones={zones}
               />
 
