@@ -42,6 +42,10 @@ export default function AdminHeader() {
       label: "Customer Management",
       path: "/admin/customer-management",
     },
+     {
+      label: "Booking Management",
+      path: "/admin/booking-management",
+    },
     {
       label: "Coupon",
       path: "/admin/coupon",
