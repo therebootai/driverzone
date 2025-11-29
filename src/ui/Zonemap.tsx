@@ -30,6 +30,7 @@ const ZoneMap = ({
   onZoneUpdate,
   onZoneDelete,
   existingZones = [],
+  defaultCenter = [26.7271, 88.3953],
 }: {
   onZoneCreate: (
     zone: Omit<ZoneDocument, "_id" | "createdAt" | "updatedAt">
@@ -37,11 +38,11 @@ const ZoneMap = ({
   onZoneUpdate: (zoneData: { id: number; coordinates: number[][] }) => void;
   onZoneDelete: (zoneId: number) => void;
   existingZones?: ZoneDocument[];
+  defaultCenter?: [number, number];
 }) => {
   const [zones, setZones] = useState(existingZones);
-  const defaultCenter = [26.7271, 88.3953]; // London coordinates
 
-  const handleCreated = (e: L.DrawEvents.Created) => {
+  const handleCreated = (e: any) => {
     const { layerType, layer } = e;
     if (layerType === "polygon") {
       const coordinates = layer
@@ -60,7 +61,7 @@ const ZoneMap = ({
     }
   };
 
-  const handleEdited = (e: L.DrawEvents.Edited) => {
+  const handleEdited = (e: any) => {
     const layers = e.layers;
     layers.eachLayer((layer: L.Layer) => {
       if (layer instanceof L.Polygon) {
@@ -69,7 +70,7 @@ const ZoneMap = ({
           .map((latLng: L.LatLng) => [latLng.lng, latLng.lat]);
 
         const updatedZone = {
-          id: layer._leaflet_id,
+          id: layer?._leaflet_id,
           coordinates: coordinates,
         };
 
@@ -78,10 +79,10 @@ const ZoneMap = ({
     });
   };
 
-  const handleDeleted = (e: L.DrawEvents.Deleted) => {
+  const handleDeleted = (e: any) => {
     const layers = e.layers;
     layers.eachLayer((layer: L.Layer) => {
-      onZoneDelete(layer._leaflet_id);
+      onZoneDelete(layer?._leaflet_id);
     });
   };
 
