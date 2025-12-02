@@ -3,21 +3,11 @@
 import { CREATEUSER } from "@/actions/userActions";
 import BasicInput from "@/ui/BasicInput";
 import { useActionState, useState } from "react";
+import toast from "react-hot-toast";
 import AsyncSelect from "react-select/async";
 
 export default function UserForm() {
-  const [byAccess, setByAccess] = useState<string[]>([]);
-
-  const [currentPageValue, setCurrentPageValue] = useState<string>("");
-
-  function handleByAccess(mode: "add" | "remove", value: string) {
-    if (mode === "add") {
-      setByAccess((prev) => [...prev, value]);
-      setCurrentPageValue("");
-    } else {
-      setByAccess((prev) => prev.filter((item) => item !== value));
-    }
-  }
+  const [byAccess, setByAccess] = useState<string[]>([])
 
   async function handleSave(prevState: any, formData: FormData) {
     try {
@@ -34,8 +24,10 @@ export default function UserForm() {
         password,
         by_access: byAccess,
       });
+      toast.success("User created successfully");
     } catch (error: any) {
       console.log(error);
+      toast.error(error.message || "Unknown error");
     }
   }
 

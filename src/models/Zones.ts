@@ -38,7 +38,7 @@ const ZoneSchema = new Schema<ZoneDocument>(
     center: pointSchema,
     coordinates: { type: [[Number]], required: true },
     area: { type: Number, required: true },
-    status: { type: Boolean, required: true },
+    status: { type: Boolean, required: true, default: true },
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date, default: Date.now },
   },
@@ -47,7 +47,7 @@ const ZoneSchema = new Schema<ZoneDocument>(
 
 ZoneSchema.index({ center: "2dsphere" });
 
-const Zone =
+const Zone: Model<ZoneDocument> =
   mongoose.models.Zones || mongoose.model<ZoneDocument>("Zones", ZoneSchema);
 
 export default Zone;

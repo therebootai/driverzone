@@ -51,10 +51,10 @@ export default function UserManagementHeader() {
             <option value="" className=" text-site-black">
               By Status
             </option>
-            <option value="Active" className=" text-site-black">
+            <option value="active" className=" text-site-black">
               Active
             </option>
-            <option value="Inactive" className=" text-site-black">
+            <option value="inactive" className=" text-site-black">
               Inactive
             </option>
           </select>
