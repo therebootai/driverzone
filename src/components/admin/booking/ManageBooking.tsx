@@ -41,12 +41,11 @@ const ManageBooking = ({
           <div className="p-6 text-center text-sm text-gray-500">No bookings found.</div>
         ) : (
           allBookings.map((b) => {
-            // adapt properties to your BookingTypes shape
             const bookingId = (b as any).booking_id || (b as any)._id;
-            const createdAt = (b as any).createdAt ? dayjs((b as any).createdAt).format("DD MMM YYYY, hh:mm a") : "-";
+            const createdAt = (b as any).createdAt ? dayjs((b as any).createdAt).format("DD MMM YYYY") : "-";
             const fare = (b as any).fare ?? (b as any).estimatedFare ?? "-";
-            const customerName = (b as any).customerDetails?.name || (b as any).customerDetails?.fullName || "-";
-            const driverName = (b as any).driverDetails?.name || (b as any).driverDetails?.fullName || "-";
+            const customerName = (b as any).customerDetails?.name ||  "-";
+            const driverName = (b as any).driverDetails?.driver_name ||  "-";
             const zone = (b as any).pickupAddress || (b as any).dropAddress || "-";
             const status = (b as any).status || "-";
 
@@ -66,11 +65,9 @@ const ManageBooking = ({
                 <div className="w-[15%] flex gap-2">
                   <button
                     onClick={() => {
-                      // Example: open details in a modal or navigate to detail page
-                      // router.push(`/bookings/${bookingId}`);
                       alert(`open booking ${bookingId}`);
                     }}
-                    className="px-3 py-1 rounded bg-site-blue text-white text-sm"
+                    className="px-3 py-1 rounded bg-site-darkyellow text-white text-sm"
                   >
                     View
                   </button>
