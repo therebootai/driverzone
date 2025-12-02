@@ -32,10 +32,8 @@ const ZoneMap = ({
   existingZones = [],
   defaultCenter = [26.7271, 88.3953],
 }: {
-  onZoneCreate: (
-    zone: Omit<ZoneDocument, "_id" | "createdAt" | "updatedAt">
-  ) => void;
-  onZoneUpdate: (zoneData: { id: number; coordinates: number[][] }) => void;
+  onZoneCreate: (coord: number[][]) => void;
+  onZoneUpdate: (zoneData: { coordinates: number[][] }) => void;
   onZoneDelete: (zoneId: number) => void;
   existingZones?: ZoneDocument[];
   defaultCenter?: [number, number];
@@ -57,7 +55,7 @@ const ZoneMap = ({
       };
 
       setZones((prev) => [...prev, newZone]);
-      onZoneCreate(newZone);
+      onZoneCreate(newZone.coordinates);
     }
   };
 
@@ -74,7 +72,7 @@ const ZoneMap = ({
           coordinates: coordinates,
         };
 
-        onZoneUpdate(updatedZone);
+        onZoneUpdate(updatedZone.coordinates);
       }
     });
   };
