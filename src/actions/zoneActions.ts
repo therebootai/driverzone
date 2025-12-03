@@ -4,6 +4,7 @@ import connectToDataBase from "@/db/connection";
 import Zone from "@/models/Zones";
 import { generateCustomId } from "@/utils/generateCustomId";
 import { calculateArea, calculateCenter } from "@/utils/geoutils";
+import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
 
 export async function CREATEZONE({
@@ -105,5 +106,27 @@ export async function GET_ALL_ZONES({
       data: null,
       paginations: { totalPages: 1, currentPage: 1 },
     };
+  }
+}
+
+export async function UPDATE_ZONE(id: string, data: any) {
+  try {
+    const updatedZone = await Zone.updateOne(
+      {
+        $or: [
+          { zone_id: id },
+          {
+            _id: mongoose.Types.ObjectId.isValid(id) ? id : undefined,
+          },
+        ],
+      },
+      { $set: data }
+    );
+
+    revalidatePath("/admin/zone-management");
+    return { success: true, data: JSON.parse(JSON.stringify(updatedZone)) };
+  } catch (error: any) {
+    console.log(error);
+    return { success: false, error: error.message, data: null };
   }
 }

@@ -3,11 +3,13 @@
 import connectToDataBase from "@/db/connection";
 import Packages from "@/models/Packages";
 import { generateCustomId } from "@/utils/generateCustomId";
+import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
 
 export async function ADD_PACKAGE({
   name,
   duration,
+  package_type = "city_tour",
   company_charge,
   driver_charge,
   fooding_charge,
@@ -17,20 +19,31 @@ export async function ADD_PACKAGE({
   late_night_charge,
   total_price,
   destination,
+  discount_type = "none",
+  discount,
   main_zone,
   service_zone,
 }: {
   name: string;
   duration: number;
+  package_type:
+    | "city_tour"
+    | "mini_outstation"
+    | "outstation"
+    | "hills_tour"
+    | "long_tour"
+    | "drop_pickup_service";
   company_charge: number;
   driver_charge: number;
-  fooding_charge: number;
+  fooding_charge?: number;
   over_time_customer_charge: number;
   over_time_driver_charge: number;
   early_morning_charge?: number;
   late_night_charge?: number;
   total_price: number;
-  destination: string;
+  destination?: string;
+  discount_type: "percentage" | "fixed" | "none";
+  discount?: number;
   main_zone?: string;
   service_zone?: string;
 }) {
@@ -46,6 +59,7 @@ export async function ADD_PACKAGE({
       package_id,
       name,
       duration,
+      package_type,
       company_charge,
       driver_charge,
       fooding_charge,
@@ -55,6 +69,8 @@ export async function ADD_PACKAGE({
       late_night_charge,
       total_price,
       destination,
+      discount_type,
+      discount,
       main_zone,
       service_zone,
     });
@@ -77,6 +93,8 @@ export async function GET_ALL_PACKAGES({
   status,
   min_price,
   max_price,
+  package_type,
+  discount_type,
 }: {
   page?: number;
   limit?: number;
@@ -84,6 +102,14 @@ export async function GET_ALL_PACKAGES({
   status?: boolean;
   min_price?: number;
   max_price?: number;
+  package_type?:
+    | "city_tour"
+    | "mini_outstation"
+    | "outstation"
+    | "hills_tour"
+    | "long_tour"
+    | "drop_pickup_service";
+  discount_type?: "percentage" | "fixed" | "none";
 }) {
   try {
     await connectToDataBase();
@@ -97,6 +123,10 @@ export async function GET_ALL_PACKAGES({
 
     if (typeof status === "boolean") {
       query.status = status;
+    }
+
+    if (package_type) {
+      query.package_type = package_type;
     }
 
     if (min_price) {
@@ -119,6 +149,10 @@ export async function GET_ALL_PACKAGES({
       query.early_morning_charge = { $lte: max_price };
       query.late_night_charge = { $lte: max_price };
       query.total_price = { $lte: max_price };
+    }
+
+    if (discount_type) {
+      query.discount_type = discount_type;
     }
 
     const packages = await Packages.find(query)
@@ -144,5 +178,50 @@ export async function GET_ALL_PACKAGES({
       data: null,
       paginations: { totalPages: 1, currentPage: 1 },
     };
+  }
+}
+
+export async function DELETE_PACKAGE(package_id: string) {
+  try {
+    await connectToDataBase();
+    await Packages.deleteOne({
+      $or: [
+        { package_id },
+        {
+          _id: mongoose.Types.ObjectId.isValid(package_id)
+            ? package_id
+            : undefined,
+        },
+      ],
+    });
+    revalidatePath("/admin/package-management");
+    return { success: true };
+  } catch (error: any) {
+    console.log(error);
+    return { success: false, message: error.message };
+  }
+}
+
+export async function UPDATE_PACKAGE(package_id: string, data: any) {
+  try {
+    await connectToDataBase();
+    const updatedPackage = await Packages.updateOne(
+      {
+        $or: [
+          { package_id },
+          {
+            _id: mongoose.Types.ObjectId.isValid(package_id)
+              ? package_id
+              : undefined,
+          },
+        ],
+      },
+      { $set: data }
+    );
+    revalidatePath("/admin/package-management");
+    return { success: true, data: updatedPackage };
+  } catch (error: any) {
+    console.log(error);
+    return { success: false, error: error.message, data: null };
   }
 }

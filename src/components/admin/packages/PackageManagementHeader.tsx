@@ -6,6 +6,7 @@ import { useState } from "react";
 import { FiPlusCircle } from "react-icons/fi";
 import { IoSearch } from "react-icons/io5";
 import { PiMoneyWavy } from "react-icons/pi";
+import PackageForm from "./PackageForm";
 
 export default function PackageManagementHeader() {
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
@@ -28,6 +29,49 @@ export default function PackageManagementHeader() {
             </option>
             <option value="inactive" className=" text-site-black">
               Inactive
+            </option>
+          </select>
+          <select
+            className="w-fit px-4 rounded-md h-[2.5rem] bg-custom-gray text-site-black font-semibold text-sm flex justify-center items-center"
+            onChange={(e) => updateFilters("package_type", e.target.value)}
+          >
+            <option value="" className="text-site-black">
+              By Package Type
+            </option>
+            <option value="city_tour" className="text-site-black">
+              City Tour
+            </option>
+            <option value="mini_outstation" className="text-site-black">
+              Mini Outstation
+            </option>
+            <option value="outstation" className="text-site-black">
+              Outstation
+            </option>
+            <option value="hills_tour" className="text-site-black">
+              Hills Tour
+            </option>
+            <option value="long_tour" className="text-site-black">
+              Long Tour
+            </option>
+            <option value="drop_pickup_service" className="text-site-black">
+              Drop & Pickup Service
+            </option>
+          </select>
+          <select
+            className="w-fit px-4 rounded-md h-[2.5rem] bg-custom-gray text-site-black font-semibold text-sm flex justify-center items-center"
+            onChange={(e) => updateFilters("discount_type", e.target.value)}
+          >
+            <option value="" className="text-site-black">
+              By Discount Type
+            </option>
+            <option value="none" className="text-site-black">
+              None
+            </option>
+            <option value="fixed" className="text-site-black">
+              Fixed
+            </option>
+            <option value="percentage" className="text-site-black">
+              Percentage
             </option>
           </select>
           <div className="w-full rounded-md flex gap-2 items-center px-2 bg-custom-gray">
@@ -74,7 +118,7 @@ export default function PackageManagementHeader() {
           <h2 className="font-semibold text-site-navyblue xl:text-4xl md:text-2xl text-lg">
             Create Package
           </h2>
-          {/* <AddNewZone /> */}
+          <PackageForm onClose={() => setShowAddForm(false)} />
         </div>
       </SidePopup>
     </>
