@@ -6,6 +6,21 @@ export type UserNameForm = {
   user_name: string; 
 };
 
+
+export type UserTypes = {
+   _id?: Types.ObjectId;
+  user_id: string; 
+    name: string;
+  email: string;
+  mobile_number: string;
+  password: string;
+  role: string;
+  by_access: string[];
+  status: boolean;
+  createdAt?:string;
+updatedAt?:string
+};
+
 export type CouponFormState = {
   coupon_id?:string
   coupon_title: string;
@@ -23,7 +38,7 @@ export type CouponFormState = {
 
 
 export type customerTypes = {
-    _id: Types.ObjectId ;
+  _id: Types.ObjectId ;
   customer_id?: string;
   name?: string;
   email?: string;

@@ -97,7 +97,7 @@ export default function UserManagementHeader() {
           <h2 className="font-semibold text-site-navyblue xl:text-4xl md:text-2xl text-lg">
             User Create
           </h2>
-          <UserForm />
+          <UserForm onClose={() => setShowAddForm(false)}/>
         </div>
       </SidePopup>
     </>

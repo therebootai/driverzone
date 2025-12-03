@@ -1,44 +1,67 @@
 "use client";
 
-import { UPDATE_ZONE } from "@/actions/zoneActions";
-import { ZoneDocument } from "@/models/Zones";
+import { DELETE_PACKAGE, UPDATE_PACKAGE } from "@/actions/packageAction";
+import { PackageDocument } from "@/models/Packages";
 import TableComponent from "@/ui/TableComponent";
+import { convertTime } from "@/utils/timeConversion";
 import toast from "react-hot-toast";
 
-export default function ZoneManagement({ zones }: { zones: ZoneDocument[] }) {
-  const handleStatus = async (id: string, status: boolean) => {
+export default function PackageTable({
+  allPackages,
+}: {
+  allPackages: PackageDocument[];
+}) {
+  const handleDelete = async (id: string) => {
     try {
-      await UPDATE_ZONE(id, { status });
-      toast.success("Zone status updated successfully");
+      await DELETE_PACKAGE(id);
+      toast.success("Package deleted successfully");
     } catch (error: any) {
       console.log(error);
       toast.error(error.message);
     }
   };
 
+  const handleStatus = async (id: string, status: boolean) => {
+    try {
+      await UPDATE_PACKAGE(id, { status });
+      toast.success("Package status updated successfully");
+    } catch (error: any) {
+      console.log(error);
+      toast.error(error.message);
+    }
+  };
   return (
     <section className="flex flex-col gap-5">
       <h1 className="font-semibold lg:text-xl text-lg text-site-black">
-        Manage Zones
+        Manage Packages
       </h1>
       <TableComponent
         TABLE_HEAD={[
           "Name",
-          "Description",
-          "Area",
+          "Destination",
+          "Duration",
+          "Package Type",
+          "Company Charge",
+          "Driver Charge",
           "Created",
           "Status",
           "Actions",
         ]}
-        TABLE_ROWS={zones.map((item) => (
-          <tr key={item.zone_id} className="even:bg-neutral-50">
+        TABLE_ROWS={allPackages.map((item) => (
+          <tr key={item.package_id} className="even:bg-neutral-50">
             <td className="py-2 px-2.5">{item.name || ""}</td>
-            <td className="py-2 px-2.5">{item.description || ""}</td>
+            <td className="py-2 px-2.5">{item.destination || ""}</td>
             <td className="py-2 px-2.5">
-              {Math.ceil(item.area / 1000000)} sq.km
+              {convertTime(item.duration).value}{" "}
+              {convertTime(item.duration).unit}
             </td>
             <td className="py-2 px-2.5">
-              {new Date(item.created_at || "").toLocaleString("en-IN", {
+              {item.package_type.replaceAll("_", " ")}
+            </td>
+            <td className="py-2 px-2.5">{item.company_charge || ""}</td>
+            <td className="py-2 px-2.5">{item.driver_charge || ""}</td>
+            <td className="py-2 px-2.5">
+              {new Date(item.createdAt || "").toLocaleString("en-IN", {
                 day: "numeric",
                 month: "long",
                 year: "numeric",
@@ -63,7 +86,7 @@ export default function ZoneManagement({ zones }: { zones: ZoneDocument[] }) {
               <button
                 className="cursor-pointer"
                 type="button"
-                // onClick={() => handleDelete(item._id)}
+                onClick={() => handleDelete(item._id as string)}
               >
                 Delete
               </button>
