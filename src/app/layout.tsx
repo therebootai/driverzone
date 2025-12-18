@@ -44,6 +44,8 @@ const pp_neue = localFont({
     },
   ],
   variable: "--font-ppneue",
+  display: "swap",
+  preload: true,
 });
 
 const spline_sans = Spline_Sans({

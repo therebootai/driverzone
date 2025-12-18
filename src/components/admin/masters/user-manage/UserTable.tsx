@@ -2,12 +2,24 @@
 
 import { DELETEUSER, UPDATEUSER } from "@/actions/userActions";
 import TableComponent from "../../../../ui/TableComponent";
+import { useState } from "react";
+import {  UserTypes } from "@/types/types";
+import SidePopUpSlider from "../../SidePopup";
+import ViewUser from "./ViewUser";
+import UserForm from "./UserForm";
 
 export default function UserTable({
   users,
 }: {
   users: { [keys: string]: string }[];
 }) {
+
+    const [selectedUser, setSelectedUser] = useState<UserTypes | null>(
+      null
+    );
+    const [showView, setShowView] = useState(false);
+    const [showEdit, setShowEdit] = useState(false);
+
   async function handleStatus(id: string, status: boolean) {
     try {
       await UPDATEUSER(id, { status });
@@ -53,8 +65,14 @@ export default function UserTable({
               </button>
             </td>
             <td className="flex flex-row gap-2 py-2 px-2.5">
-              <button className="cursor-pointer">View</button> |
-              <button className="cursor-pointer">Edit</button> |
+              <button className="cursor-pointer"    onClick={() => {
+                  setSelectedUser(item as unknown as UserTypes);
+                  setShowView(true);
+                }}>View</button> |
+              <button className="cursor-pointer"   onClick={() => {
+    setSelectedUser(item as unknown as UserTypes);
+    setShowEdit(true);
+  }}>Edit</button> |
               <button
                 className="cursor-pointer"
                 type="button"
@@ -66,6 +84,34 @@ export default function UserTable({
           </tr>
         ))}
       />
+
+          {showView && (
+        <SidePopUpSlider
+          showPopUp={showView}
+          handleClose={() => setShowView(false)}
+        >
+          <ViewUser
+            user={selectedUser}
+            onClose={() => {
+              setShowView(false);
+              setSelectedUser(null);
+            }}
+          />
+        </SidePopUpSlider>
+      )}
+
+      {showEdit && (
+  <SidePopUpSlider showPopUp={showEdit} handleClose={() => setShowEdit(false)}>
+    <div className=" p-4">
+    <UserForm
+      user={selectedUser}  
+     onClose={() => {
+              setShowEdit(false);
+              setSelectedUser(null);
+            }}
+    /></div>
+  </SidePopUpSlider>
+)}
     </section>
   );
 }

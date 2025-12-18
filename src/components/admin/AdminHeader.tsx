@@ -35,12 +35,20 @@ export default function AdminHeader() {
       path: "/admin/zone-management",
     },
     {
+      label: "Package Management",
+      path: "/admin/package-management",
+    },
+    {
       label: "Driver Management",
       path: "/admin/driver-management",
     },
     {
       label: "Customer Management",
       path: "/admin/customer-management",
+    },
+    {
+      label: "Booking Management",
+      path: "/admin/booking-management",
     },
     {
       label: "Coupon",

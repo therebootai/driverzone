@@ -51,10 +51,10 @@ export default function UserManagementHeader() {
             <option value="" className=" text-site-black">
               By Status
             </option>
-            <option value="Active" className=" text-site-black">
+            <option value="active" className=" text-site-black">
               Active
             </option>
-            <option value="Inactive" className=" text-site-black">
+            <option value="inactive" className=" text-site-black">
               Inactive
             </option>
           </select>
@@ -97,7 +97,7 @@ export default function UserManagementHeader() {
           <h2 className="font-semibold text-site-navyblue xl:text-4xl md:text-2xl text-lg">
             User Create
           </h2>
-          <UserForm />
+          <UserForm onClose={() => setShowAddForm(false)}/>
         </div>
       </SidePopup>
     </>

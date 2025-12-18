@@ -6,6 +6,21 @@ export type UserNameForm = {
   user_name: string; 
 };
 
+
+export type UserTypes = {
+   _id?: Types.ObjectId;
+  user_id: string; 
+    name: string;
+  email: string;
+  mobile_number: string;
+  password: string;
+  role: string;
+  by_access: string[];
+  status: boolean;
+  createdAt?:string;
+updatedAt?:string
+};
+
 export type CouponFormState = {
   coupon_id?:string
   coupon_title: string;
@@ -23,7 +38,7 @@ export type CouponFormState = {
 
 
 export type customerTypes = {
-    _id: Types.ObjectId ;
+  _id: Types.ObjectId ;
   customer_id?: string;
   name?: string;
   email?: string;
@@ -109,3 +124,69 @@ createdAt?:string;
 updatedAt?:string
 
 }
+
+
+export type BookingTypes= {
+  booking_id?: string;
+  fare?: number;
+  estimatedFare?: number;
+
+  pickupAddress: string;
+  pickupLat: number;
+  pickupLng: number;
+
+  dropAddress: string;
+  dropLat: number;
+  dropLng: number;
+
+  tripType?: "one-way" | "round-trip" | "local" | "outstation";
+  distance?: number;
+  duration?: number;
+
+  customerDetails: string;
+  driverDetails?: string | null;
+
+  vehicleType: string;
+
+  otp?: string;
+
+  paymentMethod?: "cash" | "upi" | "card" | "wallet";
+  paymentStatus?: "pending" | "paid" | "failed";
+
+  status?:
+    | "pending"
+    | "assigned"
+    | "accepted"
+    | "arrived"
+    | "started"
+    | "completed"
+    | "cancelled";
+
+  cancelReason?: string;
+
+  driverRating?: number;
+  customerRating?: number;
+}
+
+
+export type GetBookingsParams = {
+  page?: number;
+  limit?: number;
+  searchTerm?: string;
+  booking_id?: string;
+  customerId?: string;
+  driverId?: string;
+  status?: 
+    | "pending"
+    | "assigned"
+    | "accepted"
+    | "arrived"
+    | "started"
+    | "completed"
+    | "cancelled";
+  paymentStatus?: "pending" | "paid" | "failed";
+  tripType?: "one-way" | "round-trip" | "local" | "outstation";
+  startDate?: string | Date;
+  endDate?: string | Date;
+  sort?: any;
+};
