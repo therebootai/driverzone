@@ -117,8 +117,10 @@ export async function GET_ALL_PACKAGES({
     const query: any = {};
 
     if (search) {
-      query.name = { $regex: search, $options: "i" };
-      query.destination = { $regex: search, $options: "i" };
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { destination: { $regex: search, $options: "i" } },
+      ];
     }
 
     if (typeof status === "boolean") {
@@ -130,25 +132,31 @@ export async function GET_ALL_PACKAGES({
     }
 
     if (min_price) {
-      query.company_charge = { $gte: min_price };
-      query.driver_charge = { $gte: min_price };
-      query.fooding_charge = { $gte: min_price };
-      query.over_time_customer_charge = { $gte: min_price };
-      query.over_time_driver_charge = { $gte: min_price };
-      query.early_morning_charge = { $gte: min_price };
-      query.late_night_charge = { $gte: min_price };
-      query.total_price = { $gte: min_price };
+      query.$or = [
+        ...query.$or,
+        { company_charge: { $gte: min_price } },
+        { driver_charge: { $gte: min_price } },
+        { fooding_charge: { $gte: min_price } },
+        { over_time_customer_charge: { $gte: min_price } },
+        { over_time_driver_charge: { $gte: min_price } },
+        { early_morning_charge: { $gte: min_price } },
+        { late_night_charge: { $gte: min_price } },
+        { total_price: { $gte: min_price } },
+      ];
     }
 
     if (max_price) {
-      query.company_charge = { $lte: max_price };
-      query.driver_charge = { $lte: max_price };
-      query.fooding_charge = { $lte: max_price };
-      query.over_time_customer_charge = { $lte: max_price };
-      query.over_time_driver_charge = { $lte: max_price };
-      query.early_morning_charge = { $lte: max_price };
-      query.late_night_charge = { $lte: max_price };
-      query.total_price = { $lte: max_price };
+      query.$or = [
+        ...query.$or,
+        { company_charge: { $lte: max_price } },
+        { driver_charge: { $lte: max_price } },
+        { fooding_charge: { $lte: max_price } },
+        { over_time_customer_charge: { $lte: max_price } },
+        { over_time_driver_charge: { $lte: max_price } },
+        { early_morning_charge: { $lte: max_price } },
+        { late_night_charge: { $lte: max_price } },
+        { total_price: { $lte: max_price } },
+      ];
     }
 
     if (discount_type) {
