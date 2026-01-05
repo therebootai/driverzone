@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createCustomer } from "@/actions/customerActions"; 
-import connectToDataBase from "@/db/connection";
-
-
+import { createCustomer } from "@/actions/customerActions";
+import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
 
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
+    await ensureModelsRegistered();
     const result = await createCustomer(data);
 
     if (result.success) {
@@ -22,10 +21,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-
 export async function GET() {
   try {
     await connectToDataBase();
+    await ensureModelsRegistered();
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 });

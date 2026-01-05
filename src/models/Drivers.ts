@@ -166,8 +166,8 @@ const driverSchema = new Schema<DriverDocument>(
   { timestamps: true }
 );
 
-const Drivers: Model<DriverDocument> =
+const Driver: Model<DriverDocument> =
   mongoose.models.Driver ||
   mongoose.model<DriverDocument>("Driver", driverSchema);
 
-export default Drivers;
+export default Driver;

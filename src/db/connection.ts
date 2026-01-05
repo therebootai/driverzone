@@ -80,6 +80,7 @@ export async function ensureModelsRegistered() {
     await import("@/models/OTP");
     await import("@/models/Users");
     await import("@/models/Zones");
+    await import("@/models/Coupon");
 
     cached.modelsRegistered = true;
     console.log("✅ All models registered");

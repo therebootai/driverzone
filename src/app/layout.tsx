@@ -4,7 +4,6 @@ import localFont from "next/font/local";
 import { Spline_Sans } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/context/AuthContext";
-import mongoose from "mongoose";
 import { ensureModelsRegistered } from "@/db/connection";
 
 const pp_neue = localFont({
