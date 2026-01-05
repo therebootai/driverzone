@@ -1,6 +1,4 @@
 "use client";
-
-import { ZoneDocument } from "@/models/Zones";
 import { useState } from "react";
 import {
   FeatureGroup,
@@ -29,16 +27,18 @@ const ZoneMap = ({
   onZoneCreate,
   onZoneUpdate,
   onZoneDelete,
-  existingZones = [],
+  existingZones,
   defaultCenter = [26.7271, 88.3953],
+  editable = true,
 }: {
-  onZoneCreate: (coord: number[][]) => void;
-  onZoneUpdate: (zoneData: { coordinates: number[][] }) => void;
-  onZoneDelete: (zoneId: number) => void;
-  existingZones?: ZoneDocument[];
+  onZoneCreate?: (coord: number[][]) => void;
+  onZoneUpdate?: (zoneData: { coordinates: number[][] }) => void;
+  onZoneDelete?: (zoneId: number) => void;
+  existingZones?: number[][];
   defaultCenter?: [number, number];
+  editable?: boolean;
 }) => {
-  const [zones, setZones] = useState(existingZones);
+  const [zones, setZones] = useState<any>(existingZones);
 
   const handleCreated = (e: any) => {
     const { layerType, layer } = e;
@@ -47,15 +47,13 @@ const ZoneMap = ({
         .getLatLngs()[0]
         .map((latLng: L.LatLng) => [latLng.lng, latLng.lat]);
 
-      const newZone = {
-        id: layer._leaflet_id,
-        name: `Zone ${zones.length + 1}`,
-        coordinates: coordinates,
-        color: "#3388ff",
-      };
-
-      setZones((prev) => [...prev, newZone]);
-      onZoneCreate(newZone.coordinates);
+      // const newZone = {
+      //   id: layer._leaflet_id,
+      //   name: `Zone ${zones.length + 1}`,
+      //   coordinates: coordinates,
+      //   color: "#3388ff",
+      // };
+      onZoneCreate && onZoneCreate(coordinates);
     }
   };
 
@@ -63,24 +61,42 @@ const ZoneMap = ({
     const layers = e.layers;
     layers.eachLayer((layer: L.Layer) => {
       if (layer instanceof L.Polygon) {
-        const coordinates = layer
-          .getLatLngs()[0]
-          .map((latLng: L.LatLng) => [latLng.lng, latLng.lat]);
+        try {
+          const latLngs = layer.getLatLngs();
+          let coordinates: [number, number][] = [];
 
-        const updatedZone = {
-          id: layer?._leaflet_id,
-          coordinates: coordinates,
-        };
+          // Extract coordinates based on the polygon type
+          if (latLngs.length > 0) {
+            if (latLngs[0] instanceof L.LatLng) {
+              // Simple polygon
+              coordinates = (latLngs as L.LatLng[]).map((latLng: L.LatLng) => [
+                latLng.lng,
+                latLng.lat,
+              ]);
+            } else if (Array.isArray(latLngs[0])) {
+              // Polygon with holes - take the outer ring (first array)
+              const outerRing = latLngs[0] as L.LatLng[];
+              coordinates = outerRing.map((latLng: L.LatLng) => [
+                latLng.lng,
+                latLng.lat,
+              ]);
+            }
+          }
 
-        onZoneUpdate(updatedZone.coordinates);
+          if (coordinates.length > 0) {
+            onZoneUpdate && onZoneUpdate(coordinates as any);
+          }
+        } catch (error) {
+          console.error("Error processing polygon coordinates:", error);
+        }
       }
     });
   };
 
   const handleDeleted = (e: any) => {
     const layers = e.layers;
-    layers.eachLayer((layer: L.Layer) => {
-      onZoneDelete(layer?._leaflet_id);
+    layers.eachLayer((layer: any) => {
+      onZoneDelete && onZoneDelete(layer?._leaflet_id);
     });
   };
 
@@ -97,40 +113,44 @@ const ZoneMap = ({
         />
 
         <FeatureGroup>
-          <EditControl
-            position="topright"
-            onCreated={handleCreated}
-            onEdited={handleEdited}
-            onDeleted={handleDeleted}
-            draw={{
-              rectangle: false,
-              circle: false,
-              circlemarker: false,
-              marker: false,
-              polyline: false,
-              polygon: {
-                allowIntersection: false,
-                drawError: {
-                  color: "#e1e100",
-                  message:
-                    "<strong>Error:</strong> Polygon edges cannot cross!",
+          {editable && (
+            <EditControl
+              position="topright"
+              onCreated={handleCreated}
+              onEdited={handleEdited}
+              onDeleted={handleDeleted}
+              draw={{
+                rectangle: false,
+                circle: false,
+                circlemarker: false,
+                marker: false,
+                polyline: false,
+                polygon: {
+                  allowIntersection: false,
+                  drawError: {
+                    color: "#e1e100",
+                    message:
+                      "<strong>Error:</strong> Polygon edges cannot cross!",
+                  },
+                  shapeOptions: {
+                    color: "#3388ff",
+                  },
                 },
-                shapeOptions: {
-                  color: "#3388ff",
-                },
-              },
-            }}
-          />
+              }}
+            />
+          )}
         </FeatureGroup>
 
         {/* Render existing zones */}
-        {zones.map((zone, index) => (
+        {existingZones && Array.isArray(existingZones) && (
           <Polygon
-            key={zone.id || index}
-            positions={zone?.coordinates?.map((coord) => [coord[1], coord[0]])}
+            positions={existingZones?.map((coord: number[]) => [
+              coord[1],
+              coord[0],
+            ])}
             pathOptions={{ color: "#3388ff" }}
           />
-        ))}
+        )}
 
         <MapController
           onMapClick={(latlng) => console.log("Map clicked:", latlng)}

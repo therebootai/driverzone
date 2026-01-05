@@ -4,6 +4,8 @@ import localFont from "next/font/local";
 import { Spline_Sans } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/context/AuthContext";
+import mongoose from "mongoose";
+import { ensureModelsRegistered } from "@/db/connection";
 
 const pp_neue = localFont({
   src: [
@@ -60,11 +62,12 @@ export const metadata: Metadata = {
     "DriverZone is your trusted partner for professional Driver Hire in Siliguri and Car Driver Hire in Siliguri. We specialize in providing skilled, punctual, and verified drivers for local commutes, outstation trips, and long-distance journeys. Our mission is to make every ride safe, comfortable, and hassle-free, ensuring peace of mind for all our customers.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  await ensureModelsRegistered();
   return (
     <html lang="en">
       <body

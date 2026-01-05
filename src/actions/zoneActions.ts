@@ -74,8 +74,10 @@ export async function GET_ALL_ZONES({
     const query: any = {};
 
     if (search) {
-      query.name = { $regex: search, $options: "i" };
-      query.description = { $regex: search, $options: "i" };
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
     }
 
     if (typeof status === "boolean") {
@@ -103,7 +105,7 @@ export async function GET_ALL_ZONES({
     return {
       success: false,
       message: error.message,
-      data: null,
+      data: [],
       paginations: { totalPages: 1, currentPage: 1 },
     };
   }

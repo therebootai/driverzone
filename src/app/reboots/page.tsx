@@ -1,7 +1,14 @@
+import { VERIFY_AUTHORIZATION } from "@/actions/userActions";
 import AuthForm from "@/components/auth/AuthForm";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 
-export default function AuthPage() {
+export default async function AuthPage() {
+  const { success } = await VERIFY_AUTHORIZATION();
+
+  if (success) {
+    redirect("/admin/dashboard");
+  }
   return (
     <main className="relative bg-[url('/custom-bg/login-bg.png')] bg-center bg-cover min-h-svh w-full flex items-center justify-center font-spline-sans">
       <div className="absolute inset-0 size-full bg-black/50" />

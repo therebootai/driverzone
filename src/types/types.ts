@@ -1,28 +1,27 @@
+import { PackageDocument } from "@/models/Packages";
 import { Types } from "mongoose";
 
-
 export type UserNameForm = {
-   _id?: Types.ObjectId;
-  user_name: string; 
+  _id?: Types.ObjectId;
+  user_name: string;
 };
 
-
 export type UserTypes = {
-   _id?: Types.ObjectId;
-  user_id: string; 
-    name: string;
+  _id?: Types.ObjectId;
+  user_id: string;
+  name: string;
   email: string;
   mobile_number: string;
   password: string;
   role: string;
   by_access: string[];
   status: boolean;
-  createdAt?:string;
-updatedAt?:string
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type CouponFormState = {
-  coupon_id?:string
+  coupon_id?: string;
   coupon_title: string;
   coupon_code: string;
   coupon_type: string;
@@ -32,13 +31,12 @@ export type CouponFormState = {
   minimum_booking_value: string;
   coupon_uses_limit: string;
   users_type: string;
-  status?:boolean;
+  status?: boolean;
   user_name: UserNameForm[];
 };
 
-
 export type customerTypes = {
-  _id: Types.ObjectId ;
+  _id: Types.ObjectId;
   customer_id?: string;
   name?: string;
   email?: string;
@@ -50,8 +48,7 @@ export type customerTypes = {
   total_spent?: string;
   password?: string;
   status?: boolean;
-}
-
+};
 
 export type VehicleDetails = {
   car_name?: string;
@@ -83,9 +80,9 @@ export type VehicleDetails = {
     public_id: string;
     secure_url: string;
   };
-}
+};
 
-export type DriverDocument= {
+export type DriverDocument = {
   driver_id: string;
 
   driver_name: string;
@@ -119,41 +116,49 @@ export type DriverDocument= {
   vehicle_details?: VehicleDetails;
 
   status: boolean;
-  
-createdAt?:string;
-updatedAt?:string
 
-}
+  createdAt?: string;
+  updatedAt?: string;
+};
 
-
-export type BookingTypes= {
-  booking_id?: string;
-  fare?: number;
-  estimatedFare?: number;
-
+export type BookingTypes = {
+  _id: string;
+  booking_id: string;
+  fare: number;
+  estimatedFare: number;
   pickupAddress: string;
   pickupLat: number;
   pickupLng: number;
-
   dropAddress: string;
   dropLat: number;
   dropLng: number;
-
-  tripType?: "one-way" | "round-trip" | "local" | "outstation";
-  distance?: number;
-  duration?: number;
-
-  customerDetails: string;
-  driverDetails?: string | null;
-
+  tripType: "one-way" | "round-trip" | "local" | "outstation";
+  distance: number;
+  duration: number;
   vehicleType: string;
-
-  otp?: string;
-
-  paymentMethod?: "cash" | "upi" | "card" | "wallet";
-  paymentStatus?: "pending" | "paid" | "failed";
-
-  status?:
+  customerDetails: {
+    _id: string;
+    name: string;
+    email: string;
+    mobile_number: string;
+    profile_picture?: string;
+  };
+  driverDetails?: {
+    _id: string;
+    driver_name: string;
+    email: string;
+    mobile_number: string;
+    profile_picture?: string;
+    vehicle_number: string;
+    license_number: string;
+    status: string;
+    rating: number;
+  };
+  otp: string;
+  otp_verified: boolean;
+  paymentMethod: "cash" | "upi" | "card" | "wallet";
+  paymentStatus: "pending" | "paid" | "failed";
+  status:
     | "pending"
     | "assigned"
     | "accepted"
@@ -161,13 +166,32 @@ export type BookingTypes= {
     | "started"
     | "completed"
     | "cancelled";
-
   cancelReason?: string;
-
   driverRating?: number;
   customerRating?: number;
-}
-
+  package_type?: {
+    _id: string;
+    name: string;
+    description: string;
+    price: number;
+    duration: number;
+    features: string[];
+  };
+  schedule_date?: Date;
+  schedule_time?: string;
+  fare_details?: {
+    company_charge: number;
+    driver_charge: number;
+    fooding_charge: number;
+    over_time_customer_charge: number;
+    over_time_driver_charge: number;
+    early_morning_charge: number;
+    late_night_charge: number;
+  };
+  insurance: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export type GetBookingsParams = {
   page?: number;
@@ -176,7 +200,7 @@ export type GetBookingsParams = {
   booking_id?: string;
   customerId?: string;
   driverId?: string;
-  status?: 
+  status?:
     | "pending"
     | "assigned"
     | "accepted"
