@@ -80,7 +80,8 @@ export default function PackageForm({
   // UTILITY FUNCTION
   const handleSearchZones = async (
     e: ChangeEvent<HTMLInputElement>,
-    onChangeFunc: (value: string) => void
+    onChangeFunc: (value: string) => void,
+    onClearFunc: () => void
   ) => {
     try {
       const search = e.target.value.trim();
@@ -89,10 +90,11 @@ export default function PackageForm({
 
       if (search === "") {
         setSearchedZones([]);
+        onClearFunc();
         return;
       }
 
-      const { data } = await GET_ALL_ZONES({ limit: 12, search });
+      const { data } = await GET_ALL_ZONES({ limit: 12, search, status: true });
 
       setSearchedZones(data);
     } catch (error) {
@@ -326,7 +328,9 @@ export default function PackageForm({
             placeholder="Search Zone by name or destination"
             value={mainSearchInput}
             onChange={(e) => {
-              handleSearchZones(e, setMainSearchInput);
+              handleSearchZones(e, setMainSearchInput, () =>
+                setMainZone(update_package?.main_zone || null)
+              );
               setShowMainZone(true);
             }}
           />
@@ -356,7 +360,9 @@ export default function PackageForm({
             placeholder="Search Zone by name or destination"
             value={serviceSearchInput}
             onChange={(e) => {
-              handleSearchZones(e, setServiceSearchInput);
+              handleSearchZones(e, setServiceSearchInput, () =>
+                setServiceZone(update_package?.service_zone || null)
+              );
               setShowServiceZone(true);
             }}
           />

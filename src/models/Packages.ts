@@ -1,5 +1,4 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
-import { ZoneDocument } from "./Zones";
 
 export interface PackageDocument extends Document {
   package_id: string;
@@ -23,8 +22,8 @@ export interface PackageDocument extends Document {
   destination?: string;
   discount_type: "percentage" | "fixed" | "none";
   discount?: number;
-  main_zone?: mongoose.Types.ObjectId | ZoneDocument;
-  service_zone?: mongoose.Types.ObjectId | ZoneDocument;
+  main_zone?: any;
+  service_zone?: any;
   status: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -62,14 +61,15 @@ const PackageSchema = new Schema<PackageDocument>(
       enum: ["percentage", "fixed", "none"],
       default: "none",
     },
-    main_zone: { type: Schema.Types.ObjectId, ref: "Zone" },
-    service_zone: { type: Schema.Types.ObjectId, ref: "Zone" },
+    main_zone: { type: Schema.Types.ObjectId, ref: "Zones" },
+    service_zone: { type: Schema.Types.ObjectId, ref: "Zones" },
     status: { type: Boolean, required: true, default: true },
   },
   { timestamps: true }
 );
 
-const Packages: Model<PackageDocument> =
-  mongoose.models.Packages || mongoose.model("Packages", PackageSchema);
+const Package: Model<PackageDocument> =
+  mongoose.models.Package ||
+  mongoose.model<PackageDocument>("Package", PackageSchema);
 
-export default Packages;
+export default Package;
