@@ -21,6 +21,7 @@ export interface customerDocument extends Document {
   total_spent?: string;
   password?: string;
   status: boolean;
+  used_coupons?: Array<any>;
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
 
@@ -74,6 +75,13 @@ const customerSchema = new Schema<customerDocument>(
       required: true,
       default: true,
     },
+    used_coupons: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Coupon",
+        default: [],
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -97,8 +105,8 @@ customerSchema.methods.matchPassword = async function (
   return bcrypt.compare(enteredPassword, this.password);
 };
 
-const Customers: Model<customerDocument> =
-  mongoose.models.Customers ||
-  mongoose.model<customerDocument>("Customers", customerSchema);
+const Customer: Model<customerDocument> =
+  mongoose.models.Customer ||
+  mongoose.model<customerDocument>("Customer", customerSchema);
 
-export default Customers;
+export default Customer;

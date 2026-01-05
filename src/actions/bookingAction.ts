@@ -95,6 +95,8 @@ export async function createBooking(data: any): Promise<BookingDocument> {
       },
 
       insurance: data.insurance,
+
+      coupon: isValidObjectId(data.coupon) ? data.coupon : null,
     });
 
     return newBooking;

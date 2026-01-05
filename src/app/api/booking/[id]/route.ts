@@ -1,4 +1,4 @@
-import connectToDatabase from "@/db/connection";
+import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Booking from "@/models/Booking";
 import { isValidObjectId } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
@@ -45,6 +45,7 @@ export async function GET(
     const { id } = await params;
 
     await connectToDatabase();
+    await ensureModelsRegistered();
 
     const requestedBooking = await Booking.findOne({
       $or: [{ _id: isValidObjectId(id) ? id : undefined }, { booking_id: id }],
@@ -85,6 +86,8 @@ export async function PUT(
         { status: 400 }
       );
     }
+
+    await ensureModelsRegistered();
 
     // Get request body
     const updateData = await request.json();

@@ -70,6 +70,8 @@ export interface BookingDocument extends Document {
   startedAt: Date;
   completedAt: Date;
   cancelledAt: Date;
+
+  coupon?: any;
 }
 
 const bookingSchema = new Schema<BookingDocument>(
@@ -89,7 +91,7 @@ const bookingSchema = new Schema<BookingDocument>(
 
     tripType: {
       type: String,
-      enum: ["one-way", "round-trip", "local", "outstation"],
+      enum: ["one-way", "round-trip", "local", "outstation", "others"],
       default: "one-way",
     },
 
@@ -100,7 +102,7 @@ const bookingSchema = new Schema<BookingDocument>(
 
     customerDetails: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Customers",
+      ref: "Customer",
       required: true,
     },
 
@@ -180,6 +182,11 @@ const bookingSchema = new Schema<BookingDocument>(
     startedAt: { type: Date },
     completedAt: { type: Date },
     cancelledAt: { type: Date },
+
+    coupon: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Coupon",
+    },
   },
   { timestamps: true }
 );
