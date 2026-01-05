@@ -3,15 +3,23 @@ import bcrypt from "bcryptjs";
 
 export interface customerDocument extends Document {
   customer_id: string;
-  name: string;
-  email: string;
-  mobile_number: string;
-  sos_mobile_number: string;
-  address: string;
-  rating: string;
-  reg_date: string;
-  total_spent: string;
-  password: string;
+  name?: string;
+  email?: string;
+  mobile_number?: string;
+  sos_mobile_number?: string;
+  address?: string;
+  rating?: string;
+  reg_date?: string;
+  profile_picture?: {
+    public_id: string;
+    secure_url: string;
+  };
+  cover_picture?: {
+    public_id: string;
+    secure_url: string;
+  };
+  total_spent?: string;
+  password?: string;
   status: boolean;
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
@@ -25,12 +33,16 @@ const customerSchema = new Schema<customerDocument>(
     },
     email: {
       type: String,
-      required: true,
+      required: function (this: customerDocument) {
+        return !this.mobile_number;
+      },
       unique: true,
     },
     mobile_number: {
       type: String,
-      required: true,
+      required: function (this: customerDocument) {
+        return !this.email;
+      },
       unique: true,
     },
     sos_mobile_number: {
@@ -43,12 +55,19 @@ const customerSchema = new Schema<customerDocument>(
     reg_date: {
       type: String,
     },
+    profile_picture: {
+      public_id: { type: String },
+      secure_url: { type: String },
+    },
+    cover_picture: {
+      public_id: { type: String },
+      secure_url: { type: String },
+    },
     total_spent: {
       type: String,
     },
     password: {
       type: String,
-      required: true,
     },
     status: {
       type: Boolean,
@@ -60,7 +79,7 @@ const customerSchema = new Schema<customerDocument>(
 );
 
 customerSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) {
+  if (!this.isModified("password") || !this.password) {
     return next();
   }
   try {

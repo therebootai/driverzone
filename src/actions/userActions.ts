@@ -59,8 +59,10 @@ export async function GETALLUSERS({
     const query: any = {};
 
     if (search) {
-      query.name = { $regex: search, $options: "i" };
-      query.mobile_number = { $regex: search, $options: "i" };
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { mobile_number: { $regex: search, $options: "i" } },
+      ];
     }
 
     if (role) {
@@ -259,7 +261,7 @@ export async function VERIFY_AUTHORIZATION() {
     const user = await verifyToken(token.value);
 
     if (!user) {
-      return { success: false, message: "Unauthorized" };
+      return { success: false, message: "Unauthorized", data: null };
     }
 
     return {
@@ -269,7 +271,11 @@ export async function VERIFY_AUTHORIZATION() {
     };
   } catch (error: any) {
     console.error("Error logging in:", error);
-    return { success: false, message: error.message || "Unknown error" };
+    return {
+      success: false,
+      message: error.message || "Unknown error",
+      data: null,
+    };
   }
 }
 

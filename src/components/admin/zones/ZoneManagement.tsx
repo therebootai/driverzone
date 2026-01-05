@@ -2,10 +2,14 @@
 
 import { UPDATE_ZONE } from "@/actions/zoneActions";
 import { ZoneDocument } from "@/models/Zones";
+import SidePopup from "@/ui/SidePopup";
 import TableComponent from "@/ui/TableComponent";
+import ZoneMap from "@/ui/Zonemap";
+import { useState } from "react";
 import toast from "react-hot-toast";
 
 export default function ZoneManagement({ zones }: { zones: ZoneDocument[] }) {
+  const [selectedZone, setSelectedZone] = useState<ZoneDocument | null>(null);
   const handleStatus = async (id: string, status: boolean) => {
     try {
       await UPDATE_ZONE(id, { status });
@@ -58,8 +62,13 @@ export default function ZoneManagement({ zones }: { zones: ZoneDocument[] }) {
               </button>
             </td>
             <td className="flex flex-row gap-2 py-2 px-2.5">
-              <button className="cursor-pointer">View</button> |
-              <button className="cursor-pointer">Edit</button> |
+              <button
+                className="cursor-pointer"
+                onClick={() => setSelectedZone(item)}
+              >
+                View
+              </button>{" "}
+              |<button className="cursor-pointer">Edit</button> |
               <button
                 className="cursor-pointer"
                 type="button"
@@ -71,6 +80,38 @@ export default function ZoneManagement({ zones }: { zones: ZoneDocument[] }) {
           </tr>
         ))}
       />
+      <SidePopup
+        showPopUp={!!selectedZone}
+        handleClose={() => setSelectedZone(null)}
+        clsprops="px-6"
+      >
+        <h1 className="text-2xl font-semibold text-site-black">Zone Details</h1>
+        <div className="flex flex-col gap-2.5 mt-4">
+          <Field label="Name" value={selectedZone?.name} />
+          <Field label="Description" value={selectedZone?.description} />
+          <Field label="Area" value={selectedZone?.area} />
+          <Field
+            label="Created At"
+            value={
+              selectedZone?.created_at
+                ? new Date(selectedZone?.created_at).toLocaleString("en-IN", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })
+                : "-"
+            }
+          />
+          <ZoneMap existingZones={selectedZone?.coordinates} editable={false} />
+        </div>
+      </SidePopup>
     </section>
   );
 }
+
+const Field = ({ label, value }: { label: string; value?: any }) => (
+<div className="flex flex-col mb-3">
+  <span className="text-xs text-gray-500">{label}</span>
+  <span className="text-sm font-medium text-gray-900">{value || "-"}</span>
+</div>
+);

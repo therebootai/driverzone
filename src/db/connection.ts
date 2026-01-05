@@ -1,30 +1,89 @@
 "use server";
 import mongoose from "mongoose";
 
-let isConnected = false;
+const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
-const connectToDataBase = async () => {
-  mongoose.set("strictQuery", true);
+if (!MONGODB_URI) {
+  throw new Error("MONGODB_URI is not defined in environment variables");
+}
 
-  if (isConnected) return;
+// Interface for cached connection
+interface MongooseCache {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+  modelsRegistered: boolean;
+}
 
+// Use global to persist across serverless function invocations
+declare global {
+  var mongooseGlobal: MongooseCache | undefined;
+}
 
-  const uri = process.env.MONGO_URI ?? process.env.MONGODB_URI;
-  if (!uri) {
-    throw new Error(
-      "Missing Mongo URI. Set MONGO_URI (or MONGODB_URI) in .env.local / host env."
-    );
+// Initialize or use cached connection
+const cached: MongooseCache = global.mongooseGlobal || {
+  conn: null,
+  promise: null,
+  modelsRegistered: false,
+};
+
+if (!global.mongooseGlobal) {
+  global.mongooseGlobal = cached;
+}
+
+export async function connectToDatabase() {
+  // If already connected, return cached connection
+  if (cached.conn) {
+    return cached.conn;
+  }
+
+  // If connection is in progress, wait for it
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+    };
+
+    cached.promise = mongoose
+      .connect(MONGODB_URI as string, opts)
+      .then((mongooseInstance) => {
+        console.log("✅ MongoDB connected successfully");
+        return mongooseInstance;
+      })
+      .catch((error) => {
+        console.error("❌ MongoDB connection error:", error);
+        cached.promise = null;
+        throw error;
+      });
   }
 
   try {
-    await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 8000,
-    });
-    isConnected = true;
-  } catch (error: any) {
-    console.error("Error connecting to the database:", error);
-    throw new Error(`Mongo connect failed: ${error?.message || String(error)}`);
+    cached.conn = await cached.promise;
+  } catch (error) {
+    cached.promise = null;
+    throw error;
   }
-};
 
-export default connectToDataBase;
+  return cached.conn;
+}
+
+// Function to ensure models are registered
+export async function ensureModelsRegistered() {
+  await connectToDatabase();
+
+  if (!cached.modelsRegistered) {
+    // Dynamically import and register models
+    await import("@/models/Packages");
+    await import("@/models/Booking");
+    await import("@/models/Customers");
+    await import("@/models/Drivers");
+    await import("@/models/OTP");
+    await import("@/models/Users");
+    await import("@/models/Zones");
+
+    cached.modelsRegistered = true;
+    console.log("✅ All models registered");
+  }
+}
+
+export default connectToDatabase;
