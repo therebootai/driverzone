@@ -1,6 +1,6 @@
 "use server";
 
-import connectToDataBase from "@/db/connection";
+import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
 import Customers from "@/models/Customers";
 import { deleteFile, uploadFile } from "@/utils/cloudinary";
 import { verifyCustomerToken } from "@/utils/jwt";
@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
       );
     }
     await connectToDataBase();
+    await ensureModelsRegistered();
     const user = await verifyCustomerToken(token.split("Bearer ")[1]);
     if (!user) {
       throw new Error("Unauthorized");
@@ -68,6 +69,7 @@ export async function PUT(request: NextRequest) {
     }
 
     await connectToDataBase();
+    await ensureModelsRegistered();
 
     const user = await verifyCustomerToken(token.split("Bearer ")[1]);
 

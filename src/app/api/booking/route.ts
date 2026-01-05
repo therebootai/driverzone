@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createBooking } from "@/actions/bookingAction";
-import connectToDataBase from "@/db/connection";
+import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
 import { verifyCustomerToken } from "@/utils/jwt";
 import Booking from "@/models/Booking";
 import { VERIFY_PAYMENT } from "@/actions/razorpayAction";
+import Customer from "@/models/Customers";
 
 export async function POST(req: Request) {
   try {
@@ -24,6 +25,7 @@ export async function POST(req: Request) {
       }
 
       await connectToDataBase();
+      await ensureModelsRegistered();
       const user = await verifyCustomerToken(token.split("Bearer ")[1]);
 
       if (!user) {
@@ -78,6 +80,19 @@ export async function POST(req: Request) {
 
     const newBooking = await createBooking(body);
 
+    if (body.coupon) {
+      await Customer.findOneAndUpdate(
+        {
+          _id: body.customerDetails,
+        },
+        {
+          $push: {
+            used_coupons: body.coupon,
+          },
+        }
+      );
+    }
+
     return NextResponse.json(
       {
         success: true,
@@ -103,6 +118,7 @@ export async function GET(req: NextRequest) {
     const token = req.headers.get("authorization");
     let user;
     await connectToDataBase();
+    await ensureModelsRegistered();
     if (token) {
       user = await verifyCustomerToken(token.split("Bearer ")[1]);
     }

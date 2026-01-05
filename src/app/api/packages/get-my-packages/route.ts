@@ -1,6 +1,6 @@
 "use server";
 
-import connectToDataBase from "@/db/connection";
+import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
 import Packages from "@/models/Packages";
 import Zone from "@/models/Zones";
 import { isPointInPolygon } from "@/utils/geospatialUtils";
@@ -70,6 +70,7 @@ export async function GET(request: NextRequest) {
     let excludedPackageTypes: string[] = [];
 
     await connectToDataBase();
+    await ensureModelsRegistered();
 
     // Parse and validate distance parameter
     let distanceKm: number | null = null;

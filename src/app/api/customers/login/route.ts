@@ -1,6 +1,6 @@
 "use server";
 import { verifyOTP } from "@/actions/OTPActions";
-import connectToDataBase from "@/db/connection";
+import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
 import Customers from "@/models/Customers";
 import { generateCustomId } from "@/utils/generateCustomId";
 import { generateToken } from "@/utils/jwt";
@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
     const { otp, email, phone } = data;
 
     await connectToDataBase();
+    await ensureModelsRegistered();
 
     const result = await verifyOTP(email, phone, otp, "login");
 
