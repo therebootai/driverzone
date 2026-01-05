@@ -25,7 +25,7 @@ export interface couponDocument extends Document {
 const userNameSchema = new Schema<UserNameType>({
     user_name:{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Customers",
+    ref: "Customer",
     }
 });
 
