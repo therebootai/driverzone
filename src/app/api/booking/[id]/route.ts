@@ -49,7 +49,10 @@ export async function GET(
 
     const requestedBooking = await Booking.findOne({
       $or: [{ _id: isValidObjectId(id) ? id : undefined }, { booking_id: id }],
-    });
+    })
+      .populate("driverDetails")
+      .populate("package_type")
+      .populate("coupon");
 
     if (!requestedBooking) {
       return NextResponse.json(
