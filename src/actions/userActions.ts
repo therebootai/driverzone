@@ -1,12 +1,14 @@
 "use server";
 
-import connectToDataBase from "@/db/connection";
+import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
 import Users from "@/models/Users";
 import { generateCustomId } from "@/utils/generateCustomId";
 import { generateToken, verifyToken } from "@/utils/jwt";
 import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+
+await ensureModelsRegistered();
 
 export async function CREATEUSER(data: any) {
   try {
