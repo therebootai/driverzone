@@ -1,9 +1,11 @@
 "use server"
-import connectToDataBase from "@/db/connection";
+import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
 import Coupons from "@/models/Coupon";
 import { CouponFormState } from "@/types/types";
 import { generateCustomId } from "@/utils/generateCustomId";
 import { revalidatePath } from "next/cache";
+
+await ensureModelsRegistered();
 
 export async function createCoupon(data: CouponFormState) {
   try {

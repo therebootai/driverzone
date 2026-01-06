@@ -1,5 +1,5 @@
 "use server";
-import connectToDataBase from "@/db/connection";
+import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
 import Booking, { BookingDocument } from "@/models/Booking";
 import { GetBookingsParams } from "@/types/types";
 import { generateCustomId } from "@/utils/generateCustomId";
@@ -7,6 +7,8 @@ import { isValidObjectId, Types } from "mongoose";
 import { createOTP, resendOTP, verifyOTP } from "./OTPActions";
 import OTP from "@/models/OTP";
 import { SEND_BY_WHATSAPP } from "./waActions";
+
+await ensureModelsRegistered();
 
 function calculateTotalFare(booking: any): number {
   let total = booking.fare || 0;

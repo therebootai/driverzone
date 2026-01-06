@@ -1,7 +1,9 @@
 "use server";
 
-import connectToDataBase from "@/db/connection";
+import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
 import OTP from "@/models/OTP";
+
+await ensureModelsRegistered();
 
 function generateOTP(length = 6) {
   const digits = "0123456789";

@@ -1,11 +1,13 @@
 "use server";
-import connectToDataBase from "@/db/connection";
+import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
 import Drivers from "@/models/Drivers";
 import { deleteFile, uploadFile } from "@/utils/cloudinary";
 import { generateCustomId } from "@/utils/generateCustomId";
 import { parseImage } from "@/utils/parseFiles";
 import { revalidatePath } from "next/cache";
 import fs from "fs/promises";
+
+await ensureModelsRegistered();
 
 export async function createDriver(formData: FormData) {
   try {

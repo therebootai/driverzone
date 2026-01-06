@@ -1,11 +1,13 @@
 "use server";
 
-import connectToDataBase from "@/db/connection";
+import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
 import Zone from "@/models/Zones";
 import { generateCustomId } from "@/utils/generateCustomId";
 import { calculateArea, calculateCenter } from "@/utils/geoutils";
 import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
+
+await ensureModelsRegistered();
 
 export async function CREATEZONE({
   name,
