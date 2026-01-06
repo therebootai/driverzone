@@ -1,10 +1,12 @@
 "use server";
 
-import connectToDataBase from "@/db/connection";
+import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
 import Packages from "@/models/Packages";
 import { generateCustomId } from "@/utils/generateCustomId";
 import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
+
+await ensureModelsRegistered();
 
 export async function ADD_PACKAGE({
   name,

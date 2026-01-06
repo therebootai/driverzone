@@ -1,11 +1,13 @@
 "use server"
-import connectToDataBase from "@/db/connection";
+import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
 import Customers from "@/models/Customers";
 import { customerTypes } from "@/types/types";
 import { generateCustomId } from "@/utils/generateCustomId";
 import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
 
+
+await ensureModelsRegistered();
 
 export async function createCustomer(data: customerTypes) {
   try {
@@ -116,10 +118,6 @@ export async function getAllCustomers({
     };
   }
 }
-
-
-
-
 
 export async function updateCustomer(
   customerIdOrObjectId: string,

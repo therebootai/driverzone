@@ -37,7 +37,6 @@ const customerSchema = new Schema<customerDocument>(
       required: function (this: customerDocument) {
         return !this.mobile_number;
       },
-      unique: true,
     },
     mobile_number: {
       type: String,
