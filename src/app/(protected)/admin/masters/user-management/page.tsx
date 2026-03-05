@@ -3,6 +3,7 @@ import UserManagementHeader from "@/components/admin/masters/user-manage/UserMan
 import UserTable from "@/components/admin/masters/user-manage/UserTable";
 import AdminTemplate from "@/templates/AdminTemplate";
 import PaginationBox from "@/ui/PaginationBox";
+import { authorizeAccess } from "@/utils/authorizeAccess";
 
 export default async function UserManagementPage({
   searchParams,
@@ -10,6 +11,7 @@ export default async function UserManagementPage({
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
   const { page, search, role, status } = await searchParams;
+  await authorizeAccess("user_management");
   const { data, paginations } = await GETALLUSERS({
     page: parseInt(page ?? "1"),
     search,
@@ -17,6 +19,7 @@ export default async function UserManagementPage({
     status:
       status === "active" ? true : status === "inactive" ? false : undefined,
   });
+
   return (
     <AdminTemplate className="py-6 flex flex-col gap-6">
       <UserManagementHeader />

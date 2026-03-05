@@ -1,25 +1,49 @@
 "use client";
-import { useState } from "react";
 import {
   FeatureGroup,
   MapContainer,
   Polygon,
   TileLayer,
+  useMap,
   useMapEvents,
 } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import L from "leaflet";
+import { useEffect, useRef } from "react";
 
 const MapController = ({
   onMapClick,
+  center,
 }: {
   onMapClick: (latlng: L.LatLng) => void;
+  center?: [number, number];
 }) => {
   useMapEvents({
     click: (e: L.LeafletMouseEvent) => {
       onMapClick(e.latlng);
     },
   });
+  const map = useMap();
+  const prevCenterRef = useRef<[number, number] | undefined>(center);
+
+  useMapEvents({
+    click: (e: L.LeafletMouseEvent) => {
+      onMapClick(e.latlng);
+    },
+  });
+
+  useEffect(() => {
+    // Only update if center actually changed
+    if (
+      center &&
+      (!prevCenterRef.current ||
+        center[0] !== prevCenterRef.current[0] ||
+        center[1] !== prevCenterRef.current[1])
+    ) {
+      map.setView([center[0], center[1]], map.getZoom());
+      prevCenterRef.current = center;
+    }
+  }, [center, map]);
   return null;
 };
 
@@ -38,8 +62,6 @@ const ZoneMap = ({
   defaultCenter?: [number, number];
   editable?: boolean;
 }) => {
-  const [zones, setZones] = useState<any>(existingZones);
-
   const handleCreated = (e: any) => {
     const { layerType, layer } = e;
     if (layerType === "polygon") {
@@ -103,7 +125,7 @@ const ZoneMap = ({
   return (
     <div style={{ height: "500px", width: "100%" }} className="relative">
       <MapContainer
-        center={[defaultCenter[0], defaultCenter[1]]}
+        center={defaultCenter}
         zoom={13}
         style={{ height: "100%", width: "100%" }}
       >

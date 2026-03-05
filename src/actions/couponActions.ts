@@ -1,5 +1,5 @@
-"use server"
-import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
+"use server";
+import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Coupons from "@/models/Coupon";
 import { CouponFormState } from "@/types/types";
 import { generateCustomId } from "@/utils/generateCustomId";
@@ -9,7 +9,7 @@ await ensureModelsRegistered();
 
 export async function createCoupon(data: CouponFormState) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     const existingcouponTitle = await Coupons.findOne({
       coupon_title: data.coupon_title,
@@ -39,11 +39,9 @@ export async function createCoupon(data: CouponFormState) {
   }
 }
 
-
 function escapeRegex(input: string) {
   return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-
 
 export async function getAllCoupon({
   page = 1,
@@ -57,7 +55,7 @@ export async function getAllCoupon({
   status?: boolean;
 }) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     // Normalize pagination
     const _page = Math.max(1, Number(page) || 1);
@@ -83,7 +81,7 @@ export async function getAllCoupon({
     const query = andConditions.length ? { $and: andConditions } : {};
 
     const [allcoupon, totalCoupon] = await Promise.all([
-      Coupons.find(query, { password: 0 }) 
+      Coupons.find(query, { password: 0 })
         .sort({ createdAt: -1 })
         .skip((_page - 1) * _limit)
         .limit(_limit)
@@ -92,7 +90,7 @@ export async function getAllCoupon({
       Coupons.countDocuments(query),
     ]);
 
-     const serializedCoupon = JSON.parse(JSON.stringify(allcoupon));
+    const serializedCoupon = JSON.parse(JSON.stringify(allcoupon));
 
     return {
       success: true,
@@ -110,31 +108,33 @@ export async function getAllCoupon({
       success: false,
       error: error?.message || "Unknown error",
       data: [],
-      paginations: { totalPages: 0, currentPage: 1, totalItems: 0, perPage: 20 },
+      paginations: {
+        totalPages: 0,
+        currentPage: 1,
+        totalItems: 0,
+        perPage: 20,
+      },
     };
   }
 }
 
-
 export async function updateCoupon(
   coupon_id: string,
-  updatedData: CouponFormState
+  updatedData: CouponFormState,
 ) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     if (!coupon_id) {
       return { success: false, error: "Coupon ID is required" };
     }
 
- 
     const existingCoupon = await Coupons.findOne({ coupon_id });
 
     if (!existingCoupon) {
       return { success: false, error: "Coupon not found" };
     }
 
-  
     if (updatedData.coupon_title) {
       const existingTitle = await Coupons.findOne({
         coupon_title: updatedData.coupon_title,
@@ -176,11 +176,10 @@ export async function updateCoupon(
       }
     }
 
-  
     const updatedCoupon = await Coupons.findOneAndUpdate(
       { coupon_id },
       { $set: fieldsToUpdate },
-      { new: true }
+      { new: true },
     )
       .populate("user_name.user_name")
       .lean();
@@ -188,7 +187,6 @@ export async function updateCoupon(
     if (!updatedCoupon) {
       return { success: false, error: "Coupon not found after update" };
     }
-
 
     revalidatePath("/coupon");
 
@@ -205,7 +203,6 @@ export async function updateCoupon(
   }
 }
 
-
 export async function updateCouponStatus({
   coupon_id,
   status,
@@ -218,7 +215,7 @@ export async function updateCouponStatus({
       return { success: false, message: "coupon ID is required" };
     }
 
-    await connectToDataBase();
+    await connectToDatabase();
 
     const existing = await Coupons.findOne({ coupon_id });
 
@@ -248,7 +245,7 @@ export async function deleteCoupon(coupon_id: string) {
       return { success: false, message: "Coupon ID is required" };
     }
 
-    await connectToDataBase();
+    await connectToDatabase();
 
     const product = await Coupons.findOne({ coupon_id });
 

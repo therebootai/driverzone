@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createBooking } from "@/actions/bookingAction";
-import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
-import { verifyCustomerToken } from "@/utils/jwt";
+import { connectToDatabase, ensureModelsRegistered } from "@/db/connection";
+import { verifyCustomerToken, verifyDriverToken } from "@/utils/jwt";
 import Booking from "@/models/Booking";
 import { VERIFY_PAYMENT } from "@/actions/razorpayAction";
 import Customer from "@/models/Customers";
+import { PriorityAlertService } from "@/actions/alertActions";
 
 export async function POST(req: Request) {
   try {
@@ -20,18 +21,18 @@ export async function POST(req: Request) {
               "customerDetails is required or user must be authenticated",
             success: false,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
-      await connectToDataBase();
+      await connectToDatabase();
       await ensureModelsRegistered();
       const user = await verifyCustomerToken(token.split("Bearer ")[1]);
 
       if (!user) {
         return NextResponse.json(
           { message: "Unauthorized", success: false },
-          { status: 401 }
+          { status: 401 },
         );
       }
 
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
         console.log(field);
         return NextResponse.json(
           { success: false, message: `${field} is required` },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -89,9 +90,15 @@ export async function POST(req: Request) {
           $push: {
             used_coupons: body.coupon,
           },
-        }
+        },
       );
     }
+
+    await connectToDatabase();
+    await ensureModelsRegistered();
+
+    const alertService = PriorityAlertService.getInstance();
+    await alertService.initializeAlert(newBooking._id as string);
 
     return NextResponse.json(
       {
@@ -99,7 +106,7 @@ export async function POST(req: Request) {
         message: "Booking created successfully",
         data: newBooking,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error: any) {
     console.error("CREATE BOOKING API ERROR:", error);
@@ -108,7 +115,7 @@ export async function POST(req: Request) {
         success: false,
         message: error?.message || "Failed to create booking",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -117,10 +124,12 @@ export async function GET(req: NextRequest) {
   try {
     const token = req.headers.get("authorization");
     let user;
-    await connectToDataBase();
+    let driver;
+    await connectToDatabase();
     await ensureModelsRegistered();
     if (token) {
       user = await verifyCustomerToken(token.split("Bearer ")[1]);
+      driver = await verifyDriverToken(token.split("Bearer ")[1]);
     }
 
     const searchParams = req.nextUrl.searchParams;
@@ -137,6 +146,10 @@ export async function GET(req: NextRequest) {
 
     if (user) {
       query.customerDetails = user._id;
+    }
+
+    if (driver) {
+      query.driverDetails = driver._id;
     }
 
     // Add status filter if provided
@@ -199,7 +212,7 @@ export async function GET(req: NextRequest) {
         success: false,
         message: error?.message || "Failed to create booking",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

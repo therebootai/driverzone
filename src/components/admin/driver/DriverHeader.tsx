@@ -1,42 +1,46 @@
-"use client"
-import React, { useState } from 'react'
-import { AiOutlinePlusCircle } from 'react-icons/ai';
-import SidePopUpSlider from '../SidePopup';
-import AddAndEditDriver from './AddAndEditDriver';
-import { IoSearch } from 'react-icons/io5';
+"use client";
+import React, { useState } from "react";
+import { AiOutlinePlusCircle } from "react-icons/ai";
+import SidePopUpSlider from "../SidePopup";
+import AddAndEditDriver from "./AddAndEditDriver";
+import { IoSearch } from "react-icons/io5";
+import { useQueryParamsAdvanced } from "@/hooks/useQueryParamsAdvanced";
 
-const DriverHeader = ({
-  setSearchTerm,
-  searchTerm,
-  status,
-  setStatus,
-  fetchData,
-}: {
-  searchTerm?: any;
-  setSearchTerm?: any;
-  status?: any;
-  setStatus?: any;
-  fetchData: any;
-}) => {
-      const [showPopUp, setShowPopUp] = useState(false);
-      const [popupKey, setPopupKey] = useState(0);
-    
-      function openAddPopup() {
-        setPopupKey((k) => k + 1);
-        setShowPopUp(true);
-      }
+const DriverHeader = () => {
+  const [showPopUp, setShowPopUp] = useState(false);
+  const [popupKey, setPopupKey] = useState(0);
+
+  const { getParam, updateFilters } = useQueryParamsAdvanced();
+
+  const status = getParam("status");
+  const searchTerm = getParam("search");
+
+  function openAddPopup() {
+    setPopupKey((k) => k + 1);
+    setShowPopUp(true);
+  }
   return (
     <div className="flex flex-row justify-between items-center">
       <div className=" flex flex-row gap-4 items-center">
         <div>
           <select
-            value={status === undefined ? "" : status ? "Active" : "Inactive"}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === "Active") setStatus(true);
-              else if (val === "Inactive") setStatus(false);
-              else setStatus(undefined);
-            }}
+            value={
+              status === "true"
+                ? "Active"
+                : status === "false"
+                  ? "Inactive"
+                  : ""
+            }
+            onChange={(e) =>
+              updateFilters(
+                "status",
+                e.target.value === "Active"
+                  ? "true"
+                  : e.target.value === "Inactive"
+                    ? "false"
+                    : "",
+              )
+            }
             className=" w-fit px-4 rounded-md h-[2.5rem] bg-custom-gray text-site-black font-semibold text-sm flex justify-center items-center"
           >
             <option value="" className=" text-site-black">
@@ -56,8 +60,8 @@ const DriverHeader = ({
             <input
               type="text"
               placeholder="Search by Driver Name / Number"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchTerm ?? ""}
+              onChange={(e) => updateFilters("search", e.target.value)}
               className="h-[2.5rem] text-sm outline-none placeholder:text-site-black flex-1 capitalize placeholder:capitalize"
             />
           </div>
@@ -77,10 +81,10 @@ const DriverHeader = ({
         showPopUp={showPopUp}
         handleClose={() => setShowPopUp(false)}
       >
-        <AddAndEditDriver key={popupKey} fetchData={fetchData}/>
+        <AddAndEditDriver key={popupKey} />
       </SidePopUpSlider>
     </div>
-  )
-}
+  );
+};
 
-export default DriverHeader
+export default DriverHeader;

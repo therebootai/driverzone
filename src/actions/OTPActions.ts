@@ -1,6 +1,6 @@
 "use server";
 
-import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
+import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import OTP from "@/models/OTP";
 
 await ensureModelsRegistered();
@@ -26,9 +26,14 @@ function generateAlphaNumericOTP(length = 8) {
 async function createOTP(
   email: string | null | undefined = null,
   phone: string | null | undefined = null,
-  type: "login" | "register" | "reset-password" | "verify-account" | "booking-arrival" = "login"
+  type:
+    | "login"
+    | "register"
+    | "reset-password"
+    | "verify-account"
+    | "booking-arrival" = "login",
 ) {
-  await connectToDataBase();
+  await connectToDatabase();
   // Clean old OTPs for this user
   await OTP.deleteMany({
     $or: [{ email }, { phone }],
@@ -38,7 +43,7 @@ async function createOTP(
   const otp = generateOTP();
   const expiresAt = new Date();
   expiresAt.setMinutes(
-    expiresAt.getMinutes() + parseInt(process.env.OTP_EXPIRY_MINUTES || "10")
+    expiresAt.getMinutes() + parseInt(process.env.OTP_EXPIRY_MINUTES || "10"),
   );
 
   const otpRecord = new OTP({
@@ -57,9 +62,14 @@ async function verifyOTP(
   email: string | null = null,
   phone: string | null = null,
   otp: string,
-  type: "login" | "register" | "reset-password" | "verify-account" | "booking-arrival" = "login"
+  type:
+    | "login"
+    | "register"
+    | "reset-password"
+    | "verify-account"
+    | "booking-arrival" = "login",
 ) {
-  await connectToDataBase();
+  await connectToDatabase();
   const otpRecord = await OTP.findOne({
     $or: [{ email }, { phone }],
     otp,
@@ -114,9 +124,14 @@ async function verifyOTP(
 async function resendOTP(
   email: string | null = null,
   phone: string | null = null,
-  type: "login" | "register" | "reset-password" | "verify-account" | "booking-arrival" = "login"
+  type:
+    | "login"
+    | "register"
+    | "reset-password"
+    | "verify-account"
+    | "booking-arrival" = "login",
 ) {
-  await connectToDataBase();
+  await connectToDatabase();
   // Check if there's an unverified OTP
   const existingOtp = await OTP.findOne({
     $or: [{ email }, { phone }],

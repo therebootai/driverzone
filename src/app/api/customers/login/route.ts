@@ -1,6 +1,6 @@
 "use server";
 import { verifyOTP } from "@/actions/OTPActions";
-import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
+import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Customers from "@/models/Customers";
 import { generateCustomId } from "@/utils/generateCustomId";
 import { generateToken } from "@/utils/jwt";
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     const { otp, email, phone } = data;
 
-    await connectToDataBase();
+    await connectToDatabase();
     await ensureModelsRegistered();
 
     const result = await verifyOTP(email, phone, otp, "login");
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     if (customer && !customer.status) {
       return NextResponse.json(
         { message: "Your account is blocked" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -34,18 +34,19 @@ export async function POST(request: NextRequest) {
       const customer_id = await generateCustomId(
         Customers,
         "customer_id",
-        "customerId"
+        "customerId",
       );
       const createdCustomer = await Customers.create({
         customer_id,
         mobile_number: phone,
+        reg_date: new Date().toISOString(),
         name: "New User",
       });
 
       if (!createdCustomer) {
         return NextResponse.json(
           { message: "Failed to create customer", success: false },
-          { status: 400 }
+          { status: 400 },
         );
       }
       customer = createdCustomer;
@@ -56,13 +57,13 @@ export async function POST(request: NextRequest) {
     delete customer.password;
     return NextResponse.json(
       { user: customer, token, success: true },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error: any) {
     console.log(error);
     return NextResponse.json(
       { message: error.message, success: false },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

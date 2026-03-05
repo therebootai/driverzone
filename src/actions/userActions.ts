@@ -1,6 +1,6 @@
 "use server";
 
-import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
+import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Users from "@/models/Users";
 import { generateCustomId } from "@/utils/generateCustomId";
 import { generateToken, verifyToken } from "@/utils/jwt";
@@ -12,7 +12,7 @@ await ensureModelsRegistered();
 
 export async function CREATEUSER(data: any) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     const existingMobileNumer = await Users.findOne({
       mobile_number: data.mobile_number,
@@ -56,7 +56,7 @@ export async function GETALLUSERS({
   status?: boolean;
 }) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     const query: any = {};
 
@@ -102,7 +102,7 @@ export async function GETALLUSERS({
 
 export async function UPDATEUSER(userId: string, data: any) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     const existingUser = await Users.findOne({
       $or: [
@@ -158,7 +158,7 @@ export async function UPDATEUSER(userId: string, data: any) {
 
 export async function DELETEUSER(userId: string) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     const deletedUser = await Users.findOneAndDelete({
       $or: [
@@ -199,7 +199,7 @@ export async function LOGIN({
       };
     }
 
-    await connectToDataBase();
+    await connectToDatabase();
 
     const user = await Users.findOne({
       $or: [{ email: emailOrPhone }, { mobile_number: emailOrPhone }],
@@ -252,7 +252,7 @@ export async function LOGIN({
 
 export async function VERIFY_AUTHORIZATION() {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
 

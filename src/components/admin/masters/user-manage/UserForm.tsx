@@ -136,6 +136,10 @@ export default function UserForm({
           { label: "Customer Management", value: "customer_management" },
           { label: "Coupon", value: "coupon" },
           { label: "User Management", value: "user_management" },
+          { label: "Booking Management", value: "booking_management" },
+          { label: "Driver Management", value: "driver_management" },
+          { label: "Package Management", value: "package_management" },
+          { label: "Zone Management", value: "zone_management" },
         ]}
         className="text-sm"
         styles={{

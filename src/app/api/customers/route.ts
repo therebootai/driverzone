@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCustomer } from "@/actions/customerActions";
-import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
+import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,14 +16,14 @@ export async function POST(request: NextRequest) {
   } catch (err: any) {
     return NextResponse.json(
       { error: err.message || "Internal error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function GET() {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
     await ensureModelsRegistered();
     return NextResponse.json({ ok: true });
   } catch (e: any) {
