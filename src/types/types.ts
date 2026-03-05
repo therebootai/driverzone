@@ -36,7 +36,7 @@ export type CouponFormState = {
 };
 
 export type customerTypes = {
-  _id: Types.ObjectId;
+  _id?: Types.ObjectId;
   customer_id?: string;
   name?: string;
   email?: string;
@@ -100,6 +100,15 @@ export type DriverDocument = {
     public_id: string;
     secure_url: string;
   };
+  avatar?: {
+    public_id: string;
+    secure_url: string;
+  };
+
+  ps_noc?: {
+    public_id: string;
+    secure_url: string;
+  };
 
   licence_no?: string;
   licence_expiry_date?: Date;
@@ -116,6 +125,8 @@ export type DriverDocument = {
   vehicle_details?: VehicleDetails;
 
   status: boolean;
+  verified: boolean;
+  total_earnings: number;
 
   createdAt?: string;
   updatedAt?: string;

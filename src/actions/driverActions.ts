@@ -1,17 +1,18 @@
 "use server";
-import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
+import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Drivers from "@/models/Drivers";
 import { deleteFile, uploadFile } from "@/utils/cloudinary";
 import { generateCustomId } from "@/utils/generateCustomId";
 import { parseImage } from "@/utils/parseFiles";
 import { revalidatePath } from "next/cache";
 import fs from "fs/promises";
+import mongoose from "mongoose";
 
 await ensureModelsRegistered();
 
 export async function createDriver(formData: FormData) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     const mobile_number = formData.get("mobile_number") as string;
     const emergency_number = formData.get("emergency_number") as string | null;
@@ -37,8 +38,12 @@ export async function createDriver(formData: FormData) {
       remarks: formData.get("remarks"),
       status: true,
 
-      vehicle_transmission_type: formData.getAll("vehicle_transmission_type") as string[],
-      vehicle_category_type: formData.getAll("vehicle_category_type") as string[],
+      vehicle_transmission_type: formData.getAll(
+        "vehicle_transmission_type",
+      ) as string[],
+      vehicle_category_type: formData.getAll(
+        "vehicle_category_type",
+      ) as string[],
 
       vehicle_details: {
         car_name: formData.get("car_name"),
@@ -63,8 +68,9 @@ export async function createDriver(formData: FormData) {
           ? new Date(formData.get("pollution_expiry") as string)
           : undefined,
       },
+      verified: true,
     };
-
+    //@ts-ignore
     const existingMobileNumer = await Drivers.findOne({ mobile_number });
     if (existingMobileNumer) {
       return { success: false, error: "This mobile number already exists" };
@@ -121,6 +127,16 @@ export async function createDriver(formData: FormData) {
       driverData.vehicle_details.pollution_document = pollutionDoc;
     }
 
+    const psNoc = await handleSingleFile("ps_noc");
+    if (psNoc) {
+      driverData.ps_noc = psNoc;
+    }
+
+    const avatar = await handleSingleFile("avatar");
+    if (avatar) {
+      driverData.avatar = avatar;
+    }
+
     const carFiles = formData.getAll("car_images_and_rc") as File[];
 
     for (const file of carFiles) {
@@ -143,7 +159,7 @@ export async function createDriver(formData: FormData) {
     driverData.driver_id = await generateCustomId(
       Drivers,
       "driver_id",
-      "driverId"
+      "driverId",
     );
 
     const newDriver = new Drivers(driverData);
@@ -161,11 +177,9 @@ export async function createDriver(formData: FormData) {
   }
 }
 
-
 function escapeRegex(input: string) {
   return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-
 
 export async function getAllDriver({
   page = 1,
@@ -179,10 +193,10 @@ export async function getAllDriver({
   status?: boolean;
 }) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     const _page = Math.max(1, Number(page) || 1);
-    const _limit = Math.max(1, Math.min(100, Number(limit) || 20)); 
+    const _limit = Math.max(1, Math.min(100, Number(limit) || 20));
 
     const andConditions: any[] = [];
 
@@ -203,7 +217,8 @@ export async function getAllDriver({
     const query = andConditions.length ? { $and: andConditions } : {};
 
     const [allDriver, totalCoupon] = await Promise.all([
-      Drivers.find(query, { password: 0 }) 
+      //@ts-ignore
+      Drivers.find(query, { password: 0 })
         .sort({ createdAt: -1 })
         .skip((_page - 1) * _limit)
         .limit(_limit)
@@ -211,7 +226,7 @@ export async function getAllDriver({
       Drivers.countDocuments(query),
     ]);
 
-     const serializedDrivers = JSON.parse(JSON.stringify(allDriver));
+    const serializedDrivers = JSON.parse(JSON.stringify(allDriver));
 
     return {
       success: true,
@@ -229,17 +244,22 @@ export async function getAllDriver({
       success: false,
       error: error?.message || "Unknown error",
       data: [],
-      paginations: { totalPages: 0, currentPage: 1, totalItems: 0, perPage: 20 },
+      paginations: {
+        totalPages: 0,
+        currentPage: 1,
+        totalItems: 0,
+        perPage: 20,
+      },
     };
   }
 }
 
-
 export async function updateDriver(driverId: string, formData: FormData) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     // 1. Find existing driver
+    //@ts-ignore
     const driver = await Drivers.findOne({ driver_id: driverId });
     if (!driver) {
       return { success: false, error: "Driver not found" };
@@ -319,12 +339,12 @@ export async function updateDriver(driverId: string, formData: FormData) {
 
     // 4. Arrays: transmission & category
     const vehicle_transmission_type = formData.getAll(
-      "vehicle_transmission_type"
+      "vehicle_transmission_type",
     ) as string[];
     driver.vehicle_transmission_type = vehicle_transmission_type;
 
     const vehicle_category_type = formData.getAll(
-      "vehicle_category_type"
+      "vehicle_category_type",
     ) as string[];
     driver.vehicle_category_type = vehicle_category_type;
 
@@ -382,10 +402,9 @@ export async function updateDriver(driverId: string, formData: FormData) {
       // driver.vehicle_details = undefined; // uncomment if you want to clear
     }
 
-
     async function handleSingleFileReplace(
       fieldName: string,
-      existing?: { public_id?: string | null }
+      existing?: { public_id?: string | null },
     ) {
       const file = formData.get(fieldName) as File | null;
       if (!file || file.size === 0) return undefined;
@@ -408,7 +427,7 @@ export async function updateDriver(driverId: string, formData: FormData) {
     // 7. Identity proof
     const newIdProof = await handleSingleFileReplace(
       "identity_id_proof_url",
-      driver.identity_id_proof_url as any
+      driver.identity_id_proof_url as any,
     );
     if (newIdProof) {
       // @ts-ignore
@@ -418,11 +437,29 @@ export async function updateDriver(driverId: string, formData: FormData) {
     // 8. Licence file
     const newLicenceFile = await handleSingleFileReplace(
       "licence_file_url",
-      driver.licence_file_url as any
+      driver.licence_file_url as any,
     );
     if (newLicenceFile) {
       // @ts-ignore
       driver.licence_file_url = newLicenceFile;
+    }
+
+    const newPsNoc = await handleSingleFileReplace(
+      "ps_noc",
+      driver.ps_noc as any,
+    );
+    if (newPsNoc) {
+      // @ts-ignore
+      driver.ps_noc = newPsNoc;
+    }
+
+    const newAvatar = await handleSingleFileReplace(
+      "avatar",
+      driver.avatar as any,
+    );
+    if (newAvatar) {
+      // @ts-ignore
+      driver.avatar = newAvatar;
     }
 
     // 9. Insurance / Road tax / Pollution docs (under vehicle_details)
@@ -431,7 +468,7 @@ export async function updateDriver(driverId: string, formData: FormData) {
 
       const newInsuranceDoc = await handleSingleFileReplace(
         "insurance_document",
-        vd.insurance_document
+        vd.insurance_document,
       );
       if (newInsuranceDoc) {
         vd.insurance_document = newInsuranceDoc;
@@ -439,7 +476,7 @@ export async function updateDriver(driverId: string, formData: FormData) {
 
       const newRoadTaxDoc = await handleSingleFileReplace(
         "road_tax_document",
-        vd.road_tax_document
+        vd.road_tax_document,
       );
       if (newRoadTaxDoc) {
         vd.road_tax_document = newRoadTaxDoc;
@@ -447,7 +484,7 @@ export async function updateDriver(driverId: string, formData: FormData) {
 
       const newPollutionDoc = await handleSingleFileReplace(
         "pollution_document",
-        vd.pollution_document
+        vd.pollution_document,
       );
       if (newPollutionDoc) {
         vd.pollution_document = newPollutionDoc;
@@ -460,7 +497,7 @@ export async function updateDriver(driverId: string, formData: FormData) {
     if (driver.employment_type === "Driver+Car") {
       const carFiles = formData.getAll("car_images_and_rc") as File[];
       const hasNewCarFiles = carFiles.some(
-        (file) => file && file.size && file.size > 0
+        (file) => file && file.size && file.size > 0,
       );
 
       if (hasNewCarFiles) {
@@ -494,6 +531,16 @@ export async function updateDriver(driverId: string, formData: FormData) {
       }
     }
 
+    const status = formData.get("status") as string;
+    if (status) {
+      driver.status = status === "true";
+    }
+
+    const verified = formData.get("verified") as string;
+    if (verified) {
+      driver.verified = verified === "true";
+    }
+
     // 11. Save updated driver
     const savedDriver = await driver.save();
 
@@ -509,28 +556,41 @@ export async function updateDriver(driverId: string, formData: FormData) {
   }
 }
 
-
 export async function updateDriverStatus({
   driver_id,
   status,
+  verified,
 }: {
   driver_id: string;
-  status: boolean;
+  status?: boolean;
+  verified?: boolean;
 }) {
   try {
     if (!driver_id) {
       return { success: false, message: "Driver ID is required" };
     }
 
-    await connectToDataBase();
+    await connectToDatabase();
 
-    const existing = await Drivers.findOne({ driver_id });
+    const existing = await Drivers.findOne({
+      $or: [
+        { driver_id },
+        {
+          _id: mongoose.Types.ObjectId.isValid(driver_id) ? driver_id : null,
+        },
+      ],
+    });
 
     if (!existing) {
       return { success: false, message: "Driver not found" };
     }
 
-    existing.status = status;
+    if (typeof status === "boolean") {
+      existing.status = status;
+    }
+    if (typeof verified === "boolean") {
+      existing.verified = verified;
+    }
 
     const updatedDriver = await existing.save();
     revalidatePath("/driver-managemant");
@@ -552,7 +612,7 @@ export async function deleteDriver(driver_id: string) {
       return { success: false, message: "Driver ID is required" };
     }
 
-    await connectToDataBase();
+    await connectToDatabase();
 
     const driver = await Drivers.findOne({ driver_id });
 

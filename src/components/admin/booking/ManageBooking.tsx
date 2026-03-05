@@ -1,3 +1,4 @@
+"use client";
 // components/ManageBooking.tsx
 import React, { useEffect, useState } from "react";
 import { BookingTypes } from "@/types/types";
@@ -39,7 +40,7 @@ const ManageBooking = ({
     limit?: number,
     search?: string,
     status?: any
-  ) => Promise<void>;
+  ) => void;
 }) => {
   const [selectedBooking, setSelectedBooking] = useState<BookingTypes | null>(
     null
@@ -838,6 +839,10 @@ const ManageBooking = ({
             <Field
               label="Payment Status"
               value={getPaymentStatusBadge(selectedBooking.paymentStatus)}
+            />
+            <Field
+              label="Payment Method"
+              value={selectedBooking.paymentMethod || "cash"}
             />
             <Field
               label="OTP Verified"

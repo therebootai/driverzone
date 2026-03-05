@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
+import { BookingDocument } from "./Booking";
 
 export interface VehicleDetails {
   car_name?: string;
@@ -39,6 +40,15 @@ export interface DriverDocument extends Document {
   mobile_number: string;
   emergency_number?: string;
 
+  currentLocation: {
+    lat: number;
+    lng: number;
+    lastUpdated: Date;
+    address: string;
+  };
+
+  isOnline: boolean;
+
   address?: string;
   city_area?: string;
   landmark?: string;
@@ -57,6 +67,9 @@ export interface DriverDocument extends Document {
     public_id: string;
     secure_url: string;
   };
+
+  currentBooking: mongoose.Schema.Types.ObjectId | BookingDocument | null;
+
   vehicle_transmission_type?: string[];
   vehicle_category_type?: string[];
 
@@ -66,41 +79,67 @@ export interface DriverDocument extends Document {
   vehicle_details?: VehicleDetails;
 
   status: boolean;
+  verified: boolean;
+  total_earnings: number;
+
+  avatar?: {
+    public_id: string;
+    secure_url: string;
+  };
+
+  ps_noc?: {
+    public_id: string;
+    secure_url: string;
+  };
+
+  fcmToken?: string;
+
+  maxDistance?: number;
+
+  rejectedAlerts: {
+    bookingId: mongoose.Schema.Types.ObjectId | BookingDocument;
+    rejectedAt: Date;
+    reason: string;
+  }[];
+
+  activeAlerts: {
+    bookingId: mongoose.Schema.Types.ObjectId | BookingDocument;
+    alertSentAt: Date;
+    expiresAt: Date;
+    status: "pending" | "accepted" | "rejected" | "expired";
+  }[];
 }
 
-const vehicleDetailsSchema = new Schema<VehicleDetails>(
-  {
-    car_name: { type: String },
-    model_name_and_number: { type: String },
-    car_number: { type: String },
-    reg_number: { type: String },
-    car_images_and_rc: [
-      { public_id: { type: String }, secure_url: { type: String } },
-    ],
-    desc: { type: String },
-      insurance_number: { type: String },
-    insurance_expiry: { type: Date },
-    insurance_document: {
-      public_id: String,
-      secure_url: String,
-    },
+const vehicleDetailsSchema = new Schema<VehicleDetails>({
+  car_name: { type: String },
+  model_name_and_number: { type: String },
+  car_number: { type: String },
+  reg_number: { type: String },
+  car_images_and_rc: [
+    { public_id: { type: String }, secure_url: { type: String } },
+  ],
+  desc: { type: String },
+  insurance_number: { type: String },
+  insurance_expiry: { type: Date },
+  insurance_document: {
+    public_id: String,
+    secure_url: String,
+  },
 
-    road_tax_number: { type: String },
-    road_tax_expiry: { type: Date },
-    road_tax_document: {
-      public_id: String,
-      secure_url: String,
-    },
+  road_tax_number: { type: String },
+  road_tax_expiry: { type: Date },
+  road_tax_document: {
+    public_id: String,
+    secure_url: String,
+  },
 
-    pollution_number: { type: String },
-    pollution_expiry: { type: Date },
-    pollution_document: {
-      public_id: String,
-      secure_url: String,
-    },
-  
-  }
-);
+  pollution_number: { type: String },
+  pollution_expiry: { type: Date },
+  pollution_document: {
+    public_id: String,
+    secure_url: String,
+  },
+});
 
 const driverSchema = new Schema<DriverDocument>(
   {
@@ -114,8 +153,16 @@ const driverSchema = new Schema<DriverDocument>(
     },
     emergency_number: {
       type: String,
-      unique: true,
     },
+
+    currentLocation: {
+      lat: { type: Number, default: 0 },
+      lng: { type: Number, default: 0 },
+      lastUpdated: { type: Date },
+      address: { type: String },
+    },
+
+    isOnline: { type: Boolean, default: false },
 
     address: { type: String },
     city_area: { type: String },
@@ -136,6 +183,12 @@ const driverSchema = new Schema<DriverDocument>(
       secure_url: { type: String },
     },
 
+    currentBooking: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Booking",
+      default: null,
+    },
+
     employment_type: {
       type: String,
       enum: ["Driver", "Driver+Car"],
@@ -144,7 +197,7 @@ const driverSchema = new Schema<DriverDocument>(
 
     vehicle_transmission_type: {
       type: [String],
-      enum: ["Automatic", "Manual"],
+      enum: ["Automatic", "Manual", "Automatic+Manual"],
       default: [],
     },
 
@@ -155,16 +208,90 @@ const driverSchema = new Schema<DriverDocument>(
     },
     remarks: { type: String },
 
-    vehicle_details: vehicleDetailsSchema,
+    vehicle_details: {
+      type: vehicleDetailsSchema,
+      default: null,
+    },
+
+    total_earnings: {
+      type: Number,
+      default: 0,
+    },
 
     status: {
       type: Boolean,
       required: true,
       default: true,
     },
+    verified: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
+
+    avatar: {
+      public_id: { type: String },
+      secure_url: { type: String },
+    },
+
+    ps_noc: {
+      public_id: { type: String },
+      secure_url: { type: String },
+    },
+
+    fcmToken: { type: String, unique: true, sparse: true },
+
+    maxDistance: { type: Number, default: 20 }, // in kilometers
+
+    activeAlerts: [
+      {
+        bookingId: { type: mongoose.Schema.Types.ObjectId, ref: "Booking" },
+        alertSentAt: { type: Date },
+        expiresAt: { type: Date },
+        status: {
+          type: String,
+          enum: ["pending", "accepted", "rejected", "expired"],
+          default: "pending",
+        },
+      },
+    ],
+
+    rejectedAlerts: [
+      {
+        bookingId: { type: mongoose.Schema.Types.ObjectId, ref: "Booking" },
+        rejectedAt: { type: Date },
+        reason: { type: String },
+      },
+    ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
+
+driverSchema.pre("findOneAndUpdate", async function (next) {
+  const update = this.getUpdate() as any;
+
+  // Check if isOnline is being set to true
+  const isOnlineTrue =
+    update.isOnline === true || (update.$set && update.$set.isOnline === true);
+
+  if (isOnlineTrue) {
+    // Check if verified is also being set to true in this update
+    const isVerifiedTrue =
+      update.verified === true ||
+      (update.$set && update.$set.verified === true);
+
+    if (!isVerifiedTrue) {
+      // Need to check the current verified status of the driver
+      const driver = await this.model.findOne(this.getQuery());
+      if (driver && !driver.verified) {
+        return next(
+          new Error("Cannot go online. Your account is not verified yet."),
+        );
+      }
+    }
+  }
+  next();
+});
 
 const Driver: Model<DriverDocument> =
   mongoose.models.Driver ||

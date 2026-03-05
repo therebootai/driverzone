@@ -1,6 +1,6 @@
 "use server";
 
-import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
+import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Packages from "@/models/Packages";
 import { generateCustomId } from "@/utils/generateCustomId";
 import mongoose from "mongoose";
@@ -50,11 +50,11 @@ export async function ADD_PACKAGE({
   service_zone?: string;
 }) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
     const package_id = await generateCustomId(
       Packages,
       "package_id",
-      "packageId"
+      "packageId",
     );
 
     const newPackage = new Packages({
@@ -114,7 +114,7 @@ export async function GET_ALL_PACKAGES({
   discount_type?: "percentage" | "fixed" | "none";
 }) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     const query: any = {};
 
@@ -193,7 +193,7 @@ export async function GET_ALL_PACKAGES({
 
 export async function DELETE_PACKAGE(package_id: string) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
     await Packages.deleteOne({
       $or: [
         { package_id },
@@ -214,7 +214,7 @@ export async function DELETE_PACKAGE(package_id: string) {
 
 export async function UPDATE_PACKAGE(package_id: string, data: any) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
     const updatedPackage = await Packages.updateOne(
       {
         $or: [
@@ -226,7 +226,7 @@ export async function UPDATE_PACKAGE(package_id: string, data: any) {
           },
         ],
       },
-      { $set: data }
+      { $set: data },
     );
     revalidatePath("/admin/package-management");
     return { success: true, data: updatedPackage };
