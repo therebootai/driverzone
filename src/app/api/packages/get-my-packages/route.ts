@@ -1,6 +1,6 @@
 "use server";
 
-import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
+import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Packages from "@/models/Packages";
 import Zone from "@/models/Zones";
 import { isPointInPolygon } from "@/utils/geospatialUtils";
@@ -41,7 +41,7 @@ function calculateDistance(
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number
+  lon2: number,
 ): number {
   const R = 6371; // Earth's radius in kilometers
   const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     let distanceFilterType = null; // null, 'short', 'medium', 'long'
     let excludedPackageTypes: string[] = [];
 
-    await connectToDataBase();
+    await connectToDatabase();
     await ensureModelsRegistered();
 
     // Parse and validate distance parameter
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
             message: "Invalid distance value. Must be a positive number.",
             success: false,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
       if (isNaN(lat) || isNaN(lng)) {
         return NextResponse.json(
           { message: "Invalid latitude or longitude values", success: false },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -120,7 +120,8 @@ export async function GET(request: NextRequest) {
 
       // Find zones that contain the point
       const containingZones = zones.filter(
-        (zone) => zone.coordinates && isPointInPolygon(point!, zone.coordinates)
+        (zone) =>
+          zone.coordinates && isPointInPolygon(point!, zone.coordinates),
       );
 
       zoneIds = containingZones.map((zone) => zone._id);
@@ -234,7 +235,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching packages:", error);
     return NextResponse.json(
       { message: error.message, success: false },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

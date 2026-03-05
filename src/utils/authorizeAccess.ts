@@ -18,7 +18,7 @@ export async function authorizeAccess(page: string) {
       cookieStore.delete("token");
       redirect("/");
     }
-    if (user.role === "Admin") {
+    if (user.role === "Admin" || user.role === "admin") {
       return true;
     } else if (user.by_access.includes(page.toLowerCase())) {
       return true;

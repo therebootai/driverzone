@@ -5,16 +5,15 @@ import { DriverDocument } from "@/types/types";
 import React, { useEffect, useState } from "react";
 
 const AddAndEditDriver = ({
-  fetchData,
   selectedDriver,
-  onSuccess
+  onSuccess,
 }: {
-  fetchData: () => void;
   selectedDriver?: DriverDocument | null;
   onSuccess?: () => void;
 }) => {
-  const [employmentType, setEmploymentType] =
-    useState<"Driver" | "Driver+Car" | "Other">("Driver");
+  const [employmentType, setEmploymentType] = useState<
+    "Driver" | "Driver+Car" | "Other"
+  >("Driver");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -22,7 +21,7 @@ const AddAndEditDriver = ({
   useEffect(() => {
     if (selectedDriver?.employment_type) {
       setEmploymentType(
-        selectedDriver.employment_type as "Driver" | "Driver+Car" | "Other"
+        selectedDriver.employment_type as "Driver" | "Driver+Car" | "Other",
       );
     }
   }, [selectedDriver]);
@@ -41,14 +40,16 @@ const AddAndEditDriver = ({
     }
 
     setIsSubmitting(false);
-   
 
     if (!res.success) {
       setMessage(res.error || "Something went wrong");
     } else {
-      setMessage(selectedDriver ? "Driver updated successfully" : "Driver created successfully");
-      fetchData();
-       onSuccess?.()
+      setMessage(
+        selectedDriver
+          ? "Driver updated successfully"
+          : "Driver created successfully",
+      );
+      onSuccess?.();
     }
   };
 
@@ -60,11 +61,7 @@ const AddAndEditDriver = ({
         {selectedDriver ? "Edit Driver" : "Add Driver"}
       </h1>
 
-      {message && (
-        <p className="text-sm mt-1 text-red-600">
-          {message}
-        </p>
-      )}
+      {message && <p className="text-sm mt-1 text-red-600">{message}</p>}
 
       <form
         action={handleDriver} // ✅ no encType when using function action
@@ -292,7 +289,7 @@ const AddAndEditDriver = ({
               value={employmentType}
               onChange={(e) =>
                 setEmploymentType(
-                  e.target.value as "Driver" | "Driver+Car" | "Other"
+                  e.target.value as "Driver" | "Driver+Car" | "Other",
                 )
               }
               className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
@@ -315,7 +312,7 @@ const AddAndEditDriver = ({
                   name="vehicle_transmission_type"
                   value="Automatic"
                   defaultChecked={selectedDriver?.vehicle_transmission_type?.includes(
-                    "Automatic"
+                    "Automatic",
                   )}
                   className="h-4 w-4 rounded border-gray-300"
                 />
@@ -327,7 +324,7 @@ const AddAndEditDriver = ({
                   name="vehicle_transmission_type"
                   value="Manual"
                   defaultChecked={selectedDriver?.vehicle_transmission_type?.includes(
-                    "Manual"
+                    "Manual",
                   )}
                   className="h-4 w-4 rounded border-gray-300"
                 />
@@ -349,7 +346,7 @@ const AddAndEditDriver = ({
                     name="vehicle_category_type"
                     value={item}
                     defaultChecked={selectedDriver?.vehicle_category_type?.includes(
-                      item
+                      item,
                     )}
                     className="h-4 w-4 rounded border-gray-300"
                   />
@@ -472,7 +469,9 @@ const AddAndEditDriver = ({
 
               {/* Desc */}
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700">Desc</label>
+                <label className="text-sm font-medium text-gray-700">
+                  Desc
+                </label>
                 <input
                   name="desc"
                   type="text"
@@ -564,9 +563,7 @@ const AddAndEditDriver = ({
                   type="date"
                   defaultValue={
                     vd?.road_tax_expiry
-                      ? new Date(vd.road_tax_expiry)
-                          .toISOString()
-                          .split("T")[0]
+                      ? new Date(vd.road_tax_expiry).toISOString().split("T")[0]
                       : ""
                   }
                   className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
@@ -671,8 +668,8 @@ const AddAndEditDriver = ({
                 ? "Updating..."
                 : "Saving..."
               : selectedDriver
-              ? "Update Driver"
-              : "Add Driver"}
+                ? "Update Driver"
+                : "Add Driver"}
           </button>
         </div>
       </form>

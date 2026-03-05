@@ -1,26 +1,28 @@
 import { Model, Document } from "mongoose";
 
 export async function generateCustomId<T extends Document>(
-  Model: Model<T>,
+  Model: any,
   idField: string,
-  prefix: string
+  prefix: string,
 ): Promise<string> {
   try {
-    const records = await Model.find({}, { [idField]: 1, _id: 0 }).sort({
-      [idField]: 1,
-    });
+    const records = await Model.find({}, { [idField]: 1, _id: 0 })
+      .sort({
+        [idField]: 1,
+      })
+      .lean();
 
-    const ids = records
-      .map((record) => {
+    const ids = (records as any[])
+      .map((record: any) => {
         if (idField in record) {
           return parseInt(
             (record[idField as keyof T] as string).replace(prefix, ""),
-            10
+            10,
           );
         }
         return null;
       })
-      .filter((id) => id !== null);
+      .filter((id: number | null): id is number => id !== null);
 
     let newId = 1;
     for (let i = 0; i < ids.length; i++) {

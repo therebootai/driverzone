@@ -1,5 +1,7 @@
 "use server";
 import mongoose from "mongoose";
+import dns from "dns";
+
 
 const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
@@ -32,6 +34,8 @@ if (!global.mongooseGlobal) {
 
 export async function connectToDatabase() {
   // If already connected, return cached connection
+  dns.setServers(["8.8.8.8", "8.8.4.4"]);
+  
   if (cached.conn) {
     return cached.conn;
   }
@@ -43,10 +47,10 @@ export async function connectToDatabase() {
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
     };
-
+    
     cached.promise = mongoose
-      .connect(MONGODB_URI as string, opts)
-      .then((mongooseInstance) => {
+    .connect(MONGODB_URI as string, opts)
+    .then((mongooseInstance) => {
         console.log("✅ MongoDB connected successfully");
         return mongooseInstance;
       })
@@ -55,22 +59,22 @@ export async function connectToDatabase() {
         cached.promise = null;
         throw error;
       });
-  }
-
-  try {
+    }
+    
+    try {
     cached.conn = await cached.promise;
   } catch (error) {
     cached.promise = null;
     throw error;
   }
-
+  
   return cached.conn;
 }
 
 // Function to ensure models are registered
 export async function ensureModelsRegistered() {
   await connectToDatabase();
-
+  
   if (!cached.modelsRegistered) {
     // Dynamically import and register models
     await import("@/models/Packages");

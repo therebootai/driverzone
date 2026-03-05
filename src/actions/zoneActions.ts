@@ -1,6 +1,6 @@
 "use server";
 
-import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
+import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Zone from "@/models/Zones";
 import { generateCustomId } from "@/utils/generateCustomId";
 import { calculateArea, calculateCenter } from "@/utils/geoutils";
@@ -26,7 +26,7 @@ export async function CREATEZONE({
       };
     }
 
-    await connectToDataBase();
+    await connectToDatabase();
 
     const center = calculateCenter(coordinates);
 
@@ -71,7 +71,7 @@ export async function GET_ALL_ZONES({
   status?: boolean;
 }) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     const query: any = {};
 
@@ -124,7 +124,7 @@ export async function UPDATE_ZONE(id: string, data: any) {
           },
         ],
       },
-      { $set: data }
+      { $set: data },
     );
 
     revalidatePath("/admin/zone-management");

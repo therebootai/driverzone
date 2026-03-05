@@ -68,14 +68,14 @@ export default function ZoneManagement({ zones }: { zones: ZoneDocument[] }) {
               >
                 View
               </button>{" "}
-              |<button className="cursor-pointer">Edit</button> |
+              {/* |<button className="cursor-pointer">Edit</button> |
               <button
                 className="cursor-pointer"
                 type="button"
                 // onClick={() => handleDelete(item._id)}
               >
                 Delete
-              </button>
+              </button> */}
             </td>
           </tr>
         ))}
