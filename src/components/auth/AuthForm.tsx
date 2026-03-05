@@ -116,25 +116,35 @@ export default function AuthForm() {
   );
 }
 
-function AuthFormInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+function AuthFormInput({
+  className,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className="bg-white/5 backdrop-blur-xs px-4 py-5 text-base text-white placeholder:text-white rounded-lg"
+      className={cn(
+        "bg-white/5 backdrop-blur-xs px-4 py-5 text-base text-white placeholder:text-white rounded-lg",
+        className,
+      )}
       {...props}
     />
   );
 }
 
-function AuthFormButton(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+function AuthFormButton({
+  className,
+  children,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       className={cn(
         "rounded-lg px-5 py-4 font-semibold text-center text-base",
-        props.className
+        className,
       )}
       {...props}
     >
-      {props.children}
+      {children}
     </button>
   );
 }

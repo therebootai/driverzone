@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import BookingPageHeader from "./BookingPageHeader";
 import ManageBooking from "./ManageBooking";
 import { useSearchParams } from "next/navigation";
 import { BookingTypes, GetBookingsParams } from "@/types/types";
@@ -57,14 +56,6 @@ const BookingFullPage = () => {
   }, [pageFromUrl, searchTerm, status]);
   return (
     <div className=" p-6 flex flex-col gap-6">
-      <div>
-        <BookingPageHeader
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          status={status}
-          setStatus={setStatus}
-        />
-      </div>
       <div>
         <ManageBooking
           allBookings={allBookings}

@@ -3,6 +3,7 @@ import ZoneHeader from "@/components/admin/zones/ZoneHeader";
 import ZoneManagement from "@/components/admin/zones/ZoneManagement";
 import AdminTemplate from "@/templates/AdminTemplate";
 import PaginationBox from "@/ui/PaginationBox";
+import { authorizeAccess } from "@/utils/authorizeAccess";
 
 export default async function ZoneManagementPage({
   searchParams,
@@ -10,6 +11,8 @@ export default async function ZoneManagementPage({
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
   const { page, search, status } = await searchParams;
+
+  await authorizeAccess("zone_management");
 
   const { data, paginations } = await GET_ALL_ZONES({
     page: parseInt(page ?? "1"),

@@ -3,7 +3,7 @@
 import { DELETEUSER, UPDATEUSER } from "@/actions/userActions";
 import TableComponent from "../../../../ui/TableComponent";
 import { useState } from "react";
-import {  UserTypes } from "@/types/types";
+import { UserTypes } from "@/types/types";
 import SidePopUpSlider from "../../SidePopup";
 import ViewUser from "./ViewUser";
 import UserForm from "./UserForm";
@@ -13,12 +13,9 @@ export default function UserTable({
 }: {
   users: { [keys: string]: string }[];
 }) {
-
-    const [selectedUser, setSelectedUser] = useState<UserTypes | null>(
-      null
-    );
-    const [showView, setShowView] = useState(false);
-    const [showEdit, setShowEdit] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserTypes | null>(null);
+  const [showView, setShowView] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
   async function handleStatus(id: string, status: boolean) {
     try {
@@ -65,14 +62,26 @@ export default function UserTable({
               </button>
             </td>
             <td className="flex flex-row gap-2 py-2 px-2.5">
-              <button className="cursor-pointer"    onClick={() => {
+              <button
+                className="cursor-pointer"
+                onClick={() => {
                   setSelectedUser(item as unknown as UserTypes);
                   setShowView(true);
-                }}>View</button> |
-              <button className="cursor-pointer"   onClick={() => {
-    setSelectedUser(item as unknown as UserTypes);
-    setShowEdit(true);
-  }}>Edit</button> |
+                }}
+              >
+                View
+              </button>{" "}
+              |
+              <button
+                className="cursor-pointer"
+                onClick={() => {
+                  setSelectedUser(item as unknown as UserTypes);
+                  setShowEdit(true);
+                }}
+              >
+                Edit
+              </button>{" "}
+              |
               <button
                 className="cursor-pointer"
                 type="button"
@@ -85,7 +94,7 @@ export default function UserTable({
         ))}
       />
 
-          {showView && (
+      {showView && (
         <SidePopUpSlider
           showPopUp={showView}
           handleClose={() => setShowView(false)}
@@ -101,17 +110,21 @@ export default function UserTable({
       )}
 
       {showEdit && (
-  <SidePopUpSlider showPopUp={showEdit} handleClose={() => setShowEdit(false)}>
-    <div className=" p-4">
-    <UserForm
-      user={selectedUser}  
-     onClose={() => {
-              setShowEdit(false);
-              setSelectedUser(null);
-            }}
-    /></div>
-  </SidePopUpSlider>
-)}
+        <SidePopUpSlider
+          showPopUp={showEdit}
+          handleClose={() => setShowEdit(false)}
+        >
+          <div className=" p-4">
+            <UserForm
+              user={selectedUser}
+              onClose={() => {
+                setShowEdit(false);
+                setSelectedUser(null);
+              }}
+            />
+          </div>
+        </SidePopUpSlider>
+      )}
     </section>
   );
 }

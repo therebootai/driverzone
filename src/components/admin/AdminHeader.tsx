@@ -95,10 +95,8 @@ export default function AdminHeader() {
             {!link.dropdown ? (
               <Link
                 href={link.path + "?page=1"}
-                className={`inline-flex gap-2 items-center group text-site-black font-medium text-xs lg:text-sm xlg:text-sm xl:text-base ${
-                  isActive(link.path)
-                    ? "bg-linear-90 from-site-saffron to-site-skin px-2 rounded-md h-[2rem]"
-                    : ""
+                className={`inline-flex gap-2 items-center group text-site-black font-medium text-xs lg:text-sm xlg:text-sm xl:text-base hover:bg-linear-90 from-site-saffron to-site-skin px-2 rounded-md h-[2rem] ${
+                  isActive(link.path) ? "bg-linear-90" : ""
                 }`}
               >
                 {link.label}

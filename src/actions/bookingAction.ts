@@ -1,5 +1,5 @@
 "use server";
-import connectToDataBase, { ensureModelsRegistered } from "@/db/connection";
+import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Booking, { BookingDocument } from "@/models/Booking";
 import { GetBookingsParams } from "@/types/types";
 import { generateCustomId } from "@/utils/generateCustomId";
@@ -36,7 +36,7 @@ function getStatusText(status: string): string {
 }
 
 export async function createBooking(data: any): Promise<BookingDocument> {
-  await connectToDataBase();
+  await connectToDatabase();
 
   try {
     if (!data.booking_id) {
@@ -126,7 +126,7 @@ export async function getBookings({
   endDate,
 }: GetBookingsParams) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     const _page = Math.max(1, Number(page) || 1);
     const _limit = Math.max(1, Math.min(100, Number(limit) || 20));
@@ -307,6 +307,7 @@ export async function getBookings({
             updatedAt: 1,
           },
           otp: 1,
+          otp_verified: 1,
           paymentMethod: 1,
           paymentStatus: 1,
           status: 1,
@@ -538,10 +539,10 @@ export async function updateBooking(
     updateCustomerRating?: boolean;
     updateDriverRating?: boolean;
     forceStatusChange?: boolean;
-  } = {}
+  } = {},
 ) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     // Validate booking ID
     if (!bookingId || !isValidObjectId(bookingId)) {
@@ -589,14 +590,14 @@ export async function updateBooking(
         validationErrors.push(
           `Cannot change status from ${currentStatus} to ${newStatus}. Allowed transitions: ${
             allowedStatusTransitions[currentStatus]?.join(", ") || "none"
-          }`
+          }`,
         );
       }
 
       // Special validations for specific status changes
       if (newStatus === "accepted" && !existingBooking.driverDetails) {
         validationErrors.push(
-          "Cannot accept booking without a driver assigned"
+          "Cannot accept booking without a driver assigned",
         );
       }
 
@@ -825,16 +826,16 @@ export async function updateBooking(
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
       { $set: updateObject },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     )
       .populate("customerDetails", "name email mobile_number profile_picture")
       .populate(
         "driverDetails",
-        "driver_name mobile_number profile_picture vehicle_number license_number status rating"
+        "driver_name mobile_number profile_picture vehicle_number license_number status rating",
       )
       .populate(
         "package_type",
-        "name description price duration features is_active"
+        "name description price duration features is_active",
       );
 
     if (!updatedBooking) {
@@ -864,7 +865,7 @@ export async function updateBooking(
     // Handle specific MongoDB errors
     if (error.name === "ValidationError") {
       const validationErrors = Object.values(error.errors).map(
-        (err: any) => err.message
+        (err: any) => err.message,
       );
       return {
         success: false,
@@ -892,12 +893,12 @@ export async function updateBooking(
 
 export async function sendBookingArrivalOTP(bookingId: string) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     // Find booking and customer details
     const booking = await Booking.findById(bookingId).populate(
       "customerDetails",
-      "mobile_number name"
+      "mobile_number name",
     );
 
     if (!booking) {
@@ -927,7 +928,7 @@ export async function sendBookingArrivalOTP(bookingId: string) {
     const otp = await createOTP(
       null,
       customerPhone,
-      "booking-arrival" // Use the new type
+      "booking-arrival", // Use the new type
     );
 
     // Store OTP in booking for reference (optional)
@@ -962,12 +963,12 @@ export async function sendBookingArrivalOTP(bookingId: string) {
 
 export async function verifyBookingArrivalOTP(bookingId: string, otp: string) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     // Find booking and customer details
     const booking = await Booking.findById(bookingId).populate(
       "customerDetails",
-      "mobile_number"
+      "mobile_number",
     );
 
     if (!booking) {
@@ -990,7 +991,7 @@ export async function verifyBookingArrivalOTP(bookingId: string, otp: string) {
       null,
       customerPhone,
       otp,
-      "booking-arrival" // Match the type used when creating
+      "booking-arrival", // Match the type used when creating
     );
 
     if (!verification.success) {
@@ -1023,11 +1024,11 @@ export async function verifyBookingArrivalOTP(bookingId: string, otp: string) {
 
 export async function resendBookingArrivalOTP(bookingId: string) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     const booking = await Booking.findById(bookingId).populate(
       "customerDetails",
-      "mobile_number"
+      "mobile_number",
     );
 
     if (!booking) {
@@ -1049,7 +1050,7 @@ export async function resendBookingArrivalOTP(bookingId: string) {
     const resendResult = await resendOTP(
       null,
       customerPhone,
-      "booking-arrival"
+      "booking-arrival",
     );
 
     if (resendResult.success) {
@@ -1088,11 +1089,11 @@ export async function resendBookingArrivalOTP(bookingId: string) {
 // Helper function to check if OTP is already sent
 export async function checkBookingOTPStatus(bookingId: string) {
   try {
-    await connectToDataBase();
+    await connectToDatabase();
 
     const booking = await Booking.findById(bookingId).populate(
       "customerDetails",
-      "mobile_number name"
+      "mobile_number name",
     );
 
     if (!booking) {

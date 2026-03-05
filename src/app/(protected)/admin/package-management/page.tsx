@@ -3,6 +3,7 @@ import PackageManagementHeader from "@/components/admin/packages/PackageManageme
 import PackageTable from "@/components/admin/packages/PackageTable";
 import AdminTemplate from "@/templates/AdminTemplate";
 import PaginationBox from "@/ui/PaginationBox";
+import { authorizeAccess } from "@/utils/authorizeAccess";
 
 export default async function PackageManagementPage({
   searchParams,
@@ -18,6 +19,8 @@ export default async function PackageManagementPage({
     package_type,
     discount_type,
   } = await searchParams;
+
+  await authorizeAccess("package_management");
 
   const { data, paginations } = await GET_ALL_PACKAGES({
     page: parseInt(page ?? "1"),

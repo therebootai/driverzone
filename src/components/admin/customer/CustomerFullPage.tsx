@@ -54,14 +54,14 @@ const CustomerFullPage = () => {
 
   return (
     <div className="p-6 flex flex-col gap-6">
-      <div>
+      {/* <div>
         <CustomerPageHeader
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
           status={status}
           setStatus={setStatus}
         />
-      </div>
+      </div> */}
       <div className="">
         <ManageCustomer
           allCustomer={allCustomer}

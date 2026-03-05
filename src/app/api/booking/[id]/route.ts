@@ -1,11 +1,14 @@
 import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Booking from "@/models/Booking";
+import { verifyCustomerToken, verifyDriverToken } from "@/utils/jwt";
 import { isValidObjectId } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
-const RESTRICTED_FIELDS = [
-  "booking_id",
-  "driverDetails",
+const RESTRICTED_FIELDS = ["booking_id", "driverDetails", "customerDetails"];
+
+// Fields that customers ARE allowed to update
+const ALLOWED_FIELDS = [
+  "otp_verified_at",
   "assignedAt",
   "acceptedAt",
   "arrivedAt",
@@ -15,11 +18,6 @@ const RESTRICTED_FIELDS = [
   "assignedAt",
   "driverRating",
   "otp_verified",
-  "otp_verified_at",
-];
-
-// Fields that customers ARE allowed to update
-const ALLOWED_FIELDS = [
   "pickupAddress",
   "pickupLat",
   "pickupLng",
@@ -39,7 +37,7 @@ const ALLOWED_FIELDS = [
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -57,27 +55,27 @@ export async function GET(
     if (!requestedBooking) {
       return NextResponse.json(
         { message: "Booking not found", success: false },
-        { status: 404 }
+        { status: 404 },
       );
     }
     return NextResponse.json(
       { booking: requestedBooking, success: true },
       {
         status: 200,
-      }
+      },
     );
   } catch (error: any) {
     console.log(error);
     return NextResponse.json(
       { message: error.message, success: false },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // Get the booking ID from params
@@ -86,11 +84,26 @@ export async function PUT(
     if (!bookingId) {
       return NextResponse.json(
         { success: false, message: "Booking ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
+    const token = request.headers.get("authorization");
+    let user;
+    let driver;
+    await connectToDatabase();
     await ensureModelsRegistered();
+    if (token) {
+      user = await verifyCustomerToken(token.split("Bearer ")[1]);
+      driver = await verifyDriverToken(token.split("Bearer ")[1]);
+    }
+
+    if (!user && !driver) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 },
+      );
+    }
 
     // Get request body
     const updateData = await request.json();
@@ -106,25 +119,7 @@ export async function PUT(
     if (!existingBooking) {
       return NextResponse.json(
         { success: false, message: "Booking not found" },
-        { status: 404 }
-      );
-    }
-
-    // Check if booking can be updated (not in certain statuses)
-    const NON_UPDATABLE_STATUSES = [
-      "cancelled",
-      "completed",
-      "started",
-      "arrived",
-      "accepted",
-    ];
-    if (NON_UPDATABLE_STATUSES.includes(existingBooking.status)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: `Booking cannot be updated in "${existingBooking.status}" status`,
-        },
-        { status: 400 }
+        { status: 404 },
       );
     }
 
@@ -145,7 +140,7 @@ export async function PUT(
         if (
           key === "tripType" &&
           !["one-way", "round-trip", "local", "outstation"].includes(
-            updateData[key]
+            updateData[key],
           )
         ) {
           errors.push(`Invalid value for tripType`);
@@ -164,7 +159,7 @@ export async function PUT(
           // Only allow cancelReason if status is being cancelled
           if (updateData.status !== "cancelled") {
             errors.push(
-              "cancelReason can only be provided when cancelling booking"
+              "cancelReason can only be provided when cancelling booking",
             );
             return;
           }
@@ -180,7 +175,7 @@ export async function PUT(
       if (updateData.status === "cancelled") {
         if (!["pending", "assigned"].includes(existingBooking.status)) {
           errors.push(
-            'Booking can only be cancelled when in "pending" or "assigned" status'
+            'Booking can only be cancelled when in "pending" or "assigned" status',
           );
         } else {
           filteredUpdateData.status = "cancelled";
@@ -200,7 +195,7 @@ export async function PUT(
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
       { $set: filteredUpdateData },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     )
       .populate("customerDetails", "name email phone")
       .populate("driverDetails", "name vehicleNumber phone")
@@ -216,7 +211,7 @@ export async function PUT(
       // Example notification logic (you'd implement your actual notification service)
       if (updatedBooking?.driverDetails) {
         console.log(
-          `Send cancellation notification to driver: ${updatedBooking.driverDetails._id}`
+          `Send cancellation notification to driver: ${updatedBooking.driverDetails._id}`,
         );
       }
 
@@ -255,7 +250,7 @@ export async function PUT(
     if (error.name === "CastError") {
       return NextResponse.json(
         { success: false, message: "Invalid booking ID format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -266,7 +261,7 @@ export async function PUT(
         error:
           process.env.NODE_ENV === "development" ? error.message : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { ADD_PACKAGE } from "@/actions/packageAction";
+import { ADD_PACKAGE, UPDATE_PACKAGE } from "@/actions/packageAction";
 import { GET_ALL_ZONES } from "@/actions/zoneActions";
 import { PackageDocument } from "@/models/Packages";
 import { ZoneDocument } from "@/models/Zones";
@@ -76,6 +76,27 @@ export default function PackageForm({
   const [discount, setDiscount] = useState<number>(
     update_package?.discount || 0
   );
+
+  useEffect(() => {
+    if (update_package) {
+      setName(update_package?.name ?? "");
+      setDestination(update_package?.destination ?? "");
+      setPackageType(update_package?.package_type);
+      setDuration(String(update_package?.duration) ?? "");
+      setCompanyCharge(update_package?.company_charge);
+      setDriverCharge(update_package?.driver_charge);
+      setFoodingCharge(update_package?.fooding_charge ?? 150);
+      setOverTimeCustomerCharge(update_package?.over_time_customer_charge);
+      setOverTimeDriverCharge(update_package?.over_time_driver_charge);
+      setEarlyMorningCharge(update_package?.early_morning_charge ?? 0);
+      setLateNightCharge(update_package?.late_night_charge ?? 0);
+      setTotalPrice(update_package?.total_price);
+      setMainZone(update_package?.main_zone);
+      setServiceZone(update_package?.service_zone);
+      setDiscountType(update_package?.discount_type);
+      setDiscount(update_package?.discount ?? 0);
+    }
+  }, [update_package]);
 
   // UTILITY FUNCTION
   const handleSearchZones = async (
@@ -161,6 +182,7 @@ export default function PackageForm({
 
       if (isEdit) {
         // await update_package?.update_package(payload);
+        await UPDATE_PACKAGE(update_package?._id as string, payload);
       } else {
         await ADD_PACKAGE(payload);
       }
