@@ -94,9 +94,6 @@ export async function POST(req: Request) {
       );
     }
 
-    await connectToDatabase();
-    await ensureModelsRegistered();
-
     const alertService = PriorityAlertService.getInstance();
     await alertService.initializeAlert(newBooking._id as string);
 

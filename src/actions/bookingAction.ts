@@ -1,14 +1,26 @@
 "use server";
 import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Booking, { BookingDocument } from "@/models/Booking";
+import Driver from "@/models/Drivers";
+import Customer from "@/models/Customers";
 import { GetBookingsParams } from "@/types/types";
 import { generateCustomId } from "@/utils/generateCustomId";
 import { isValidObjectId, Types } from "mongoose";
 import { createOTP, resendOTP, verifyOTP } from "./OTPActions";
 import OTP from "@/models/OTP";
 import { SEND_BY_WHATSAPP } from "./waActions";
+import { sendPushNotification } from "./notificationAction";
 
 await ensureModelsRegistered();
+
+function generateBookingOTP(length = 6) {
+  const digits = "0123456789";
+  let otp = "";
+  for (let i = 0; i < length; i++) {
+    otp += digits[Math.floor(Math.random() * 10)];
+  }
+  return otp;
+}
 
 function calculateTotalFare(booking: any): number {
   let total = booking.fare || 0;
@@ -41,6 +53,10 @@ export async function createBooking(data: any): Promise<BookingDocument> {
   try {
     if (!data.booking_id) {
       data.booking_id = await generateCustomId(Booking, "booking_id", "bkid");
+    }
+
+    if (!data.otp) {
+      data.otp = generateBookingOTP();
     }
 
     const newBooking = await Booking.create({
@@ -100,6 +116,20 @@ export async function createBooking(data: any): Promise<BookingDocument> {
 
       coupon: isValidObjectId(data.coupon) ? data.coupon : null,
     });
+
+    // Create OTP record in OTP model for the customer
+    const customer = await Customer.findById(data.customerDetails);
+    if (customer && customer.mobile_number) {
+      const farFuture = new Date();
+      farFuture.setFullYear(farFuture.getFullYear() + 99); // "No expiry"
+
+      await OTP.create({
+        phone: customer.mobile_number,
+        otp: newBooking.otp,
+        type: "booking-arrival",
+        expiresAt: farFuture,
+      });
+    }
 
     return newBooking;
   } catch (error: any) {
@@ -543,6 +573,7 @@ export async function updateBooking(
 ) {
   try {
     await connectToDatabase();
+    await ensureModelsRegistered();
 
     // Validate booking ID
     if (!bookingId || !isValidObjectId(bookingId)) {
@@ -823,7 +854,7 @@ export async function updateBooking(
     updateObject.updatedAt = new Date();
 
     // Perform the update
-    const updatedBooking = await Booking.findByIdAndUpdate(
+    const updatedBooking = (await Booking.findByIdAndUpdate(
       bookingId,
       { $set: updateObject },
       { new: true, runValidators: true },
@@ -836,7 +867,7 @@ export async function updateBooking(
       .populate(
         "package_type",
         "name description price duration features is_active",
-      );
+      )) as any;
 
     if (!updatedBooking) {
       return {
@@ -848,6 +879,87 @@ export async function updateBooking(
 
     // Serialize the response
     const serializedBooking = JSON.parse(JSON.stringify(updatedBooking));
+
+    // Notify driver if one was just assigned
+    if (updateData.driverDetails) {
+      try {
+        const driverIdStr =
+          typeof updateData.driverDetails === "string"
+            ? updateData.driverDetails
+            : updateData.driverDetails instanceof Types.ObjectId
+              ? updateData.driverDetails.toString()
+              : String(updateData.driverDetails);
+        //@ts-ignore
+        const driver = (await Driver.findById(driverIdStr)) as any;
+        if (driver) {
+          // Add to activeAlerts
+          const existingAlertIndex = driver.activeAlerts.findIndex(
+            (a: any) =>
+              a.bookingId.toString() === updatedBooking?._id?.toString(),
+          );
+
+          if (existingAlertIndex === -1) {
+            driver.activeAlerts.push({
+              bookingId: updatedBooking._id,
+              alertSentAt: new Date(),
+              expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 mins
+              status: "accepted",
+            });
+          } else {
+            driver.activeAlerts[existingAlertIndex].status = "accepted";
+          }
+          await driver.save();
+        }
+
+        if (driver && (driver as any).fcmToken) {
+          await sendPushNotification({
+            token: (driver as any).fcmToken,
+            notification: {
+              title: "You have been assigned a booking!",
+              body: `Pickup: ${updatedBooking.pickupAddress} → Drop: ${updatedBooking.dropAddress}`,
+            },
+            data: {
+              type: "booking_assigned",
+              bookingId: serializedBooking.booking_id ?? bookingId,
+              pickupAddress: updatedBooking.pickupAddress ?? "",
+              dropAddress: updatedBooking.dropAddress ?? "",
+              fare: String(updatedBooking.fare ?? ""),
+              customerName:
+                (updatedBooking.customerDetails as any)?.name ?? "Customer",
+              customerMobile:
+                (updatedBooking.customerDetails as any)?.mobile_number ?? "",
+            },
+            android: { priority: "high" },
+          });
+        }
+      } catch (notifError) {
+        console.error(
+          "Failed to send driver assignment notification:",
+          notifError,
+        );
+      }
+    }
+
+    // Remove from activeAlerts if completed or cancelled
+    if (
+      isChangingStatus &&
+      (newStatus === "completed" || newStatus === "cancelled")
+    ) {
+      try {
+        if (updatedBooking.driverDetails) {
+          const driverIdToCleanup =
+            updatedBooking.driverDetails instanceof Types.ObjectId
+              ? updatedBooking.driverDetails
+              : (updatedBooking.driverDetails as any)._id;
+
+          await Driver.findByIdAndUpdate(driverIdToCleanup, {
+            $pull: { activeAlerts: { bookingId: updatedBooking._id } },
+          });
+        }
+      } catch (cleanupError) {
+        console.error("Failed to cleanup activeAlerts:", cleanupError);
+      }
+    }
 
     return {
       success: true,
