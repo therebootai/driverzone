@@ -226,6 +226,8 @@ export class PriorityAlertService {
           fare: booking.fare?.toString(),
           distance: booking.distance?.toString(),
           expiresAt: alert.expiresAt.toISOString(),
+          customerName: booking.customerDetails?.name ?? "Customer",
+          customerMobile: booking.customerDetails?.mobile_number ?? "",
         },
         android: {
           priority: "high" as const,
@@ -338,10 +340,13 @@ export class PriorityAlertService {
 
       // Update driver's current booking
       driver.currentBooking = alert.booking_id;
-      // Remove all active alerts for this driver
-      driver.activeAlerts = driver.activeAlerts.filter(
-        (a: any) => a.bookingId.toString() !== alert.booking_id.toString(),
+      // Update driver's alert status to accepted
+      const activeAlertIndex = driver.activeAlerts.findIndex(
+        (a: any) => a.bookingId.toString() === alert.booking_id.toString(),
       );
+      if (activeAlertIndex !== -1) {
+        driver.activeAlerts[activeAlertIndex].status = "accepted";
+      }
       await driver.save();
 
       await alert.save();

@@ -39,11 +39,11 @@ const ManageBooking = ({
     page?: number,
     limit?: number,
     search?: string,
-    status?: any
+    status?: any,
   ) => void;
 }) => {
   const [selectedBooking, setSelectedBooking] = useState<BookingTypes | null>(
-    null
+    null,
   );
   const [updateModal, setUpdateModal] = useState<{
     show: boolean;
@@ -112,7 +112,7 @@ const ManageBooking = ({
             currentPage: page,
             totalItems: 0,
             perPage: 20,
-          }
+          },
         );
       } else {
         console.error("Failed to fetch drivers:", result.error);
@@ -191,7 +191,7 @@ const ManageBooking = ({
   // Handle update actions
   const handleUpdateAction = async (
     action: UpdateActionType,
-    bookingId: string
+    bookingId: string,
   ) => {
     const booking = allBookings.find((b) => b._id === bookingId);
 
@@ -214,7 +214,7 @@ const ManageBooking = ({
                 new Date(otpStatus.otpSentAt).getTime() + expiryMinutes * 60000;
               const remainingSeconds = Math.max(
                 0,
-                Math.floor((expiryTime - Date.now()) / 1000)
+                Math.floor((expiryTime - Date.now()) / 1000),
               );
               setOtpExpiry(remainingSeconds);
             }
@@ -284,7 +284,7 @@ const ManageBooking = ({
     try {
       const verificationResponse = await verifyBookingArrivalOTP(
         updateModal.bookingId,
-        otpInput
+        otpInput,
       );
 
       if (verificationResponse.success) {
@@ -299,7 +299,7 @@ const ManageBooking = ({
           },
           {
             validateOtp: true,
-          }
+          },
         );
 
         if (updateResponse.success) {
@@ -405,7 +405,7 @@ const ManageBooking = ({
       const response = await updateBooking(
         updateModal.bookingId,
         updateData,
-        options
+        options,
       );
 
       if (response.success) {
@@ -450,7 +450,7 @@ const ManageBooking = ({
           className="px-3 py-1 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
         >
           Assign Driver
-        </button>
+        </button>,
       );
     }
 
@@ -473,6 +473,8 @@ const ManageBooking = ({
         case "completed":
           actionText = "Complete Trip";
           break;
+        default:
+          break;
       }
 
       if (actionText) {
@@ -489,7 +491,7 @@ const ManageBooking = ({
             className="px-3 py-1 rounded bg-green-600 text-white text-sm hover:bg-green-700 transition-colors"
           >
             {actionText}
-          </button>
+          </button>,
         );
       }
     }
@@ -502,7 +504,7 @@ const ManageBooking = ({
           className="px-3 py-1 rounded bg-red-600 text-white text-sm hover:bg-red-700 transition-colors"
         >
           Cancel
-        </button>
+        </button>,
       );
     }
 
@@ -952,8 +954,8 @@ const ManageBooking = ({
                     <option value="">Select status</option>
                     {getAvailableStatuses(
                       allBookings.find(
-                        (b) => b._id === updateModal.bookingId
-                      ) || null
+                        (b) => b._id === updateModal.bookingId,
+                      ) || null,
                     ).map((status) => (
                       <option key={status} value={status}>
                         {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -1051,21 +1053,21 @@ const ManageBooking = ({
                   isLoading
                     ? "bg-gray-400 cursor-not-allowed"
                     : updateModal.action === "cancel_booking"
-                    ? "bg-red-600 hover:bg-red-700 text-white"
-                    : updateModal.action === "complete_booking"
-                    ? "bg-green-600 hover:bg-green-700 text-white"
-                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                      ? "bg-red-600 hover:bg-red-700 text-white"
+                      : updateModal.action === "complete_booking"
+                        ? "bg-green-600 hover:bg-green-700 text-white"
+                        : "bg-blue-600 hover:bg-blue-700 text-white"
                 }`}
               >
                 {isLoading
                   ? "Processing..."
                   : updateModal.action === "assign_driver"
-                  ? "Assign Driver"
-                  : updateModal.action === "update_status"
-                  ? "Update Status"
-                  : updateModal.action === "cancel_booking"
-                  ? "Cancel Booking"
-                  : "Complete Booking"}
+                    ? "Assign Driver"
+                    : updateModal.action === "update_status"
+                      ? "Update Status"
+                      : updateModal.action === "cancel_booking"
+                        ? "Cancel Booking"
+                        : "Complete Booking"}
               </button>
             )}
 
