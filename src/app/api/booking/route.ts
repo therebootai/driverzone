@@ -49,7 +49,7 @@ export async function POST(req: Request) {
       "dropLng",
       "razorpay_order_id",
       "razorpay_payment_id",
-      "razorpay_signature",
+      // "razorpay_signature",
       "customerDetails", // Still required but now we might have populated it above
       "vehicleType",
       "package_type",
@@ -151,7 +151,11 @@ export async function GET(req: NextRequest) {
 
     // Add status filter if provided
     if (status) {
-      query.status = status;
+      if (status === "active") {
+        query.status = { $in: ["accepted", "arrived", "started"] };
+      } else {
+        query.status = status;
+      }
     }
 
     // Add trip type filter if provided

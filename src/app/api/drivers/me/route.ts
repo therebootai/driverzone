@@ -2,6 +2,8 @@
 
 import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Drivers from "@/models/Drivers";
+import Booking from "@/models/Booking";
+import Alert from "@/models/Alert";
 import { handleImageUpload } from "@/utils/handleImageUpload";
 import { verifyDriverToken } from "@/utils/jwt";
 import { NextRequest, NextResponse } from "next/server";
@@ -21,7 +23,31 @@ export async function GET(request: NextRequest) {
     if (!user) {
       throw new Error("Unauthorized");
     }
-    return NextResponse.json({ user, success: true }, { status: 200 });
+
+    // Calculate dynamic stats
+    const total_rides = await Booking.countDocuments({
+      driverDetails: user._id,
+      status: "completed",
+    });
+
+    const totalAlerts = await Alert.countDocuments({
+      "assignedDrivers.driverId": user._id,
+    });
+
+    const acceptedAlerts = await Alert.countDocuments({
+      "assignedDrivers.driverId": user._id,
+      "assignedDrivers.response": "accepted",
+    });
+
+    const accept_rate = totalAlerts > 0 ? Math.round((acceptedAlerts / totalAlerts) * 100) : 0;
+
+    const userWithStats = {
+      ...user,
+      total_rides,
+      accept_rate,
+    };
+
+    return NextResponse.json({ user: userWithStats, success: true }, { status: 200 });
   } catch (error: any) {
     console.log(error);
     return NextResponse.json(
@@ -104,16 +130,52 @@ export async function PUT(request: NextRequest) {
         continue;
 
       // Handle other fields
-      updateData[key] = value;
+      if (key === "currentLocation" && typeof value === "string") {
+        try {
+          updateData[key] = JSON.parse(value);
+        } catch (e) {
+          updateData[key] = value;
+        }
+      } else {
+        updateData[key] = value;
+      }
     }
 
     const updatedUser = await Drivers.findOneAndUpdate(
       { _id: user._id },
       { $set: updateData },
       { new: true },
-    );
+    ).lean();
+
+    if (!updatedUser) {
+      throw new Error("User not found after update");
+    }
+
+    // Calculate dynamic stats for updated user
+    const total_rides = await Booking.countDocuments({
+      driverDetails: updatedUser._id,
+      status: "completed",
+    });
+
+    const totalAlerts = await Alert.countDocuments({
+      "assignedDrivers.driverId": updatedUser._id,
+    });
+
+    const acceptedAlerts = await Alert.countDocuments({
+      "assignedDrivers.driverId": updatedUser._id,
+      "assignedDrivers.response": "accepted",
+    });
+
+    const accept_rate = totalAlerts > 0 ? Math.round((acceptedAlerts / totalAlerts) * 100) : 0;
+
+    const userWithStats = {
+      ...updatedUser,
+      total_rides,
+      accept_rate,
+    };
+
     return NextResponse.json(
-      { user: updatedUser, success: true },
+      { user: userWithStats, success: true },
       { status: 200 },
     );
   } catch (error: any) {

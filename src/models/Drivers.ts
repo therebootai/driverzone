@@ -70,7 +70,7 @@ export interface DriverDocument extends Document {
 
   currentBooking: mongoose.Schema.Types.ObjectId | BookingDocument | null;
 
-  vehicle_transmission_type?: string[];
+  vehicle_transmission_type?: string;
   vehicle_category_type?: string[];
 
   employment_type?: "Driver" | "Driver+Car" | "Other";
@@ -107,7 +107,7 @@ export interface DriverDocument extends Document {
     alertSentAt: Date;
     expiresAt: Date;
     status: "pending" | "accepted" | "rejected" | "expired";
-  }[];
+  } | null;
 }
 
 const vehicleDetailsSchema = new Schema<VehicleDetails>({
@@ -196,7 +196,7 @@ const driverSchema = new Schema<DriverDocument>(
     },
 
     vehicle_transmission_type: {
-      type: [String],
+      type: String,
       enum: ["Automatic", "Manual", "Automatic+Manual"],
       default: [],
     },
@@ -243,18 +243,16 @@ const driverSchema = new Schema<DriverDocument>(
 
     maxDistance: { type: Number, default: 20 }, // in kilometers
 
-    activeAlerts: [
-      {
-        bookingId: { type: mongoose.Schema.Types.ObjectId, ref: "Booking" },
-        alertSentAt: { type: Date },
-        expiresAt: { type: Date },
-        status: {
-          type: String,
-          enum: ["pending", "accepted", "rejected", "expired"],
-          default: "pending",
-        },
+    activeAlerts: {
+      bookingId: { type: mongoose.Schema.Types.ObjectId, ref: "Booking" },
+      alertSentAt: { type: Date },
+      expiresAt: { type: Date },
+      status: {
+        type: String,
+        enum: ["pending", "accepted", "rejected", "expired"],
+        default: "pending",
       },
-    ],
+    },
 
     rejectedAlerts: [
       {
