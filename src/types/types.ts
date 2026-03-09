@@ -83,6 +83,7 @@ export type VehicleDetails = {
 };
 
 export type DriverDocument = {
+  _id: string;
   driver_id: string;
 
   driver_name: string;

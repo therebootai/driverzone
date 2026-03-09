@@ -1,6 +1,5 @@
 import React, { Suspense } from "react";
 import AdminTemplate from "@/templates/AdminTemplate";
-import BookingFullPage from "@/components/admin/booking/BookingFullPage";
 import BookingPageHeader from "@/components/admin/booking/BookingPageHeader";
 import Loader from "@/ui/Loader";
 import { getBookings } from "@/actions/bookingAction";
@@ -14,16 +13,36 @@ const BookingManagement = async ({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
-  const { page = "1", search, status } = await searchParams;
+  const { 
+    page = "1", 
+    search, 
+    status,
+    tripType,
+    startDate,
+    endDate 
+  } = await searchParams;
+  
   await authorizeAccess("booking_management");
+  
   const normalizedStatus: GetBookingsParams["status"] =
     !status || status === ""
       ? undefined
       : (status as GetBookingsParams["status"]);
+      
+  const normalizedTripType: GetBookingsParams["tripType"] =
+    !tripType || tripType === ""
+      ? undefined
+      : (tripType as GetBookingsParams["tripType"]);
+
+  const adjustedEndDate = endDate ? `${endDate}T23:59:59.999Z` : undefined;
+
   const { data, paginations } = await getBookings({
     page: parseInt(page),
     searchTerm: search,
     status: normalizedStatus,
+    tripType: normalizedTripType,
+    startDate,
+    endDate: adjustedEndDate,
   });
 
   return (

@@ -49,7 +49,7 @@ export async function POST(req: Request) {
       "dropLng",
       "razorpay_order_id",
       "razorpay_payment_id",
-      // "razorpay_signature",
+      "razorpay_signature",
       "customerDetails", // Still required but now we might have populated it above
       "vehicleType",
       "package_type",
@@ -64,6 +64,23 @@ export async function POST(req: Request) {
           { success: false, message: `${field} is required` },
           { status: 400 },
         );
+      }
+    }
+
+    // Validate Coupon Reuse
+    if (body.coupon) {
+      const customerRecord = await Customer.findById(body.customerDetails);
+      if (customerRecord && customerRecord.used_coupons) {
+        // Convert to string to compare objectIds
+        const hasUsed = customerRecord.used_coupons.some(
+          (cId) => cId.toString() === body.coupon.toString()
+        );
+        if (hasUsed) {
+          return NextResponse.json(
+            { success: false, message: "You have already used this coupon." },
+            { status: 400 },
+          );
+        }
       }
     }
 
