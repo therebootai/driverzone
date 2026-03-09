@@ -67,7 +67,7 @@ const PaginationBox = ({
             <>
               <Link
                 href={buildUrl(1)}
-                className="size-8 rounded-md bg-custom-green hover:bg-custom-darkred hover:text-white transition-colors duration-500 border-custom-black border flex justify-center items-center text-base font-medium cursor-pointer"
+                className="size-8 rounded-md bg-custom-green hover:bg-site-saffron hover:text-white transition-colors duration-500 border-custom-black border flex justify-center items-center text-base font-medium cursor-pointer"
               >
                 1
               </Link>
@@ -86,8 +86,8 @@ const PaginationBox = ({
               href={buildUrl(pageNumber)}
               className={`size-8 rounded-md ${
                 pageNumber === currentPage
-                  ? "bg-custom-darkred text-white"
-                  : "bg-custom-green hover:bg-custom-darkred hover:text-white transition-colors duration-500"
+                  ? "bg-site-saffron text-white"
+                  : "bg-custom-green hover:bg-site-saffron hover:text-white transition-colors duration-500"
               } border-custom-black border flex justify-center items-center text-base font-medium cursor-pointer`}
             >
               {pageNumber}
@@ -104,7 +104,7 @@ const PaginationBox = ({
               )}
               <Link
                 href={buildUrl(totalPages)}
-                className="size-8 rounded-md bg-custom-green hover:bg-custom-darkred hover:text-white transition-colors duration-500 border-custom-black border flex justify-center items-center text-base font-medium cursor-pointer"
+                className="size-8 rounded-md bg-custom-green hover:bg-site-saffron hover:text-white transition-colors duration-500 border-custom-black border flex justify-center items-center text-base font-medium cursor-pointer"
               >
                 {totalPages}
               </Link>

@@ -1,6 +1,7 @@
 import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Booking from "@/models/Booking";
 import Driver from "@/models/Drivers";
+import Customer from "@/models/Customers";
 import { verifyCustomerToken, verifyDriverToken } from "@/utils/jwt";
 import { isValidObjectId } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
@@ -279,6 +280,23 @@ export async function PUT(
           $inc: { total_earnings: updatedBooking.fare_details.driver_charge },
           $set: { activeAlerts: null, currentBooking: null },
         });
+      }
+
+      // Update customer total_spent
+      if (updatedBooking.customerDetails?._id) {
+        const customer = await Customer.findById(updatedBooking.customerDetails._id);
+        if (customer) {
+          const currentSpent = parseFloat(customer.total_spent || "0");
+          let totalFare = updatedBooking.fare || 0;
+          if (updatedBooking.fare_details) {
+            totalFare += updatedBooking.fare_details.over_time_customer_charge || 0;
+            totalFare += updatedBooking.fare_details.early_morning_charge || 0;
+            totalFare += updatedBooking.fare_details.late_night_charge || 0;
+          }
+          const newSpent = currentSpent + totalFare;
+          customer.total_spent = newSpent.toString();
+          await customer.save();
+        }
       }
     }
 

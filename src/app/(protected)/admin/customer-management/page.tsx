@@ -33,7 +33,6 @@ const CustomerManagement = async ({
       >
         <ManageCustomer
           allCustomer={data}
-          pagination={paginations}
           fetchData={async () => {
             "use server";
             revalidatePath("/admin/customer-managment");

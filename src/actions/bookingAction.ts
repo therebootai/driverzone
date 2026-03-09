@@ -952,6 +952,31 @@ export async function updateBooking(
       }
     }
 
+    if (
+      isChangingStatus &&
+      newStatus === "completed"
+    ) {
+      try {
+        if (updatedBooking.customerDetails) {
+          const customerId = 
+            updatedBooking.customerDetails instanceof Types.ObjectId
+              ? updatedBooking.customerDetails
+              : (updatedBooking.customerDetails as any)._id;
+
+          const customer = await Customer.findById(customerId);
+          if (customer) {
+            const currentSpent = parseFloat(customer.total_spent || "0");
+            const totalFare = calculateTotalFare(updatedBooking);
+            const newSpent = currentSpent + totalFare;
+            customer.total_spent = newSpent.toString();
+            await customer.save();
+          }
+        }
+      } catch (spentError) {
+        console.error("Failed to update customer total_spent:", spentError);
+      }
+    }
+
     // Remove from activeAlerts if completed or cancelled
     if (
       isChangingStatus &&
