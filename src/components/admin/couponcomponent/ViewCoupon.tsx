@@ -32,7 +32,7 @@ const ViewCoupon: React.FC<ViewCouponProps> = ({ coupon, onClose }) => {
   
 
       {/* Side panel */}
-      <div className="w-full  bg-white h-full  flex flex-col">
+      <div className="w-full h-full  flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h2 className="text-base font-semibold text-site-black">

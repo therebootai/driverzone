@@ -178,11 +178,10 @@ const AddAndEditDriver = ({
               className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
             >
               <option value="">Select</option>
-              <option value="Aadhaar">Aadhaar</option>
-              <option value="PAN">PAN</option>
-              <option value="Voter ID">Voter ID</option>
-              <option value="Driving Licence">Driving Licence</option>
-              <option value="Passport">Passport</option>
+              <option value="aadhar">Aadhaar</option>
+              <option value="pan">PAN</option>
+              <option value="voter">Voter ID</option>
+              <option value="passport">Passport</option>
             </select>
           </div>
 

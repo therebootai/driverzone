@@ -4,6 +4,8 @@
 @import "react-datepicker/dist/react-datepicker.css";
 @import "leaflet/dist/leaflet.css";
 @import "leaflet-draw/dist/leaflet.draw.css";
+@import "react-date-range/dist/styles.css";
+@import "react-date-range/dist/theme/default.css";
 
 @theme inline {
   --color-site-black: #1c1b1f;

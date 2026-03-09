@@ -31,6 +31,10 @@ export async function createCustomer(data: customerTypes) {
         "customerId",
       );
     }
+    
+    if (!data.reg_date) {
+      data.reg_date = new Date().toISOString();
+    }
 
     const newUser = new Customers(data);
 

@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { BookingTypes } from "@/types/types";
 import dayjs from "dayjs";
-import PaginationBox from "../PaginationBox";
+import { useQueryParamsAdvanced } from "@/hooks/useQueryParamsAdvanced";
+import PaginationBox from "@/ui/PaginationBox";
 import Field from "@/ui/Field";
 import SidePopup from "@/ui/SidePopup";
 import {
@@ -14,6 +15,7 @@ import {
   verifyBookingArrivalOTP,
 } from "@/actions/bookingAction";
 import { getAllDriver } from "@/actions/driverActions";
+import ViewBooking from "./ViewBooking";
 
 type UpdateActionType =
   | "assign_driver"
@@ -50,6 +52,22 @@ const ManageBooking = ({
     action: UpdateActionType;
     bookingId: string | null;
   }>({ show: false, action: "assign_driver", bookingId: null });
+
+  const { getParam, updateFilters } = useQueryParamsAdvanced();
+  const viewId = getParam("view");
+
+  useEffect(() => {
+    if (viewId && allBookings) {
+      const booking = allBookings.find(
+        (b) => String(b._id) === viewId || b.booking_id === viewId
+      );
+      if (booking) {
+        setSelectedBooking(booking);
+      }
+    } else {
+      setSelectedBooking(null);
+    }
+  }, [viewId, allBookings]);
 
   // Form states
   const [otpInput, setOtpInput] = useState("");
@@ -784,7 +802,10 @@ const ManageBooking = ({
               <div className="w-[15%]">{getStatusBadge(booking.status)}</div>
               <div className="w-[15%] flex gap-2">
                 <button
-                  onClick={() => setSelectedBooking(booking)}
+                  onClick={() => {
+                    setSelectedBooking(booking);
+                    updateFilters("view", String(booking._id));
+                  }}
                   className="px-3 py-1 rounded bg-site-darkyellow text-white text-sm hover:bg-amber-600 transition-colors"
                 >
                   View
@@ -797,70 +818,20 @@ const ManageBooking = ({
 
         <PaginationBox
           pagination={pagination}
-          prefix="/admin/booking-management"
+          baseUrl="/admin/booking-management"
         />
       </div>
 
       {/* Booking Details Popup */}
       {selectedBooking && (
-        <SidePopup
+        <ViewBooking
+          booking={selectedBooking}
           showPopUp={!!selectedBooking}
-          handleClose={() => setSelectedBooking(null)}
-          clsprops="px-6 max-w-2xl"
-        >
-          <h1 className="text-2xl font-semibold text-site-black mb-2">
-            Booking Details
-          </h1>
-          <p className="text-gray-600 text-sm mb-6">
-            ID: {selectedBooking.booking_id}
-          </p>
-
-          <div className="flex flex-col gap-2.5 max-h-[80vh] overflow-y-auto pr-2">
-            {/* Add your detailed booking fields here */}
-            <Field label="Booking ID" value={selectedBooking.booking_id} />
-            <Field
-              label="Status"
-              value={getStatusBadge(selectedBooking.status)}
-            />
-            <Field
-              label="Customer"
-              value={selectedBooking.customerDetails.name}
-            />
-            <Field
-              label="Customer Phone"
-              value={selectedBooking.customerDetails.mobile_number}
-            />
-            <Field
-              label="Driver"
-              value={selectedBooking.driverDetails?.driver_name || "-"}
-            />
-            <Field
-              label="Fare"
-              value={`₹${selectedBooking.fare?.toLocaleString("en-IN") || "0"}`}
-            />
-            <Field
-              label="Payment Status"
-              value={getPaymentStatusBadge(selectedBooking.paymentStatus)}
-            />
-            <Field
-              label="Payment Method"
-              value={selectedBooking.paymentMethod || "cash"}
-            />
-            <Field
-              label="OTP Verified"
-              value={selectedBooking.otp_verified ? "Yes" : "No"}
-            />
-          </div>
-
-          <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
-            <button
-              onClick={() => setSelectedBooking(null)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </SidePopup>
+          onClose={() => {
+            setSelectedBooking(null);
+            updateFilters("view", "");
+          }}
+        />
       )}
 
       {/* Update Modal */}

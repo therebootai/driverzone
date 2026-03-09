@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { AiOutlinePlusCircle } from "react-icons/ai";
-import SidePopUpSlider from "../SidePopup";
+import SidePopup from "@/ui/SidePopup";
 import AddAndEditDriver from "./AddAndEditDriver";
 import { IoSearch } from "react-icons/io5";
 import { useQueryParamsAdvanced } from "@/hooks/useQueryParamsAdvanced";
@@ -77,12 +77,12 @@ const DriverHeader = () => {
         </button>
       </div>
 
-      <SidePopUpSlider
+      <SidePopup
         showPopUp={showPopUp}
         handleClose={() => setShowPopUp(false)}
       >
         <AddAndEditDriver key={popupKey} />
-      </SidePopUpSlider>
+      </SidePopup>
     </div>
   );
 };
