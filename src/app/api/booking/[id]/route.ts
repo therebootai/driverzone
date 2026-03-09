@@ -1,5 +1,6 @@
 import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Booking from "@/models/Booking";
+import Driver from "@/models/Drivers";
 import { verifyCustomerToken, verifyDriverToken } from "@/utils/jwt";
 import { isValidObjectId } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
@@ -33,6 +34,8 @@ const ALLOWED_FIELDS = [
   "schedule_date",
   "schedule_time",
   "insurance",
+  "otp",
+  "status",
 ];
 
 export async function GET(
@@ -123,6 +126,19 @@ export async function PUT(
       );
     }
 
+    // Security check: If driver is updating, ensure they are assigned to this booking
+    if (driver && existingBooking.driverDetails) {
+      if (existingBooking.driverDetails.toString() !== driver._id.toString()) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Unauthorized: You are not assigned to this booking",
+          },
+          { status: 403 },
+        );
+      }
+    }
+
     // Filter and validate update data
     const filteredUpdateData: any = {};
     const errors: string[] = [];
@@ -169,6 +185,35 @@ export async function PUT(
       }
     });
 
+    // Handle OTP verification separately if provided
+    if (updateData.otp) {
+      if (!existingBooking.otp) {
+        errors.push("No OTP available for this booking");
+      } else if (updateData.otp !== existingBooking.otp) {
+        errors.push("Invalid OTP provided");
+      } else {
+        // OTP is valid
+        filteredUpdateData.otp_verified = true;
+        filteredUpdateData.otp_verified_at = new Date();
+
+        // Handle specific status transitions that require OTP
+        if (
+          updateData.status === "arrived" &&
+          existingBooking.status === "accepted"
+        ) {
+          filteredUpdateData.status = "arrived";
+          filteredUpdateData.arrivedAt = new Date();
+        } else if (
+          updateData.status === "started" &&
+          (existingBooking.status === "arrived" ||
+            existingBooking.status === "accepted")
+        ) {
+          filteredUpdateData.status = "started";
+          filteredUpdateData.startedAt = new Date();
+        }
+      }
+    }
+
     // Handle status updates specifically
     if (updateData.status) {
       // Customers can only cancel pending or assigned bookings
@@ -180,6 +225,26 @@ export async function PUT(
         } else {
           filteredUpdateData.status = "cancelled";
           filteredUpdateData.cancelledAt = new Date();
+        }
+      } else if (driver) {
+        // Driver allowed status transitions
+        if (updateData.status === "completed") {
+          if (existingBooking.status !== "started") {
+            errors.push("Booking can only be completed after it has started");
+          } else {
+            filteredUpdateData.status = "completed";
+            filteredUpdateData.completedAt = new Date();
+          }
+        } else if (["arrived", "started"].includes(updateData.status)) {
+          // These are handled by OTP check above.
+          // If we reach here and it wasn't handled (e.g. no OTP was provided), throw error.
+          if (!updateData.otp) {
+            errors.push(
+              `OTP is required to change status to "${updateData.status}"`,
+            );
+          }
+        } else if (updateData.status !== existingBooking.status) {
+          errors.push(`Invalid status update to "${updateData.status}"`);
         }
       } else if (updateData.status !== existingBooking.status) {
         errors.push(`Customers cannot change status to "${updateData.status}"`);
@@ -198,8 +263,24 @@ export async function PUT(
       { new: true, runValidators: true },
     )
       .populate("customerDetails", "name email phone")
-      .populate("driverDetails", "name vehicleNumber phone")
+      .populate("driverDetails")
       .populate("package_type", "name description price");
+
+    // If booking was completed, update driver earnings and clear active alerts
+    if (
+      updatedBooking?.status === "completed" &&
+      existingBooking.status !== "completed"
+    ) {
+      if (
+        updatedBooking.driverDetails?._id &&
+        updatedBooking.fare_details?.driver_charge
+      ) {
+        await Driver.findByIdAndUpdate(updatedBooking.driverDetails._id, {
+          $inc: { total_earnings: updatedBooking.fare_details.driver_charge },
+          $set: { activeAlerts: null, currentBooking: null },
+        });
+      }
+    }
 
     // If booking was cancelled, send notification
     if (filteredUpdateData.status === "cancelled") {
@@ -244,7 +325,10 @@ export async function PUT(
     // Handle specific Mongoose errors
     if (error.name === "ValidationError") {
       const errors = Object.values(error.errors).map((err: any) => err.message);
-      return NextResponse.json({ success: false, errors }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: errors },
+        { status: 400 },
+      );
     }
 
     if (error.name === "CastError") {

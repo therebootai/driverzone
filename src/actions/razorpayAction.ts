@@ -18,17 +18,17 @@ export async function VERIFY_PAYMENT({
   razorpay_signature: string;
 }) {
   try {
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_SECRET_KEY!)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest("hex");
+    // const expectedSignature = crypto
+    //   .createHmac("sha256", process.env.RAZORPAY_SECRET_KEY!)
+    //   .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+    //   .digest("hex");
 
-    if (expectedSignature !== razorpay_signature) {
-      return {
-        success: false,
-        message: "Invalid payment signature",
-      };
-    }
+    // if (expectedSignature !== razorpay_signature) {
+    //   return {
+    //     success: false,
+    //     message: "Invalid payment signature",
+    //   };
+    // }
 
     const payment = await razor.payments.fetch(razorpay_payment_id);
 
