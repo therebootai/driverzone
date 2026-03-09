@@ -175,6 +175,7 @@ const ZoneMap = ({
         )}
 
         <MapController
+          center={defaultCenter}
           onMapClick={(latlng) => console.log("Map clicked:", latlng)}
         />
       </MapContainer>

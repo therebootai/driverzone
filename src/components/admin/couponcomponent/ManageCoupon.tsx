@@ -1,18 +1,17 @@
+"use client";
 import { CouponFormState } from "@/types/types";
-import React, { useState } from "react";
-import SidePopUpSlider from "../SidePopup";
+import React, { useState, useEffect } from "react";
+import { useQueryParamsAdvanced } from "@/hooks/useQueryParamsAdvanced";
+import SidePopup from "@/ui/SidePopup";
 import ViewCoupon from "./ViewCoupon";
 import { deleteCoupon, updateCouponStatus } from "@/actions/couponActions";
 import AddCoupon from "./AddCoupon";
-import PaginationBox from "../PaginationBox";
 
 const ManageCoupon = ({
   allCoupon,
-  pagination,
   fetchData,
 }: {
   allCoupon: CouponFormState[];
-  pagination: any;
   fetchData: any;
 }) => {
   const [selectedCoupon, setSelectedCoupon] = useState<CouponFormState | null>(
@@ -20,6 +19,23 @@ const ManageCoupon = ({
   );
   const [showView, setShowView] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+
+  const { getParam, updateFilters } = useQueryParamsAdvanced();
+  const viewId = getParam("view");
+
+  useEffect(() => {
+    if (viewId && allCoupon) {
+      const coupon = allCoupon.find(
+        (c: any) => String(c._id) === viewId || c.coupon_id === viewId
+      );
+      if (coupon) {
+        setSelectedCoupon(coupon);
+        setShowView(true);
+      }
+    } else {
+      setShowView(false);
+    }
+  }, [viewId, allCoupon]);
 
   const formatDateToDDMMYYYY = (input: string | Date) => {
     const date = typeof input === "string" ? new Date(input) : input;
@@ -100,6 +116,7 @@ const ManageCoupon = ({
                 onClick={() => {
                   setSelectedCoupon(item);
                   setShowView(true);
+                  updateFilters("view", String((item as any)._id || item.coupon_id));
                 }}
               >
                 View
@@ -125,25 +142,27 @@ const ManageCoupon = ({
           </div>
         ))}
       </div>
-      <PaginationBox pagination={pagination} prefix="/coupon" />
-
       {showView && (
-        <SidePopUpSlider
+        <SidePopup
           showPopUp={showView}
-          handleClose={() => setShowView(false)}
+          handleClose={() => {
+            setShowView(false);
+            updateFilters("view", "");
+          }}
         >
           <ViewCoupon
             coupon={selectedCoupon}
             onClose={() => {
               setShowView(false);
               setSelectedCoupon(null);
+              updateFilters("view", "");
             }}
           />
-        </SidePopUpSlider>
+        </SidePopup>
       )}
 
       {showEdit && selectedCoupon && (
-        <SidePopUpSlider
+        <SidePopup
           showPopUp={showEdit}
           handleClose={() => {
             setShowEdit(false);
@@ -163,7 +182,7 @@ const ManageCoupon = ({
               setSelectedCoupon(null);
             }}
           />
-        </SidePopUpSlider>
+        </SidePopup>
       )}
     </div>
   );

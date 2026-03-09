@@ -1,8 +1,9 @@
 "use client";
 import { DriverDocument } from "@/types/types";
-import React, { useState } from "react";
-import PaginationBox from "../PaginationBox";
-import SidePopUpSlider from "../SidePopup";
+import React, { useState, useEffect } from "react";
+import { useQueryParamsAdvanced } from "@/hooks/useQueryParamsAdvanced";
+import PaginationBox from "@/ui/PaginationBox";
+import SidePopup from "@/ui/SidePopup";
 import AddAndEditDriver from "./AddAndEditDriver";
 import { deleteDriver, updateDriverStatus } from "@/actions/driverActions";
 import ViewDriver from "./ViewDriver";
@@ -19,6 +20,23 @@ const ManageDriver = ({
   );
   const [showView, setShowView] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+
+  const { getParam, updateFilters } = useQueryParamsAdvanced();
+  const viewId = getParam("view");
+
+  useEffect(() => {
+    if (viewId && allDrivers) {
+      const driver = allDrivers.find(
+        (d: any) => String(d._id) === viewId || d.driver_id === viewId,
+      );
+      if (driver) {
+        setSelectedDriver(driver);
+        setShowView(true);
+      }
+    } else {
+      setShowView(false);
+    }
+  }, [viewId, allDrivers]);
 
   const formatDateToDDMMYYYY = (input: string | Date) => {
     const date = typeof input === "string" ? new Date(input) : input;
@@ -123,6 +141,7 @@ const ManageDriver = ({
                 onClick={() => {
                   setSelectedDriver(item);
                   setShowView(true);
+                  updateFilters("view", String(item?._id as string));
                 }}
               >
                 View
@@ -148,17 +167,20 @@ const ManageDriver = ({
           </div>
         ))}
       </div>
-      <PaginationBox pagination={pagination} prefix="/driver-management" />
+      <PaginationBox pagination={pagination} baseUrl="/driver-management" />
       {showView && selectedDriver && (
-        <SidePopUpSlider
+        <SidePopup
           showPopUp={showView}
-          handleClose={() => setShowView(false)}
+          handleClose={() => {
+            setShowView(false);
+            updateFilters("view", "");
+          }}
         >
           <ViewDriver driver={selectedDriver} />
-        </SidePopUpSlider>
+        </SidePopup>
       )}
       {showEdit && selectedDriver && (
-        <SidePopUpSlider
+        <SidePopup
           showPopUp={showEdit}
           handleClose={() => {
             setShowEdit(false);
@@ -172,7 +194,7 @@ const ManageDriver = ({
               setSelectedDriver(null);
             }}
           />
-        </SidePopUpSlider>
+        </SidePopup>
       )}
     </div>
   );

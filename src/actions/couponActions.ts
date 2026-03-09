@@ -48,11 +48,17 @@ export async function getAllCoupon({
   limit = 20,
   searchTerm,
   status,
+  coupon_type,
+  startDate,
+  endDate,
 }: {
   page: number;
   limit: number;
   searchTerm?: string;
   status?: boolean;
+  coupon_type?: string;
+  startDate?: string;
+  endDate?: string;
 }) {
   try {
     await connectToDatabase();
@@ -66,6 +72,26 @@ export async function getAllCoupon({
 
     if (typeof status === "boolean") {
       andConditions.push({ status });
+    }
+
+    if (coupon_type && coupon_type.trim() !== "") {
+      andConditions.push({ coupon_type });
+    }
+
+    if (startDate || endDate) {
+      const dateQuery: any = {};
+      
+      if (startDate) {
+        dateQuery.$gte = new Date(startDate);
+      }
+      
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        dateQuery.$lte = end;
+      }
+      
+      andConditions.push({ coupon_ExpiryDate: dateQuery });
     }
 
     if (searchTerm && searchTerm.trim() !== "") {

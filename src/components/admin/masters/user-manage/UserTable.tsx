@@ -2,9 +2,10 @@
 
 import { DELETEUSER, UPDATEUSER } from "@/actions/userActions";
 import TableComponent from "../../../../ui/TableComponent";
-import { useState } from "react";
 import { UserTypes } from "@/types/types";
-import SidePopUpSlider from "../../SidePopup";
+import { useQueryParamsAdvanced } from "@/hooks/useQueryParamsAdvanced";
+import { useState, useEffect } from "react";
+import SidePopup from "@/ui/SidePopup";
 import ViewUser from "./ViewUser";
 import UserForm from "./UserForm";
 
@@ -16,6 +17,23 @@ export default function UserTable({
   const [selectedUser, setSelectedUser] = useState<UserTypes | null>(null);
   const [showView, setShowView] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+
+  const { getParam, updateFilters } = useQueryParamsAdvanced();
+  const viewId = getParam("view");
+
+  useEffect(() => {
+    if (viewId && users) {
+      const user = users.find(
+        (u) => String(u._id) === viewId || String(u.user_id) === viewId
+      );
+      if (user) {
+        setSelectedUser(user as unknown as UserTypes);
+        setShowView(true);
+      }
+    } else {
+      setShowView(false);
+    }
+  }, [viewId, users]);
 
   async function handleStatus(id: string, status: boolean) {
     try {
@@ -67,6 +85,7 @@ export default function UserTable({
                 onClick={() => {
                   setSelectedUser(item as unknown as UserTypes);
                   setShowView(true);
+                  updateFilters("view", String(item._id));
                 }}
               >
                 View
@@ -95,9 +114,12 @@ export default function UserTable({
       />
 
       {showView && (
-        <SidePopUpSlider
+        <SidePopup
           showPopUp={showView}
-          handleClose={() => setShowView(false)}
+          handleClose={() => {
+            setShowView(false);
+            updateFilters("view", "");
+          }}
         >
           <ViewUser
             user={selectedUser}
@@ -106,11 +128,11 @@ export default function UserTable({
               setSelectedUser(null);
             }}
           />
-        </SidePopUpSlider>
+        </SidePopup>
       )}
 
       {showEdit && (
-        <SidePopUpSlider
+        <SidePopup
           showPopUp={showEdit}
           handleClose={() => setShowEdit(false)}
         >
@@ -123,7 +145,7 @@ export default function UserTable({
               }}
             />
           </div>
-        </SidePopUpSlider>
+        </SidePopup>
       )}
     </section>
   );

@@ -1,10 +1,9 @@
 import { createCoupon, updateCoupon } from "@/actions/couponActions";
 import { getAllCustomers } from "@/actions/customerActions";
-import { CouponFormState, customerTypes } from "@/types/types";
-import React, { useEffect, useMemo, useState } from "react";
+import { CouponFormState } from "@/types/types";
+import React, { useEffect, useState } from "react";
 import { DateRange, RangeKeyDict } from "react-date-range";
-import "react-date-range/dist/styles.css";
-import "react-date-range/dist/theme/default.css";
+
 import AsyncSelect from "react-select/async";
 
 interface AddCouponProps {
