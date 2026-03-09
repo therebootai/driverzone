@@ -160,38 +160,37 @@ export class PriorityAlertService {
    */
   private async sendAlertsToDrivers(alert: any, drivers: any[]): Promise<void> {
     try {
-      for (let i = 0; i < drivers.length; i++) {
-        const driver = drivers[i];
-
+      // Only send alert to the first driver initially
+      if (drivers.length > 0) {
+        const firstDriver = drivers[0];
+        
         // Add driver to assigned list
         alert.assignedDrivers.push({
-          driverId: driver._id,
+          driverId: firstDriver._id,
           assignedAt: new Date(),
           response: "pending",
         });
 
-        // Add alert to driver's active alerts
-        driver.activeAlerts.push({
+        // Set alert as driver's active alert
+        firstDriver.activeAlerts = {
           bookingId: alert.booking_id,
           alertSentAt: new Date(),
           expiresAt: alert.expiresAt,
           status: "pending",
-        });
+        };
 
-        await driver.save();
+        await firstDriver.save();
 
-        // Send push notification
-        await this.sendDriverAlert(driver, alert);
-      }
+        // Send push notification to the first driver
+        await this.sendDriverAlert(firstDriver, alert);
 
-      alert.currentDriverIndex = 0;
-      await alert.save();
+        alert.currentDriverIndex = 0;
+        await alert.save();
 
-      // Set timeout for first driver response
-      if (drivers[0]) {
+        // Set timeout for first driver response
         this.setResponseTimeout(
           alert._id.toString(),
-          drivers[0]._id.toString(),
+          firstDriver._id.toString(),
         );
       }
     } catch (error) {
@@ -220,7 +219,9 @@ export class PriorityAlertService {
         data: {
           type: "ride_request",
           alertId: alert.alert_id,
-          bookingId: booking.booking_id,
+          _id: booking._id?.toString(),
+          bookingId: booking.booking_id, // Keeping matching key for potential compatibility
+          booking_id: booking.booking_id,
           pickupAddress: booking.pickupAddress,
           dropAddress: booking.dropAddress,
           fare: booking.fare?.toString(),
@@ -257,9 +258,21 @@ export class PriorityAlertService {
     response: "accepted" | "rejected",
   ): Promise<boolean> {
     try {
-      const alert = await Alert.findById(alertId);
-      if (!alert || alert.status !== "active") {
-        return false;
+      const alert = await Alert.findOne({
+        $or: [
+          {
+            _id: mongoose.Types.ObjectId.isValid(alertId)
+              ? new mongoose.Types.ObjectId(alertId)
+              : null,
+          },
+          { alert_id: alertId },
+        ],
+      });
+
+      if (!alert || (alert.status !== "active" && response !== "rejected")) {
+        // Allow rejection of non-active alerts to clean up, but only if they exist
+        if (!alert) return false;
+        if (alert.status !== "active") return false;
       }
 
       // Find driver in assigned list
@@ -278,12 +291,11 @@ export class PriorityAlertService {
       }
 
       // Update driver's alert status
-      const alertIndex = driver.activeAlerts.findIndex(
-        (a) => a.bookingId.toString() === alert.booking_id.toString(),
-      );
-
-      if (alertIndex !== -1) {
-        driver.activeAlerts[alertIndex].status =
+      if (
+        driver.activeAlerts &&
+        driver.activeAlerts.bookingId.toString() === alert.booking_id.toString()
+      ) {
+        driver.activeAlerts.status =
           response === "accepted" ? "accepted" : "rejected";
 
         if (response === "rejected") {
@@ -341,11 +353,11 @@ export class PriorityAlertService {
       // Update driver's current booking
       driver.currentBooking = alert.booking_id;
       // Update driver's alert status to accepted
-      const activeAlertIndex = driver.activeAlerts.findIndex(
-        (a: any) => a.bookingId.toString() === alert.booking_id.toString(),
-      );
-      if (activeAlertIndex !== -1) {
-        driver.activeAlerts[activeAlertIndex].status = "accepted";
+      if (
+        driver.activeAlerts &&
+        driver.activeAlerts.bookingId.toString() === alert.booking_id.toString()
+      ) {
+        driver.activeAlerts.status = "accepted";
       }
       await driver.save();
 
@@ -370,14 +382,32 @@ export class PriorityAlertService {
 
       // Check if we have more drivers in the current batch
       if (alert.currentDriverIndex < alert.assignedDrivers.length) {
-        const nextDriver = alert.assignedDrivers[alert.currentDriverIndex];
+        const nextDriverData = alert.assignedDrivers[alert.currentDriverIndex];
 
-        if (nextDriver.response === "pending") {
-          // Set timeout for next driver
-          this.setResponseTimeout(
-            alert._id.toString(),
-            nextDriver.driverId.toString(),
-          );
+        if (nextDriverData.response === "pending") {
+          // Fetch the driver to send alert and set activeAlerts
+          const driver = await Driver.findById(nextDriverData.driverId);
+          if (driver) {
+            driver.activeAlerts = {
+              bookingId: alert.booking_id,
+              alertSentAt: new Date(),
+              expiresAt: alert.expiresAt,
+              status: "pending",
+            };
+            await driver.save();
+            
+            // Send push notification to the next driver
+            await this.sendDriverAlert(driver, alert);
+
+            // Set timeout for next driver
+            this.setResponseTimeout(
+              alert._id.toString(),
+              nextDriverData.driverId.toString(),
+            );
+          } else {
+            // Driver not found, skip to next
+            await this.moveToNextDriver(alert);
+          }
         } else {
           // Driver already responded, skip to next
           await this.moveToNextDriver(alert);
@@ -452,13 +482,14 @@ export class PriorityAlertService {
       alert.status = "expired";
       await alert.save();
 
-      // Update booking status
+      // Update booking status - User requested to keep it pending
       const booking = await Booking.findById(alert.booking_id);
       if (booking && booking.status === "pending") {
-        booking.status = "cancelled";
-        booking.cancelReason = "No drivers available";
-        booking.cancelledAt = new Date();
-        await booking.save();
+        // booking.status = "cancelled"; // Keeping it pending as per request
+        // booking.cancelReason = "No drivers available";
+        // booking.cancelledAt = new Date();
+        // await booking.save();
+        console.log(`Alert ${alert._id} expired, booking ${booking._id} remains pending.`);
       }
 
       // Clear driver active alerts
@@ -466,8 +497,8 @@ export class PriorityAlertService {
       await Driver.updateMany(
         { _id: { $in: driverIds } },
         {
-          $pull: {
-            activeAlerts: { bookingId: alert.booking_id },
+          $set: {
+            activeAlerts: null,
           },
         },
       );
@@ -514,11 +545,12 @@ export class PriorityAlertService {
         // Update driver's alert status
         const driver = await Driver.findById(driverId);
         if (driver) {
-          const alertIndex = driver.activeAlerts.findIndex(
-            (a) => a.bookingId.toString() === alert.booking_id.toString(),
-          );
-          if (alertIndex !== -1) {
-            driver.activeAlerts[alertIndex].status = "expired";
+          if (
+            driver.activeAlerts &&
+            driver.activeAlerts.bookingId.toString() ===
+              alert.booking_id.toString()
+          ) {
+            driver.activeAlerts.status = "expired";
             await driver.save();
           }
         }
@@ -572,10 +604,14 @@ export class PriorityAlertService {
             },
           });
 
-          // Remove alert from driver's active alerts
-          driver.activeAlerts = driver.activeAlerts.filter(
-            (a: any) => a.bookingId.toString() !== alert.booking_id.toString(),
-          );
+          // Clear alert from driver's active alerts
+          if (
+            driver.activeAlerts &&
+            driver.activeAlerts.bookingId.toString() ===
+              alert.booking_id.toString()
+          ) {
+            driver.activeAlerts = null;
+          }
           await driver.save();
         }
       }
@@ -611,8 +647,8 @@ export class PriorityAlertService {
       await Driver.updateMany(
         { _id: { $in: driverIds } },
         {
-          $pull: {
-            activeAlerts: { bookingId: alert.booking_id },
+          $set: {
+            activeAlerts: null,
           },
         },
       );
