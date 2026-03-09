@@ -300,37 +300,39 @@ const AddAndEditDriver = ({
             </select>
           </div>
 
-          {/* Vehicle Transmission Type (checkbox group) */}
+          {/* Vehicle Transmission Type */}
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-gray-700">
+            <label className="text-sm font-medium text-gray-700">
               Vehicle Transmission Type
-            </span>
-            <div className="flex items-center gap-4 text-sm text-gray-700">
-              <label className="inline-flex items-center gap-1">
-                <input
-                  type="checkbox"
-                  name="vehicle_transmission_type"
-                  value="Automatic"
-                  defaultChecked={selectedDriver?.vehicle_transmission_type?.includes(
-                    "Automatic",
-                  )}
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-                Automatic
-              </label>
-              <label className="inline-flex items-center gap-1">
-                <input
-                  type="checkbox"
-                  name="vehicle_transmission_type"
-                  value="Manual"
-                  defaultChecked={selectedDriver?.vehicle_transmission_type?.includes(
-                    "Manual",
-                  )}
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-                Manual
-              </label>
-            </div>
+            </label>
+            <select
+              name="vehicle_transmission_type"
+              defaultValue={
+                selectedDriver?.vehicle_transmission_type?.includes(
+                  "Automatic+Manual",
+                ) ||
+                (selectedDriver?.vehicle_transmission_type?.includes(
+                  "Automatic",
+                ) &&
+                  selectedDriver?.vehicle_transmission_type?.includes("Manual"))
+                  ? "Automatic+Manual"
+                  : selectedDriver?.vehicle_transmission_type?.includes(
+                        "Automatic",
+                      )
+                    ? "Automatic"
+                    : selectedDriver?.vehicle_transmission_type?.includes(
+                          "Manual",
+                        )
+                      ? "Manual"
+                      : ""
+              }
+              className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+            >
+              <option value="">Select</option>
+              <option value="Automatic">Automatic</option>
+              <option value="Manual">Manual</option>
+              <option value="Automatic+Manual">Both</option>
+            </select>
           </div>
 
           {/* Vehicle Category Type (checkbox group) */}

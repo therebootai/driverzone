@@ -374,8 +374,8 @@ const ManageBooking = ({
             setIsLoading(false);
             return;
           }
-          updateData.driverDetails = selectedDriver;
-          updateData.status = "assigned";
+          updateData.driverDetails = selectedDriver as any;
+          updateData.status = "assigned" as any;
           break;
 
         case "update_status":

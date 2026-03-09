@@ -642,13 +642,24 @@ export async function updateBooking(
     }
 
     // Validate OTP if required
-    if (options.validateOtp && updateData.otp_verified !== undefined) {
-      if (updateData.otp_verified && !existingBooking.otp) {
+    if (options.validateOtp && updateData.otp) {
+      if (!existingBooking.otp) {
         validationErrors.push("No OTP available for verification");
-      }
+      } else if (updateData.otp !== existingBooking.otp) {
+        validationErrors.push("Invalid OTP provided");
+      } else {
+        // OTP matches
+        updateObject.otp_verified = true;
+        updateObject.otp_verified_at = new Date();
 
-      if (updateData.otp_verified && existingBooking.otp_verified) {
-        validationErrors.push("OTP already verified");
+        // If status is not provided, but we are verifying OTP,
+        // it usually means we are transitioning to 'arrived' or 'started'
+        // For this specific task, if OTP is verified, we should probably set status to 'arrived'
+        // if it's currently 'accepted'.
+        if (!updateData.status && existingBooking.status === "accepted") {
+          updateObject.status = "arrived";
+          updateObject.arrivedAt = new Date();
+        }
       }
     }
 
@@ -893,21 +904,22 @@ export async function updateBooking(
         const driver = (await Driver.findById(driverIdStr)) as any;
         if (driver) {
           // Add to activeAlerts
-          const existingAlertIndex = driver.activeAlerts.findIndex(
-            (a: any) =>
-              a.bookingId.toString() === updatedBooking?._id?.toString(),
-          );
-
-          if (existingAlertIndex === -1) {
-            driver.activeAlerts.push({
+          if (
+            !driver.activeAlerts ||
+            driver.activeAlerts.bookingId.toString() !==
+              updatedBooking?._id?.toString()
+          ) {
+            driver.activeAlerts = {
               bookingId: updatedBooking._id,
               alertSentAt: new Date(),
               expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 mins
               status: "accepted",
-            });
+            };
           } else {
-            driver.activeAlerts[existingAlertIndex].status = "accepted";
+            driver.activeAlerts.status = "accepted";
           }
+          driver.markModified("activeAlerts");
+          driver.currentBooking = updatedBooking._id;
           await driver.save();
         }
 
@@ -953,7 +965,7 @@ export async function updateBooking(
               : (updatedBooking.driverDetails as any)._id;
 
           await Driver.findByIdAndUpdate(driverIdToCleanup, {
-            $pull: { activeAlerts: { bookingId: updatedBooking._id } },
+            $set: { activeAlerts: null, currentBooking: null },
           });
         }
       } catch (cleanupError) {

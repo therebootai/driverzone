@@ -1,6 +1,7 @@
 import Customers from "@/models/Customers";
 import Drivers from "@/models/Drivers";
 import Users from "@/models/Users";
+import Booking from "@/models/Booking";
 import jwt from "jsonwebtoken";
 
 export function generateToken(payload: any): string | null {
@@ -67,7 +68,17 @@ export const verifyDriverToken = async (token: string) => {
     // Verify the token and decode it
     const decoded = jwt.verify(token, process.env.SECRET_KEY);
     const userId = (decoded as { userId: string }).userId;
-    const user = await Drivers.findById(userId).select("-password").lean();
+    //@ts-ignore
+    const user = await Drivers.findById(userId)
+      .select("-password")
+      .populate({
+        path: "currentBooking",
+        populate: {
+          path: "customerDetails",
+          select: "name mobile_number email profile_picture",
+        },
+      })
+      .lean();
     if (!user) {
       throw new Error("User not found");
     }
