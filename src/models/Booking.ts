@@ -46,6 +46,7 @@ export interface BookingDocument extends Document {
 
   driverRating?: number;
   customerRating?: number;
+  customerTags?: string[];
 
   package_type: any;
 
@@ -156,6 +157,7 @@ const bookingSchema = new Schema<BookingDocument>(
 
     driverRating: { type: Number },
     customerRating: { type: Number },
+    customerTags: [{ type: String }],
 
     package_type: {
       type: mongoose.Schema.Types.ObjectId,
