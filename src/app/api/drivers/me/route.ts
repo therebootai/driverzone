@@ -40,11 +40,18 @@ export async function GET(request: NextRequest) {
     });
 
     const accept_rate = totalAlerts > 0 ? Math.round((acceptedAlerts / totalAlerts) * 100) : 0;
+    
+    // Find active booking
+    const currentBooking = await Booking.findOne({
+      driverDetails: user._id,
+      status: { $in: ["accepted", "arrived", "started"] }
+    }).populate("customerDetails package_type coupon").lean();
 
     const userWithStats = {
       ...user,
       total_rides,
       accept_rate,
+      currentBooking: currentBooking || null,
     };
 
     return NextResponse.json({ user: userWithStats, success: true }, { status: 200 });
@@ -185,10 +192,17 @@ export async function PUT(request: NextRequest) {
 
     const accept_rate = totalAlerts > 0 ? Math.round((acceptedAlerts / totalAlerts) * 100) : 0;
 
+    // Find active booking for updated user
+    const currentBooking = await Booking.findOne({
+      driverDetails: updatedUser._id,
+      status: { $in: ["accepted", "arrived", "started"] }
+    }).populate("customerDetails package_type coupon").lean();
+
     const userWithStats = {
       ...updatedUser,
       total_rides,
       accept_rate,
+      currentBooking: currentBooking || null,
     };
 
     return NextResponse.json(
