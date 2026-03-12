@@ -792,6 +792,7 @@ export async function updateBooking(
       "cancelReason",
       "driverRating",
       "customerRating",
+      "customerTags",
       "package_type",
       "schedule_date",
       "schedule_time",
@@ -950,6 +951,30 @@ export async function updateBooking(
           "Failed to send driver assignment notification:",
           notifError,
         );
+      }
+    }
+
+    // If customer rating is provided, update the customer's average rating
+    if (options.updateCustomerRating && updateData.customerRating && updatedBooking.customerDetails) {
+      try {
+        const customerId = updatedBooking.customerDetails._id;
+        const customer = await Customer.findById(customerId);
+        if (customer) {
+          const newRating = Number(updateData.customerRating);
+          const currentAvg = customer.average_rating || 0;
+          const currentCount = customer.total_ratings || 0;
+          
+          const newCount = currentCount + 1;
+          const newAvg = ((currentAvg * currentCount) + newRating) / newCount;
+          
+          customer.average_rating = Number(newAvg.toFixed(2));
+          customer.total_ratings = newCount;
+          customer.rating = newAvg.toFixed(1); // Keep string version for UI compatibility
+          
+          await customer.save();
+        }
+      } catch (ratingError) {
+        console.error("Failed to update customer rating:", ratingError);
       }
     }
 

@@ -32,11 +32,13 @@ export const verifyToken = async (token: string) => {
     }
 
     return user;
-  } catch (err) {
-    console.error(
-      "Invalid or expired token:",
-      err instanceof Error ? err.message : err,
-    );
+  } catch (err: any) {
+    if (err.message !== "User not found") {
+      console.error(
+        "Invalid or expired token:",
+        err instanceof Error ? err.message : err,
+      );
+    }
     return null;
   }
 };
@@ -53,11 +55,13 @@ export const verifyCustomerToken = async (token: string) => {
     }
 
     return user;
-  } catch (err) {
-    console.error(
-      "Invalid or expired token:",
-      err instanceof Error ? err.message : err,
-    );
+  } catch (err: any) {
+    if (err.message !== "User not found") {
+      console.error(
+        "Invalid or expired token:",
+        err instanceof Error ? err.message : err,
+      );
+    }
     return null;
   }
 };
@@ -84,11 +88,13 @@ export const verifyDriverToken = async (token: string) => {
     }
 
     return user;
-  } catch (err) {
-    console.error(
-      "Invalid or expired token:",
-      err instanceof Error ? err.message : err,
-    );
+  } catch (err: any) {
+    if (err.message !== "User not found") {
+      console.error(
+        "Invalid or expired token:",
+        err instanceof Error ? err.message : err,
+      );
+    }
     return null;
   }
 };
