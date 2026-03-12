@@ -5,6 +5,11 @@ import Customer from "@/models/Customers";
 import { verifyCustomerToken, verifyDriverToken } from "@/utils/jwt";
 import { isValidObjectId } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import mongoose from "mongoose";
+
+dayjs.extend(customParseFormat);
 
 const RESTRICTED_FIELDS = ["booking_id", "driverDetails", "customerDetails"];
 
@@ -215,6 +220,45 @@ export async function PUT(
       }
     }
 
+    // Handle overtime driver charge calculation
+    if (filteredUpdateData.arrivedAt || filteredUpdateData.otp_verified_at) {
+      const checkTime =
+        filteredUpdateData.arrivedAt || filteredUpdateData.otp_verified_at;
+      if (
+        existingBooking.schedule_date &&
+        existingBooking.schedule_time &&
+        existingBooking.package_type
+      ) {
+        const scheduleDate = dayjs(existingBooking.schedule_date).format(
+          "YYYY-MM-DD",
+        );
+        const scheduleDateTime = dayjs(
+          `${scheduleDate} ${existingBooking.schedule_time}`,
+          "YYYY-MM-DD hh:mm A",
+        );
+
+        if (dayjs(checkTime).isAfter(scheduleDateTime)) {
+          const delayInMinutes = dayjs(checkTime).diff(
+            scheduleDateTime,
+            "minute",
+          );
+          if (delayInMinutes > 0) {
+            const pkg = await mongoose
+              .model("Package")
+              .findById(existingBooking.package_type);
+            if (pkg && pkg.over_time_driver_charge) {
+              const overtimeCharge =
+                delayInMinutes * pkg.over_time_driver_charge;
+              filteredUpdateData["fare_details.over_time_driver_charge"] =
+                overtimeCharge;
+              filteredUpdateData.fare =
+                (existingBooking.fare || 0) + overtimeCharge;
+            }
+          }
+        }
+      }
+    }
+
     // Handle status updates specifically
     if (updateData.status) {
       // Customers can only cancel pending or assigned bookings
@@ -276,8 +320,11 @@ export async function PUT(
         updatedBooking.driverDetails?._id &&
         updatedBooking.fare_details?.driver_charge
       ) {
+        const overtimeCharge = updatedBooking.fare_details.over_time_driver_charge || 0;
         await Driver.findByIdAndUpdate(updatedBooking.driverDetails._id, {
-          $inc: { total_earnings: updatedBooking.fare_details.driver_charge },
+          $inc: { 
+            total_earnings: updatedBooking.fare_details.driver_charge - overtimeCharge 
+          },
           $set: { activeAlerts: null, currentBooking: null },
         });
       }
