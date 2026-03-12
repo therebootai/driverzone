@@ -9,6 +9,8 @@ export interface customerDocument extends Document {
   sos_mobile_number?: string;
   address?: string;
   rating?: string;
+  average_rating?: number;
+  total_ratings?: number;
   reg_date?: string;
   profile_picture?: {
     public_id: string;
@@ -52,6 +54,8 @@ const customerSchema = new Schema<customerDocument>(
       type: String,
     },
     rating: { type: String },
+    average_rating: { type: Number, default: 0 },
+    total_ratings: { type: Number, default: 0 },
     reg_date: {
       type: String,
       default: Date.now,

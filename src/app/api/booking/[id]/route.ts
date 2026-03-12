@@ -42,6 +42,8 @@ const ALLOWED_FIELDS = [
   "insurance",
   "otp",
   "status",
+  "customerRating",
+  "customerTags",
 ];
 
 export async function GET(
@@ -59,7 +61,8 @@ export async function GET(
     })
       .populate("driverDetails")
       .populate("package_type")
-      .populate("coupon");
+      .populate("coupon")
+      .populate("customerDetails");
 
     if (!requestedBooking) {
       return NextResponse.json(
