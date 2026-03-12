@@ -8,16 +8,26 @@ import React, { Suspense } from "react";
 const DriverManagement = async ({
   searchParams,
 }: {
-  searchParams: Promise<{ page: string; search?: string; status?: string }>;
+  searchParams: Promise<{
+    page: string;
+    search?: string;
+    status?: string;
+    isOnline?: string;
+    verified?: string;
+  }>;
 }) => {
   await authorizeAccess("driver_management");
-  const { page, search, status } = await searchParams;
+  const { page, search, status, isOnline, verified } = await searchParams;
 
   const { data, paginations } = await getAllDriver({
     page: Number(page),
     limit: 20,
     searchTerm: search,
     status: status === "true" ? true : status === "false" ? false : undefined,
+    isOnline:
+      isOnline === "true" ? true : isOnline === "false" ? false : undefined,
+    verified:
+      verified === "true" ? true : verified === "false" ? false : undefined,
   });
 
   return (

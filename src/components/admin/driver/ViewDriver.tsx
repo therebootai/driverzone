@@ -1,15 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { DriverDocument } from "@/types/types";
+import { DriverDocument, BookingTypes } from "@/types/types";
 import Link from "next/link";
-
-const Field = ({ label, value }: { label: string; value?: any }) => (
-  <div className="flex flex-col mb-3">
-    <span className="text-xs text-gray-500">{label}</span>
-    <span className="text-sm font-medium text-gray-900">{value || "-"}</span>
-  </div>
-);
+import Field from "@/ui/Field";
+import { useEffect, useState } from "react";
+import { getBookings } from "@/actions/bookingAction";
 
 const FilePreview = ({ file }: any) => {
   if (!file?.secure_url)
@@ -43,67 +39,195 @@ const FilePreview = ({ file }: any) => {
 const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
   const vd = driver.vehicle_details;
 
+  const [bookings, setBookings] = useState<BookingTypes[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+
+  const fetchBookings = async (pageNum: number, isInitial = false) => {
+    if (!driver._id) return;
+
+    if (isInitial) setLoading(true);
+    else setLoadingMore(true);
+
+    try {
+      const res = await getBookings({
+        driverId: driver._id.toString(),
+        page: pageNum,
+        limit: 12,
+      });
+
+      if (res.success) {
+        if (isInitial) {
+          setBookings(res.data);
+        } else {
+          setBookings((prev: BookingTypes[]) => [...prev, ...res.data]);
+        }
+        setHasNextPage(res.paginations.hasNextPage);
+      }
+    } catch (error) {
+      console.error("Failed to fetch bookings:", error);
+    } finally {
+      if (isInitial) setLoading(false);
+      else setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBookings(1, true);
+  }, [driver._id]);
+
+  useEffect(() => {
+    if (page > 1) {
+      fetchBookings(page);
+    }
+  }, [page]);
+
+  // Infinite Scroll Observer
+  useEffect(() => {
+    if (loading || !hasNextPage || loadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !loadingMore) {
+          setPage((prev: number) => prev + 1);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    const target = document.getElementById("scroll-trigger");
+    if (target) observer.observe(target);
+
+    return () => observer.disconnect();
+  }, [loading, hasNextPage, loadingMore]);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "completed":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "cancelled":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "started":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "accepted":
+      case "assigned":
+      case "arrived":
+        return "bg-indigo-100 text-indigo-800 border-indigo-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
   return (
     <div className="p-5 w-full max-h-screen overflow-y-auto">
-      <h1 className="text-lg font-semibold text-gray-900 mb-4">
-        Driver Details
-      </h1>
+      <h1 className="text-xl font-bold text-gray-900 mb-6">Driver Details</h1>
 
       {/* ========== DRIVER BASIC INFO ========== */}
-      <div className="grid grid-cols-2 gap-4 bg-white p-4 rounded-lg border shadow-sm">
-        <Field label="Driver Name" value={driver.driver_name} />
-        <Field label="Mobile Number" value={driver.mobile_number} />
-        <Field label="Emergency Number" value={driver.emergency_number} />
-        <Field label="City / Area" value={driver.city_area} />
-        <Field label="Address" value={driver.address} />
-        <Field label="Landmark" value={driver.landmark} />
-        <Field label="Pin Code" value={driver.pin_code} />
-        <Field label="Employment Type" value={driver.employment_type} />
-        <Field label="Remarks" value={driver.remarks} />
+      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-8">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+          Basic Information
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Field label="Driver Name" value={driver.driver_name} />
+          <Field label="Mobile Number" value={driver.mobile_number} />
+          <Field label="Emergency Number" value={driver.emergency_number} />
+          <Field label="City / Area" value={driver.city_area} />
+          <Field label="Address" value={driver.address} />
+          <Field label="Landmark" value={driver.landmark} />
+          <Field label="Pin Code" value={driver.pin_code} />
+          <Field label="Employment Type" value={driver.employment_type} />
+          <Field label="Remarks" value={driver.remarks} />
+          <Field
+            label="Verified"
+            value={
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  driver.verified
+                    ? "bg-green-100 text-green-700"
+                    : "bg-red-100 text-red-700"
+                }`}
+              >
+                {driver.verified ? "Verified" : "Unverified"}
+              </span>
+            }
+          />
+          <Field
+            label="Status"
+            value={
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  driver.status
+                    ? "bg-green-100 text-green-700"
+                    : "bg-red-100 text-red-700"
+                }`}
+              >
+                {driver.status ? "Active" : "Inactive"}
+              </span>
+            }
+          />
+        </div>
       </div>
-      <div className=" grid grid-cols-2 gap-4">
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         {/* ========== IDENTITY INFO ========== */}
-        <div className=" flex flex-col gap-2">
-          <h2 className="text-md font-semibold mt-6 mb-2">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">
             Identity Information
           </h2>
-          <div className="bg-white p-4 rounded-lg border shadow-sm">
-            <Field label="Identity Type" value={driver.identity_id_type} />
-            <Field label="Identity Number" value={driver.identity_id_number} />
-            <div className=" flex justify-between items-center">
-                <div className=" flex flex-col gap-2">
-            <span className="text-xs font-medium text-gray-700">
-              Identity Proof
-            </span>
-            <FilePreview file={driver.identity_id_proof_url} />
-            </div>
-             <Link href={driver.identity_id_proof_url?.secure_url ?? ""} target="_blank" className=" text-sm font-semibold cursor-pointer">View Identity</Link>
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <div className="grid grid-cols-1 gap-4">
+              <Field label="Identity Type" value={driver.identity_id_type} />
+              <Field label="Identity Number" value={driver.identity_id_number} />
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium text-gray-700">
+                  Identity Proof
+                </span>
+                <FilePreview file={driver.identity_id_proof_url} />
+                <Link
+                  href={driver.identity_id_proof_url?.secure_url ?? ""}
+                  target="_blank"
+                  className="mt-2 text-sm font-semibold text-primary hover:underline inline-block"
+                >
+                  View Identity Full Document
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-        <div className=" flex flex-col gap-2">
-          {/* ========== LICENSE INFO ========== */}
-          <h2 className="text-md font-semibold mt-6 mb-2">
+
+        {/* ========== LICENSE INFO ========== */}
+        <div className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">
             Licence Information
           </h2>
-          <div className="bg-white p-4 rounded-lg border shadow-sm">
-            <Field label="Licence Number" value={driver.licence_no} />
-            <Field
-              label="Licence Expiry"
-              value={
-                driver.licence_expiry_date
-                  ? new Date(driver.licence_expiry_date).toLocaleDateString()
-                  : "-"
-              }
-            />
-            <div className=" flex justify-between items-center">
-                <div className=" flex flex-col gap-2">
-            <span className="text-xs font-medium text-gray-700">
-              Licence Document
-            </span>
-            <FilePreview file={driver.licence_file_url} />
-            </div>
-            <Link href={driver.licence_file_url?.secure_url ?? ""} target="_blank" className=" text-sm font-semibold cursor-pointer">View Document</Link>
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <div className="grid grid-cols-1 gap-4">
+              <Field label="Licence Number" value={driver.licence_no} />
+              <Field
+                label="Licence Expiry"
+                value={
+                  driver.licence_expiry_date
+                    ? new Date(driver.licence_expiry_date).toLocaleDateString()
+                    : "-"
+                }
+              />
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium text-gray-700">
+                  Licence Document
+                </span>
+                <FilePreview file={driver.licence_file_url} />
+                <Link
+                  href={driver.licence_file_url?.secure_url ?? ""}
+                  target="_blank"
+                  className="mt-2 text-sm font-semibold text-primary hover:underline inline-block"
+                >
+                  View Licence Full Document
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -111,94 +235,226 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
 
       {/* ========== VEHICLE DETAILS ========== */}
       {driver.employment_type === "Driver+Car" && vd && (
-        <>
-          <h2 className="text-md font-semibold mt-6 mb-2">Vehicle Details</h2>
-          <div className="bg-white p-4 rounded-lg border shadow-sm grid grid-cols-2 gap-4">
-            <Field label="Car Name" value={vd.car_name} />
-            <Field
-              label="Model Name & Number"
-              value={vd.model_name_and_number}
-            />
-            <Field label="Car Number" value={vd.car_number} />
-            <Field label="Registration Number" value={vd.reg_number} />
-            <Field label="Description" value={vd.desc} />
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Vehicle Details
+          </h2>
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Field label="Car Name" value={vd.car_name} />
+              <Field
+                label="Model Name & Number"
+                value={vd.model_name_and_number}
+              />
+              <Field label="Car Number" value={vd.car_number} />
+              <Field label="Registration Number" value={vd.reg_number} />
+              <Field label="Description" value={vd.desc} />
+            </div>
+
+            <div className="mt-8">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                Car Images & RC
+              </h3>
+              <div className="flex flex-wrap gap-4">
+                {vd.car_images_and_rc && vd.car_images_and_rc.length > 0 ? (
+                  vd.car_images_and_rc.map((img, index) => (
+                    <div key={index} className="group relative border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <Image
+                        src={img.secure_url}
+                        alt="car image"
+                        width={180}
+                        height={120}
+                        className="object-cover"
+                      />
+                      <Link
+                         href={img.secure_url}
+                         target="_blank"
+                         className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity"
+                      >
+                        View Full
+                      </Link>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">No car images uploaded.</p>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Car Images */}
-          <h3 className="text-sm font-semibold mt-4">Car Images & RC</h3>
-          <div className="flex flex-wrap gap-3 mt-2">
-            {vd.car_images_and_rc && vd.car_images_and_rc.length > 0 ? (
-              vd.car_images_and_rc.map((img, index) => (
-                <div key={index} className="border rounded-md p-1">
-                  <Image
-                    src={img.secure_url}
-                    alt="car image"
-                    width={120}
-                    height={120}
-                    className="rounded-md object-cover"
-                  />
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-gray-500">No car images uploaded.</p>
-            )}
-          </div>
-
-          {/* Insurance, Road Tax, Pollution */}
-          <h2 className="text-md font-semibold mt-6 mb-2">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Insurance & Documents
           </h2>
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="flex flex-col gap-4">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Insurance</h3>
+              <Field label="Insurance Number" value={vd.insurance_number} />
+              <Field
+                label="Insurance Expiry"
+                value={
+                  vd.insurance_expiry
+                    ? new Date(vd.insurance_expiry).toLocaleDateString()
+                    : "-"
+                }
+              />
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium text-gray-700">Document Preview</span>
+                <FilePreview file={vd.insurance_document} />
+              </div>
+            </div>
 
-          <div className="bg-white p-4 rounded-lg border shadow-sm grid grid-cols-2 gap-4">
-            {/* Insurance */}
-            <Field label="Insurance Number" value={vd.insurance_number} />
-            <Field
-              label="Insurance Expiry"
-              value={
-                vd.insurance_expiry
-                  ? new Date(vd.insurance_expiry).toLocaleDateString()
-                  : "-"
-              }
-            />
-            <span className="text-xs font-medium text-gray-700 col-span-2">
-              Insurance Document
-            </span>
-            <FilePreview file={vd.insurance_document} />
+            <div className="flex flex-col gap-4 border-l border-gray-100 pl-8">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Road Tax</h3>
+              <Field label="Road Tax Number" value={vd.road_tax_number} />
+              <Field
+                label="Road Tax Expiry"
+                value={
+                  vd.road_tax_expiry
+                    ? new Date(vd.road_tax_expiry).toLocaleDateString()
+                    : "-"
+                }
+              />
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium text-gray-700">Document Preview</span>
+                <FilePreview file={vd.road_tax_document} />
+              </div>
+            </div>
 
-            {/* Road Tax */}
-            <Field label="Road Tax Number" value={vd.road_tax_number} />
-            <Field
-              label="Road Tax Expiry"
-              value={
-                vd.road_tax_expiry
-                  ? new Date(vd.road_tax_expiry).toLocaleDateString()
-                  : "-"
-              }
-            />
-            <span className="text-xs font-medium text-gray-700 col-span-2">
-              Road Tax Document
-            </span>
-            <FilePreview file={vd.road_tax_document} />
-
-            {/* Pollution */}
-            <Field label="Pollution Number" value={vd.pollution_number} />
-            <Field
-              label="Pollution Expiry"
-              value={
-                vd.pollution_expiry
-                  ? new Date(vd.pollution_expiry).toLocaleDateString()
-                  : "-"
-              }
-            />
-            <span className="text-xs font-medium text-gray-700 col-span-2">
-              Pollution Document
-            </span>
-            <FilePreview file={vd.pollution_document} />
+            <div className="flex flex-col gap-4 border-l border-gray-100 pl-8">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pollution (PUC)</h3>
+              <Field label="Pollution Number" value={vd.pollution_number} />
+              <Field
+                label="Pollution Expiry"
+                value={
+                  vd.pollution_expiry
+                    ? new Date(vd.pollution_expiry).toLocaleDateString()
+                    : "-"
+                }
+              />
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium text-gray-700">Document Preview</span>
+                <FilePreview file={vd.pollution_document} />
+              </div>
+            </div>
           </div>
-        </>
+        </div>
       )}
+
+      {/* ========== DRIVER BOOKINGS ========== */}
+      <div className="mt-8 border-t pt-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          Recent Bookings
+        </h2>
+
+        {loading ? (
+          <div className="flex items-center justify-center p-12 bg-white rounded-xl border border-dashed border-gray-300">
+            <svg
+              className="animate-spin -ml-1 mr-3 h-6 w-6 text-primary"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span className="text-gray-500 font-medium">
+              Loading bookings...
+            </span>
+          </div>
+        ) : bookings.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {bookings.map((booking: BookingTypes) => (
+
+                <Link
+                  key={booking._id}
+                  href={`/admin/booking-management?view=${booking._id}`}
+                  className="group block bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:border-primary hover:shadow-md transition-all duration-200"
+                >
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono text-gray-400 group-hover:text-primary transition-colors">
+                        ID: {booking._id}
+                      </span>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(
+                          booking.status,
+                        )}`}
+                      >
+                        {booking.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-semibold text-gray-700 group-hover:text-gray-900">
+                        {booking.tripType} - ₹{booking.fare}
+                      </div>
+                      <div className="text-[10px] text-gray-400">
+                        {new Date(booking.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Scroll Trigger */}
+            <div id="scroll-trigger" className="h-10 w-full" />
+
+            {/* Loading More Indicator */}
+            {loadingMore && (
+              <div className="flex items-center justify-center py-6">
+                <svg
+                  className="animate-spin h-5 w-5 text-primary mr-2"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <span className="text-gray-500 text-sm font-medium">
+                  Loading more...
+                </span>
+              </div>
+            )}
+
+            {!hasNextPage && bookings.length > 5 && (
+              <div className="text-center py-8 text-gray-400 text-xs italic">
+                You've reached the end of the list
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center p-12 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+            <p className="text-gray-500">No bookings found for this driver.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
+
 
 export default ViewDriver;
