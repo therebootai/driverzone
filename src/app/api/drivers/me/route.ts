@@ -119,7 +119,7 @@ export async function PUT(request: NextRequest) {
     }
     
 
-    for (const [key, value] of formData.entries()) {
+    for (const key of formData.keys()) {
       // Skip already processed image fields
       if (
         key === "avatar" ||
@@ -130,14 +130,18 @@ export async function PUT(request: NextRequest) {
         continue;
 
       // Handle other fields
-      if (key === "currentLocation" && typeof value === "string") {
+      if (key.endsWith("[]")) {
+        const actualKey = key.slice(0, -2);
+        updateData[actualKey] = formData.getAll(key);
+      } else if (key === "currentLocation" && typeof formData.get(key) === "string") {
+        const value = formData.get(key) as string;
         try {
           updateData[key] = JSON.parse(value);
         } catch (e) {
           updateData[key] = value;
         }
       } else {
-        updateData[key] = value;
+        updateData[key] = formData.get(key);
       }
     }
 
