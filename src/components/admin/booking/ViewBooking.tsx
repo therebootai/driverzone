@@ -4,6 +4,7 @@ import { BookingTypes } from "@/types/types";
 import SidePopup from "@/ui/SidePopup";
 import Field from "@/ui/Field";
 import dayjs from "dayjs";
+import Link from "next/link";
 
 interface ViewBookingProps {
   booking: BookingTypes | null;
@@ -120,7 +121,17 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
               Customer Info
             </h3>
             <div className="flex flex-col gap-3">
-              <Field label="Name" value={booking.customerDetails?.name || "-"} />
+              <Field
+                label="Name"
+                value={
+                  <Link
+                    href={`/admin/customer-management?view=${booking.customerDetails?._id}`}
+                    className="text-blue-600 hover:underline"
+                  >
+                    {booking.customerDetails?.name || "-"}
+                  </Link>
+                }
+              />
               <Field label="Phone" value={booking.customerDetails?.mobile_number || "-"} />
               <Field label="Email" value={booking.customerDetails?.email || "-"} />
               {booking.customerRating !== undefined && (
@@ -134,7 +145,21 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
               Driver Info
             </h3>
             <div className="flex flex-col gap-3">
-              <Field label="Name" value={booking.driverDetails?.driver_name || "Unassigned"} />
+              <Field
+                label="Name"
+                value={
+                  booking.driverDetails ? (
+                    <Link
+                      href={`/admin/driver-management?view=${booking.driverDetails._id}`}
+                      className="text-blue-600 hover:underline"
+                    >
+                      {booking.driverDetails.driver_name}
+                    </Link>
+                  ) : (
+                    "Unassigned"
+                  )
+                }
+              />
               {booking.driverDetails && (
                 <>
                   <Field label="Phone" value={booking.driverDetails.mobile_number || "-"} />

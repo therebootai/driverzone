@@ -731,7 +731,7 @@ export async function updateBooking(
       if (typeof updateData.driverDetails === "string") {
         driverIdString = updateData.driverDetails;
       } else if (updateData.driverDetails instanceof Types.ObjectId) {
-        driverIdString = updateData.driverDetails.toString();
+        driverIdString = updateData.driverDetails?.toString();
       } else {
         // Handle case where it might be an ObjectId-like object
         driverIdString = String(updateData.driverDetails);
@@ -746,7 +746,7 @@ export async function updateBooking(
     if (
       updateData.customerDetails &&
       updateData.customerDetails.toString() !==
-        existingBooking.customerDetails.toString()
+        existingBooking.customerDetails?.toString()
     ) {
       validationErrors.push("Cannot change customer for existing booking");
     }
@@ -907,7 +907,7 @@ export async function updateBooking(
           // Add to activeAlerts
           if (
             !driver.activeAlerts ||
-            driver.activeAlerts.bookingId.toString() !==
+            driver.activeAlerts.bookingId?.toString() !==
               updatedBooking?._id?.toString()
           ) {
             driver.activeAlerts = {
