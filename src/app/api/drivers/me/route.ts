@@ -132,7 +132,20 @@ export async function PUT(request: NextRequest) {
       // Handle other fields
       if (key.endsWith("[]")) {
         const actualKey = key.slice(0, -2);
-        updateData[actualKey] = formData.getAll(key);
+        const values = formData.getAll(key);
+        // Clean each value: if it's a string that looks like a JSON array, parse it.
+        const cleanedValues = values.flatMap((v: any) => {
+          if (typeof v === "string" && v.startsWith("[") && v.endsWith("]")) {
+            try {
+              const parsed = JSON.parse(v);
+              return Array.isArray(parsed) ? parsed : v;
+            } catch (e) {
+              return v;
+            }
+          }
+          return v;
+        });
+        updateData[actualKey] = cleanedValues;
       } else if (key === "currentLocation" && typeof formData.get(key) === "string") {
         const value = formData.get(key) as string;
         try {
