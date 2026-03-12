@@ -306,7 +306,7 @@ export async function PUT(
 
     // Update booking
     const updatedBooking = await Booking.findByIdAndUpdate(
-      bookingId,
+      existingBooking._id,
       { $set: filteredUpdateData },
       { new: true, runValidators: true },
     )
