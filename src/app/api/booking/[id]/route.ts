@@ -283,6 +283,15 @@ export async function PUT(
             filteredUpdateData.status = "completed";
             filteredUpdateData.completedAt = new Date();
           }
+        } else if (updateData.status === "accepted") {
+          if (existingBooking.status !== "assigned") {
+            errors.push(
+              'Booking can only be accepted when it is in "assigned" status',
+            );
+          } else {
+            filteredUpdateData.status = "accepted";
+            filteredUpdateData.acceptedAt = new Date();
+          }
         } else if (["arrived", "started"].includes(updateData.status)) {
           // These are handled by OTP check above.
           // If we reach here and it wasn't handled (e.g. no OTP was provided), throw error.
