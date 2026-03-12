@@ -38,9 +38,9 @@ export async function createDriver(formData: FormData) {
       remarks: formData.get("remarks"),
       status: true,
 
-      vehicle_transmission_type: formData.get(
+      vehicle_transmission_type: (formData.get(
         "vehicle_transmission_type",
-      ) as string,
+      ) as string) || "Automatic+Manual",
       vehicle_category_type: formData.getAll(
         "vehicle_category_type",
       ) as string[],
@@ -338,9 +338,9 @@ export async function updateDriver(driverId: string, formData: FormData) {
     }
 
     // 4. Arrays: transmission & category
-    const vehicle_transmission_type = formData.get(
+    const vehicle_transmission_type = (formData.get(
       "vehicle_transmission_type",
-    ) as string;
+    ) as string) || "Automatic+Manual";
     driver.vehicle_transmission_type = vehicle_transmission_type;
 
     const vehicle_category_type = formData.getAll(

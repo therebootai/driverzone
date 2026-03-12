@@ -27,6 +27,7 @@ function calculateTotalFare(booking: any): number {
 
   if (booking.fare_details) {
     total += booking.fare_details.over_time_customer_charge || 0;
+    total += booking.fare_details.over_time_driver_charge || 0;
     total += booking.fare_details.early_morning_charge || 0;
     total += booking.fare_details.late_night_charge || 0;
   }
@@ -106,8 +107,8 @@ export async function createBooking(data: any): Promise<BookingDocument> {
         company_charge: data.company_charge,
         driver_charge: data.driver_charge,
         fooding_charge: data.fooding_charge,
-        over_time_customer_charge: data.over_time_customer_charge,
-        over_time_driver_charge: data.over_time_driver_charge,
+        over_time_customer_charge: 0,
+        over_time_driver_charge: 0,
         early_morning_charge: data.early_morning_charge,
         late_night_charge: data.late_night_charge,
       },
