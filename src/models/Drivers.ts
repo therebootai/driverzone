@@ -198,7 +198,7 @@ const driverSchema = new Schema<DriverDocument>(
     vehicle_transmission_type: {
       type: String,
       enum: ["Automatic", "Manual", "Automatic+Manual"],
-      default: [],
+      default: "Automatic+Manual",
     },
 
     vehicle_category_type: {

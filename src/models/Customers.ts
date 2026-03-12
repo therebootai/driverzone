@@ -54,6 +54,7 @@ const customerSchema = new Schema<customerDocument>(
     rating: { type: String },
     reg_date: {
       type: String,
+      default: Date.now,
     },
     profile_picture: {
       public_id: { type: String },
@@ -82,7 +83,7 @@ const customerSchema = new Schema<customerDocument>(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 customerSchema.pre("save", async function (next) {
@@ -99,7 +100,7 @@ customerSchema.pre("save", async function (next) {
 });
 
 customerSchema.methods.matchPassword = async function (
-  enteredPassword: string
+  enteredPassword: string,
 ): Promise<boolean> {
   return bcrypt.compare(enteredPassword, this.password);
 };
