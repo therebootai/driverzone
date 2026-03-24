@@ -85,10 +85,9 @@ export class PriorityAlertService {
       const booking = alert.booking_id as any;
 
       // Find available drivers within radius
-      // Issue #6: Only exclude drivers who REJECTED the ride.
-      // Drivers who timed out (response: 'timeout') can be retried in the next batch.
+      // Exclude ALL drivers who have already been assigned to this alert.
+      // This forces the system to move to the next nearby driver if the first one doesn't respond.
       const excludedDriverIds = alert.assignedDrivers
-        .filter((d: any) => d.response === "rejected" || d.response === "accepted")
         .map((d: any) => d.driverId);
 
       const drivers = await this.findAvailableDrivers(
