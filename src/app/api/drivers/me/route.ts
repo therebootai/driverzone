@@ -156,10 +156,16 @@ export async function PUT(request: NextRequest) {
       } else if (key === "currentLocation" && typeof formData.get(key) === "string") {
         const value = formData.get(key) as string;
         try {
-          updateData[key] = JSON.parse(value);
+          const parsed = JSON.parse(value);
+          if (parsed && parsed.lastUpdated) {
+            parsed.lastUpdated = new Date(parsed.lastUpdated);
+          }
+          updateData[key] = parsed;
         } catch (e) {
           updateData[key] = value;
         }
+      } else if (key === "currentLocation.lastUpdated") {
+        updateData[key] = new Date(formData.get(key) as string);
       } else {
         updateData[key] = formData.get(key);
       }
