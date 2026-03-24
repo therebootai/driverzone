@@ -5,7 +5,7 @@ import { verifyCustomerToken, verifyDriverToken } from "@/utils/jwt";
 import Booking from "@/models/Booking";
 import { VERIFY_PAYMENT } from "@/actions/razorpayAction";
 import Customer from "@/models/Customers";
-import { PriorityAlertService } from "@/actions/alertActions";
+import { alertService } from "@/services/alertService";
 
 export async function POST(req: Request) {
   try {
@@ -111,7 +111,6 @@ export async function POST(req: Request) {
       );
     }
 
-    const alertService = PriorityAlertService.getInstance();
     await alertService.initializeAlert(newBooking._id as string);
 
     return NextResponse.json(
