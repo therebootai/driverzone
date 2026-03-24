@@ -11,6 +11,8 @@ export default function HomeHero() {
             width={1400}
             height={666}
             className="rounded-t-4xl"
+            priority // Critical for LCP
+            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 1400px"
           />
           <div className="absolute top-0 left-0 size-full flex items-end justify-center bg-gradient-to-b from-white/0 to-white/80">
             <div className="font-bold xl:text-5xl md:text-4xl text-3xl text-center xl:my-14 md:my-7 my-3.5 text-site-black max-w-[30ch]">
@@ -23,3 +25,4 @@ export default function HomeHero() {
     </header>
   );
 }
+
