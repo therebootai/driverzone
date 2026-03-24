@@ -165,6 +165,14 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    if (updateData.fcmToken) {
+      // Remove this fcmToken from any other driver record
+      await Drivers.updateMany(
+        { _id: { $ne: user._id }, fcmToken: updateData.fcmToken },
+        { $unset: { fcmToken: "" } }
+      );
+    }
+
     const updatedUser = await Drivers.findOneAndUpdate(
       { _id: user._id },
       { $set: updateData },
