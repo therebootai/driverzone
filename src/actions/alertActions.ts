@@ -230,12 +230,12 @@ export class PriorityAlertService {
         },
         data: {
           type: "ride_request",
-          alertId: (alert._id as any).toString(), // Added alertId
-          alertSlug: alert.alert_id, // Added alert slug
+          alertId: (alert._id as any).toString(), 
+          alertSlug: alert.alert_id, 
           bookingId: (booking._id as any).toString(),
           pickupAddress: booking.pickupAddress,
           dropAddress: booking.dropAddress,
-          fare: booking.fare.toString(),
+          fare: (booking.fare || "").toString(),
           customerName: booking.customerDetails?.name || "Customer",
           customerMobile: booking.customerDetails?.mobile_number || "", 
           distance: booking.distance?.toString() || "", 
@@ -263,9 +263,28 @@ export class PriorityAlertService {
         },
       };
 
-      await sendPushNotification(payload);
+      try {
+        await sendPushNotification(payload);
+        console.log(`Notification sent to driver ${driver.driver_name} (${driver._id})`);
+      } catch (error: any) {
+        const errorMsg = error?.message || String(error);
+        console.error(`FCM SEND ERROR for driver ${driver._id}:`, errorMsg);
+        
+        // Handle stale/invalid tokens (404 Not Found in FCM v1)
+        if (errorMsg.includes("Requested entity was not found") || 
+            errorMsg.includes("registration-token-not-registered") ||
+            errorMsg.includes("404")) {
+          console.warn(`Cleaning up invalid FCM token for driver ${driver._id}`);
+          // Use the actual Drivers model for update
+          const DriverModel = (await import("@/models/Drivers")).default;
+          await DriverModel.findByIdAndUpdate(driver._id, { $unset: { fcmToken: "" } });
+        }
+        
+        // We re-throw or handle based on strategy. 
+        // Since this is an async background task, we'll let it be caught by the outer try-catch.
+      }
     } catch (error) {
-      console.error("Error sending driver alert:", error);
+      console.error("Error in sendDriverAlert wrapper:", error);
     }
   }
 
