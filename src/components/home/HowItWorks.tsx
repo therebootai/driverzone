@@ -54,7 +54,10 @@ export default function HowItWorks() {
                   className={`${
                     !isActive ? "grayscale-100 h-96" : "h-[26rem] grayscale-0"
                   } select-none`}
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 200px"
+                  priority={index < 2} // Preload the first two images in the swiper
                 />
+
               )}
             </SwiperSlide>
           ))}

@@ -1,7 +1,7 @@
 "use client";
 
 import SidePopup from "@/ui/SidePopup";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiPlusCircle } from "react-icons/fi";
 import { IoSearch } from "react-icons/io5";
 import AddNewZone from "./AddNewZone";
@@ -10,7 +10,16 @@ import { useQueryParamsAdvanced } from "@/hooks/useQueryParamsAdvanced";
 export default function ZoneHeader() {
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
 
-  const { updateFilters } = useQueryParamsAdvanced();
+  const { updateFilters, getParam } = useQueryParamsAdvanced();
+  const [localSearch, setLocalSearch] = useState(getParam("search") || "");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      updateFilters("search", localSearch);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [localSearch, updateFilters]);
 
   return (
     <>
@@ -34,7 +43,8 @@ export default function ZoneHeader() {
             <IoSearch className="text-site-black size-5" />
             <input
               type="text"
-              onChange={(e) => updateFilters("search", e.target.value)}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
               placeholder="Search by name"
               className="h-[2.5rem] text-sm outline-none placeholder:text-site-black flex-1 capitalize placeholder:capitalize"
             />

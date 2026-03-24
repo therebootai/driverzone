@@ -122,6 +122,7 @@ export type DriverDocument = {
 
   employment_type?: "Driver" | "Driver+Car" | "Other";
   remarks?: string;
+  maxDistance?: number;
 
   vehicle_details?: VehicleDetails;
 

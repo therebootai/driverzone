@@ -85,24 +85,28 @@ export async function GET(req: NextRequest) {
       groupBy = "month";
     }
 
-    const currentBookings = await Booking.find({
-      driverDetails: driver._id,
-      status: "completed",
-      completedAt: { $gte: startDate, $lte: endDate },
-    });
+    // Optimization: Use MongoDB Aggregation for all major metrics in a single pass
+    const statsResult = await Booking.aggregate([
+      {
+        $match: {
+          driverDetails: new mongoose.Types.ObjectId(driver._id),
+          status: "completed",
+          completedAt: { $gte: startDate, $lte: endDate },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total_earnings: { $sum: "$fare_details.driver_charge" },
+          total_trips: { $sum: 1 },
+          total_duration: { $sum: "$duration" },
+        },
+      },
+    ]);
 
-    const prevBookingsCount = await Booking.countDocuments({
-      driverDetails: driver._id,
-      status: "completed",
-      completedAt: { $gte: prevStartDate, $lte: prevEndDate },
-    });
+    const { total_earnings = 0, total_trips = 0, total_duration = 0 } = statsResult[0] || {};
 
-    const total_earnings = currentBookings.reduce(
-      (acc, b) => acc + (b.fare_details?.driver_charge || 0),
-      0,
-    );
-
-    const prevTotalEarnings = await Booking.aggregate([
+    const prevStatsResult = await Booking.aggregate([
       {
         $match: {
           driverDetails: new mongoose.Types.ObjectId(driver._id),
@@ -113,66 +117,92 @@ export async function GET(req: NextRequest) {
       {
         $group: {
           _id: null,
-          total: { $sum: "$fare_details.driver_charge" },
+          total_earnings: { $sum: "$fare_details.driver_charge" },
         },
       },
     ]);
 
-    const prev_earnings = prevTotalEarnings[0]?.total || 0;
+    const prev_earnings = prevStatsResult[0]?.total_earnings || 0;
     const percentage_change = prev_earnings === 0 ? 100 : ((total_earnings - prev_earnings) / prev_earnings) * 100;
 
-    // Generate Graph Data
+    // Generate Graph Data using Aggregation
+    let graphAgg: any[] = [];
+    if (filter === "today") {
+      graphAgg = await Booking.aggregate([
+        {
+          $match: {
+            driverDetails: new mongoose.Types.ObjectId(driver._id),
+            status: "completed",
+            completedAt: { $gte: startDate, $lte: endDate },
+          },
+        },
+        {
+          $group: {
+            _id: { $hour: "$completedAt" },
+            value: { $sum: "$fare_details.driver_charge" },
+          },
+        },
+      ]);
+    } else {
+      graphAgg = await Booking.aggregate([
+        {
+          $match: {
+            driverDetails: new mongoose.Types.ObjectId(driver._id),
+            status: "completed",
+            completedAt: { $gte: startDate, $lte: endDate },
+          },
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$completedAt" } },
+            value: { $sum: "$fare_details.driver_charge" },
+          },
+        },
+      ]);
+    }
+
+    // Process graph data into labels
     let graph_data: { label: string; value: number }[] = [];
     if (filter === "today") {
-      const hours = [6, 10, 14, 18, 22]; // 6 AM, 10 AM, 2 PM, 6 PM, 10 PM
-      graph_data = hours.map((hour) => {
-        const label = hour > 12 ? `${hour - 12} PM` : hour === 12 ? "12 PM" : `${hour} AM`;
-        const value = currentBookings
-          .filter((b) => {
-            const h = new Date(b.completedAt).getHours();
-            return h >= hour && h < hour + 4;
-          })
-          .reduce((acc, b) => acc + (b.fare_details?.driver_charge || 0), 0);
-        return { label, value };
+      const hours = [6, 10, 14, 18, 22];
+      graph_data = hours.map((h) => {
+        const label = h > 12 ? `${h - 12} PM` : h === 12 ? "12 PM" : `${h} AM`;
+        const match = graphAgg.find((g) => g._id >= h && g._id < h + 4);
+        return { label, value: match ? match.value : 0 };
       });
     } else if (filter === "weekly") {
       const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       for (let i = 6; i >= 0; i--) {
         const date = new Date(baseDate);
         date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split("T")[0];
         const dayLabel = days[date.getDay()];
-        const value = currentBookings
-          .filter((b) => new Date(b.completedAt).toDateString() === date.toDateString())
-          .reduce((acc, b) => acc + (b.fare_details?.driver_charge || 0), 0);
-        graph_data.push({ label: dayLabel, value });
+        const match = graphAgg.find((g) => g._id === dateStr);
+        graph_data.push({ label: dayLabel, value: match ? match.value : 0 });
       }
     } else {
-      // For monthly, 3month, 6month - group by simpler chunks
+      // Monthly/3month/6month logic simplified to monthly buckets
       const now = new Date(baseDate);
       for (let i = 5; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const label = d.toLocaleString("default", { month: "short" });
-        const value = currentBookings
-          .filter((b) => {
-            const bd = new Date(b.completedAt);
-            return bd.getMonth() === d.getMonth() && bd.getFullYear() === d.getFullYear();
-          })
-          .reduce((acc, b) => acc + (b.fare_details?.driver_charge || 0), 0);
-        graph_data.push({ label, value });
+        const prefix = d.toISOString().split("-").slice(0, 2).join("-");
+        const match = graphAgg.filter((g) => g._id.startsWith(prefix)).reduce((acc, curr) => acc + curr.value, 0);
+        graph_data.push({ label, value: match });
       }
     }
 
-    // Active time (Total online hours) - Placeholder logic using trip durations
-    const totalDurationMinutes = currentBookings.reduce((acc, b) => acc + (b.duration || 0), 0);
-    const hours = Math.floor(totalDurationMinutes / 60);
-    const minutes = Math.floor(totalDurationMinutes % 60);
+    // Active time string
+    const hours = Math.floor(total_duration / 60);
+    const minutes = Math.floor(total_duration % 60);
     const active_time_str = `${hours}h ${minutes}m`;
+
 
     return NextResponse.json({
       success: true,
       data: {
         total_earnings,
-        total_trips: currentBookings.length,
+        total_trips,
         percentage_change: parseFloat(percentage_change.toFixed(1)),
         active_time: active_time_str,
         active_range: "5 AM - 10 PM", // Hardcoded per image
@@ -182,6 +212,7 @@ export async function GET(req: NextRequest) {
         filter,
       },
     });
+
   } catch (error: any) {
     console.error("Error in driver analytics API:", error);
     return NextResponse.json(
