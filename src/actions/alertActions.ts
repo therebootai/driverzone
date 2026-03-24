@@ -1,3 +1,4 @@
+"use server";
 import Alert, { AlertDocument } from "@/models/Alert";
 import Booking from "@/models/Booking";
 import Driver, { DriverDocument } from "@/models/Drivers";
@@ -41,21 +42,31 @@ export class PriorityAlertService {
       }
 
       // Check if alert already exists
-      const existingAlert = await Alert.findOne({ booking_id: booking._id });
-      if (existingAlert) {
-        return existingAlert;
+      let alert = await Alert.findOne({ booking_id: booking._id });
+      
+      if (alert) {
+        // If alert exists but not active, reset it to allow re-triggering
+        if (alert.status !== "active") {
+          alert.status = "active";
+          alert.radius = 10;
+          alert.retryCount = 0;
+          alert.assignedDrivers = [] as any;
+          alert.expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+          await alert.save();
+        }
+        return alert;
       }
 
       // Create new alert
-      const alert = new Alert({
+      alert = new Alert({
         alert_id: `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         booking_id: booking._id,
         status: "active",
         priorityLevel: 1,
         expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes expiry
-        maxRetries: 3,
+        maxRetries: 10, // Increased max retries for better availability
         retryCount: 0,
-        radius: 10, // Increased to 10km initial radius
+        radius: 10,
         maxDrivers: 10,
       });
 
@@ -238,8 +249,8 @@ export class PriorityAlertService {
           customerName: booking.customerDetails?.name || "Customer",
           customerMobile: booking.customerDetails?.mobile_number || "", 
           distance: booking.distance?.toString() || "", 
-          duration: booking.duration?.toString() || "", 
-          timeout: (alert.expiresAt.getTime() - Date.now() > 0 ? (alert.expiresAt.getTime() - Date.now()) / 1000 : 0).toString(), 
+          tripDuration: booking.duration?.toString() || "", 
+          duration: (alert.expiresAt.getTime() - Date.now() > 0 ? Math.floor((alert.expiresAt.getTime() - Date.now()) / 1000) : 30).toString(), 
         },
         android: {
           priority: "high" as const, 
@@ -722,4 +733,27 @@ export class PriorityAlertService {
   }
 }
 
-export default PriorityAlertService.getInstance();
+// Global instance for internal use
+const alertService = PriorityAlertService.getInstance();
+
+/**
+ * Server Action to manually trigger or retry an alert
+ */
+export async function triggerDriverAlert(bookingId: string) {
+  try {
+    const alert = await alertService.initializeAlert(bookingId);
+    
+    // If it was already active but we want to force a re-process of available drivers 
+    // (e.g. manual button click), we call processAlert directly.
+    if (alert.status === "active") {
+        await alertService.processAlert((alert._id as any).toString());
+    }
+    
+    return { success: true, message: "Alert triggered successfully", alertId: (alert._id as any).toString() };
+  } catch (error: any) {
+    console.error("Manual alert trigger failed:", error);
+    return { success: false, error: error.message || "Failed to trigger alert" };
+  }
+}
+
+export default alertService;

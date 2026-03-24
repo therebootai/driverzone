@@ -15,6 +15,7 @@ import {
   verifyBookingArrivalOTP,
 } from "@/actions/bookingAction";
 import { getAllDriver } from "@/actions/driverActions";
+import { triggerDriverAlert } from "@/actions/alertActions";
 import ViewBooking from "./ViewBooking";
 
 type UpdateActionType =
@@ -442,6 +443,26 @@ const ManageBooking = ({
     }
   };
 
+  // Manual Trigger Alert
+  const handleManualTrigger = async (bookingId: string) => {
+    setIsLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      const response = await triggerDriverAlert(bookingId);
+      if (response.success) {
+        setSuccess("Driver alert triggered successfully!");
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        setError(response.error || "Failed to trigger alert");
+      }
+    } catch (err: any) {
+      setError(err.message || "An error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Reset modal
   const resetModal = () => {
     setUpdateModal({ show: false, action: "assign_driver", bookingId: null });
@@ -468,6 +489,16 @@ const ManageBooking = ({
           className="px-3 py-1 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
         >
           Assign Driver
+        </button>,
+      );
+      actions.push(
+        <button
+          key="trigger"
+          onClick={() => handleManualTrigger(booking._id)}
+          disabled={isLoading}
+          className={`px-3 py-1 rounded bg-orange-600 text-white text-sm hover:bg-orange-700 transition-colors ${isLoading ? "opacity-50" : ""}`}
+        >
+          {isLoading ? "Triggering..." : "Trigger Alert"}
         </button>,
       );
     }
