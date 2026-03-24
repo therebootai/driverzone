@@ -107,7 +107,19 @@ const ViewCustomer = ({ customer }: { customer: customerTypes }) => {
           <Field label="Mobile Number" value={customer.mobile_number} />
           <Field label="SOS Mobile Number" value={customer.sos_mobile_number} />
           <Field label="Address" value={customer.address} />
-          <Field label="Registration Date" value={customer.reg_date} />
+          <Field
+            label="Registration Date"
+            value={
+              customer.reg_date
+                ? (isNaN(Number(customer.reg_date))
+                    ? new Date(customer.reg_date)
+                    : new Date(Number(customer.reg_date))
+                  ).toLocaleString("en-IN", {
+                    timeZone: "Asia/Kolkata",
+                  })
+                : ""
+            }
+          />
           <Field label="Total Spent" value={customer.total_spent} />
           <Field label="Rating" value={customer.rating} />
           <Field

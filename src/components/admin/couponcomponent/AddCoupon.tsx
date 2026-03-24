@@ -1,7 +1,7 @@
 import { createCoupon, updateCoupon } from "@/actions/couponActions";
 import { getAllCustomers } from "@/actions/customerActions";
 import { CouponFormState } from "@/types/types";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { DateRange, RangeKeyDict } from "react-date-range";
 
 import AsyncSelect from "react-select/async";
@@ -156,8 +156,52 @@ const AddCoupon: React.FC<AddCouponProps> = ({
         };
       }) || [];
 
-    setSelectedCustomerOptions(opts);
+  setSelectedCustomerOptions(opts);
   }, [initialData]);
+
+  const loadOptions = (
+    inputValue: string,
+    callback: (options: any[]) => void
+  ) => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+    timeoutRef.current = setTimeout(async () => {
+      if (!inputValue.trim()) {
+        callback([]);
+        return;
+      }
+
+      try {
+        const res = await getAllCustomers({
+          page: 1,
+          limit: 20,
+          searchTerm: inputValue,
+        });
+
+        if (!res?.success) {
+          callback([]);
+          return;
+        }
+
+        const options = res.data.map((cus: any) => ({
+          value: cus._id.toString(),
+          label: `${cus.name} (${cus.mobile_number})`,
+        }));
+        callback(options);
+      } catch (error) {
+        console.error(error);
+        callback([]);
+      }
+    }, 600);
+  };
+
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -351,22 +395,7 @@ const AddCoupon: React.FC<AddCouponProps> = ({
               cacheOptions
               defaultOptions={selectedCustomerOptions}
               value={selectedCustomerOptions}
-              loadOptions={async (inputValue: string) => {
-                if (!inputValue.trim()) return [];
-
-                const res = await getAllCustomers({
-                  page: 1,
-                  limit: 20,
-                  searchTerm: inputValue,
-                });
-
-                if (!res?.success) return [];
-
-                return res.data.map((cus: any) => ({
-                  value: cus._id.toString(),
-                  label: `${cus.name} (${cus.mobile_number})`,
-                }));
-              }}
+              loadOptions={loadOptions}
               onChange={(selected: any) => {
                 const safeSelected = selected || [];
 

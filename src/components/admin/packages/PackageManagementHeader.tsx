@@ -2,7 +2,7 @@
 
 import { useQueryParamsAdvanced } from "@/hooks/useQueryParamsAdvanced";
 import SidePopup from "@/ui/SidePopup";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiPlusCircle } from "react-icons/fi";
 import { IoSearch } from "react-icons/io5";
 import { PiMoneyWavy } from "react-icons/pi";
@@ -11,7 +11,31 @@ import PackageForm from "./PackageForm";
 export default function PackageManagementHeader() {
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
 
-  const { updateFilters } = useQueryParamsAdvanced();
+  const { updateFilters, getParam } = useQueryParamsAdvanced();
+  const [localSearch, setLocalSearch] = useState(getParam("search") || "");
+  const [localMinPrice, setLocalMinPrice] = useState(getParam("min_price") || "");
+  const [localMaxPrice, setLocalMaxPrice] = useState(getParam("max_price") || "");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      updateFilters("search", localSearch);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [localSearch, updateFilters]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      updateFilters("min_price", localMinPrice);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [localMinPrice, updateFilters]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      updateFilters("max_price", localMaxPrice);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [localMaxPrice, updateFilters]);
 
   return (
     <>
@@ -78,7 +102,8 @@ export default function PackageManagementHeader() {
             <IoSearch className="text-site-black size-5" />
             <input
               type="text"
-              onChange={(e) => updateFilters("search", e.target.value)}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
               placeholder="Search by name"
               className="h-[2.5rem] text-sm outline-none placeholder:text-site-black flex-1 capitalize placeholder:capitalize"
             />
@@ -87,7 +112,8 @@ export default function PackageManagementHeader() {
             <PiMoneyWavy className="text-site-black size-5" />
             <input
               type="number"
-              onChange={(e) => updateFilters("min_price", e.target.value)}
+              value={localMinPrice}
+              onChange={(e) => setLocalMinPrice(e.target.value)}
               placeholder="Filter by minimum price"
               className="h-[2.5rem] text-sm outline-none placeholder:text-site-black flex-1 capitalize placeholder:capitalize"
             />
@@ -96,7 +122,8 @@ export default function PackageManagementHeader() {
             <PiMoneyWavy className="text-site-black size-5" />
             <input
               type="number"
-              onChange={(e) => updateFilters("max_price", e.target.value)}
+              value={localMaxPrice}
+              onChange={(e) => setLocalMaxPrice(e.target.value)}
               placeholder="Filter by maximum price"
               className="h-[2.5rem] text-sm outline-none placeholder:text-site-black flex-1 capitalize placeholder:capitalize"
             />

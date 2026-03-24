@@ -1,6 +1,6 @@
 "use client";
 import { useQueryParamsAdvanced } from "@/hooks/useQueryParamsAdvanced";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { IoSearch, IoCalendarOutline, IoCloseOutline } from "react-icons/io5";
 import useClickOutside from "@/hooks/useClickOutside";
 
@@ -19,10 +19,18 @@ const BookingPageHeader = ({
   });
 
   const currentStatus = getParam("status") || "";
-  const currentSearch = getParam("search") || "";
   const currentTripType = getParam("tripType") || "";
   const currentStartDate = getParam("startDate") || "";
   const currentEndDate = getParam("endDate") || "";
+  const [localSearch, setLocalSearch] = useState(getParam("search") || "");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      updateFilters("search", localSearch);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [localSearch, updateFilters]);
 
   const formatDateForDisplay = () => {
     if (currentStartDate && currentEndDate) {
@@ -134,9 +142,9 @@ const BookingPageHeader = ({
             <IoSearch className="text-gray-400 size-5" />
             <input
               type="text"
-              value={currentSearch}
+              value={localSearch}
               placeholder="Search by name/mobile/id"
-              onChange={(e) => updateFilters("search", e.target.value)}
+              onChange={(e) => setLocalSearch(e.target.value)}
               className="h-full w-full text-sm outline-none placeholder:text-gray-400 text-site-black bg-transparent"
             />
           </div>
