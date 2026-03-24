@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AiOutlinePlusCircle } from "react-icons/ai";
 import SidePopup from "@/ui/SidePopup";
 import AddAndEditDriver from "./AddAndEditDriver";
@@ -13,9 +13,17 @@ const DriverHeader = () => {
   const { getParam, updateFilters } = useQueryParamsAdvanced();
 
   const status = getParam("status");
-  const searchTerm = getParam("search");
   const isOnline = getParam("isOnline");
   const verified = getParam("verified");
+  const [localSearch, setLocalSearch] = useState(getParam("search") || "");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      updateFilters("search", localSearch);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [localSearch, updateFilters]);
 
   function openAddPopup() {
     setPopupKey((k) => k + 1);
@@ -126,8 +134,8 @@ const DriverHeader = () => {
             <input
               type="text"
               placeholder="Search by Driver Name / Number"
-              value={searchTerm ?? ""}
-              onChange={(e) => updateFilters("search", e.target.value)}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
               className="h-[2.5rem] text-sm outline-none placeholder:text-site-black flex-1 capitalize placeholder:capitalize"
             />
           </div>

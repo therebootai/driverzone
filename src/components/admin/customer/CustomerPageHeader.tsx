@@ -15,7 +15,19 @@ const CustomerPageHeader = ({
   status?: any;
   setStatus?: any;
 }) => {
-  const { updateFilters } = useQueryParamsAdvanced();
+  const { updateFilters, getParam } = useQueryParamsAdvanced();
+  const [localSearch, setLocalSearch] = React.useState(getParam("search") || "");
+
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      updateFilters("search", localSearch);
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [localSearch, updateFilters]);
+
   return (
     <div className="w-full flex flex-row justify-between items-center">
       <div className=" flex flex-row gap-4">
@@ -41,7 +53,8 @@ const CustomerPageHeader = ({
             <input
               type="text"
               placeholder="Search by name/mobile"
-              onChange={(e) => updateFilters("search", e.target.value)}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
               className="h-[2.5rem] text-sm outline-none placeholder:text-site-black flex-1 capitalize placeholder:capitalize"
             />
           </div>

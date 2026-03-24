@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
+import { useDebounceCallback } from "./useDebounce";
 
 export const useQueryParamsAdvanced = () => {
   const router = useRouter();
@@ -22,6 +23,8 @@ export const useQueryParamsAdvanced = () => {
     [searchParams, router]
   );
 
+  const updateFiltersDebounced = useDebounceCallback(updateFilters, 500);
+
   const getParam = useCallback(
     (key: string) => {
       return searchParams.get(key);
@@ -39,6 +42,7 @@ export const useQueryParamsAdvanced = () => {
 
   return {
     updateFilters,
+    updateFiltersDebounced,
     getParam,
     getAllParams,
     clearAllParams,

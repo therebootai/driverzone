@@ -357,6 +357,20 @@ const AddAndEditDriver = ({
             </div>
           </div>
 
+          {/* Max Distance */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700">
+              Max Distance (km)
+            </label>
+            <input
+              name="max_distance"
+              type="number"
+              defaultValue={selectedDriver?.maxDistance ?? 20}
+              className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Enter max distance"
+            />
+          </div>
+
           {/* Remarks */}
           <div className="flex flex-col gap-1 md:col-span-3">
             <label className="text-sm font-medium text-gray-700">Remarks</label>

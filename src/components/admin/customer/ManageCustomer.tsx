@@ -67,7 +67,16 @@ const ManageCustomer = ({
           <tr key={String(item._id) || item.customer_id} className="even:bg-neutral-50">
             <td className="py-2">{item.name || ""}</td>
             <td className="py-2">{item.mobile_number || ""}</td>
-            <td className="py-2">{item.reg_date || ""}</td>
+            <td className="py-2">
+              {item.reg_date
+                ? (isNaN(Number(item.reg_date))
+                    ? new Date(item.reg_date)
+                    : new Date(Number(item.reg_date))
+                  ).toLocaleString("en-IN", {
+                    timeZone: "Asia/Kolkata",
+                  })
+                : ""}
+            </td>
             <td className="py-2">{item.total_spent || ""}</td>
             <td className="py-2">{item.rating || ""}</td>
             <td className="py-2">
@@ -96,9 +105,8 @@ const ManageCustomer = ({
               >
                 View
               </button>{" "}
-              |
-              <button className="cursor-pointer">Edit</button>|
-              <button className="cursor-pointer">Delete</button>
+              {/* <button className="cursor-pointer">Edit</button>| */}
+              {/* <button className="cursor-pointer">Delete</button> */}
             </td>
           </tr>
         ))}

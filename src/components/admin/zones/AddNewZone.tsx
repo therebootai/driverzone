@@ -4,7 +4,7 @@ import { CREATEZONE } from "@/actions/zoneActions";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import BasicInput from "@/ui/BasicInput";
 import dynamic from "next/dynamic";
-import { useActionState, useState } from "react";
+import { useActionState, useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { CiLocationOn } from "react-icons/ci";
 
@@ -43,9 +43,11 @@ export default function AddNewZone() {
     }
   };
 
-  const handleSearch = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!searchQuery.trim()) return;
+  const handleSearch = useCallback(async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
 
     setIsSearching(true);
     try {
@@ -57,16 +59,25 @@ export default function AddNewZone() {
       if (!response.ok) throw new Error("Search failed");
       const data = await response.json();
       setSearchResults(data);
-      if (data.length === 0) {
-        toast.error("No locations found");
-      }
     } catch (error) {
       console.error("Search error:", error);
       toast.error("Failed to search location");
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (searchQuery.trim()) {
+        handleSearch();
+      } else {
+        setSearchResults([]);
+      }
+    }, 800);
+
+    return () => clearTimeout(handler);
+  }, [searchQuery, handleSearch]);
 
   const handleSaveZone = async (prevState: any, formData: FormData) => {
     try {
