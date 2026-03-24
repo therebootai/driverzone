@@ -55,7 +55,7 @@ export class PriorityAlertService {
         expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes expiry
         maxRetries: 3,
         retryCount: 0,
-        radius: 5, // 5km initial radius
+        radius: 10, // Increased to 10km initial radius
         maxDrivers: 10,
       });
 
@@ -124,8 +124,8 @@ export class PriorityAlertService {
     allowRetryTimeout = false,
   ) {
     try {
-      // 5 minutes ago
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      // 30 minutes ago - increased from 5 minutes to be more lenient
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
 
       // Find online drivers
       const filter: any = {
@@ -133,10 +133,11 @@ export class PriorityAlertService {
         currentBooking: null,
         verified: true,
         status: true,
+        fcmToken: { $exists: true, $ne: "" }, // Ensure driver can receive push notifications
         _id: { $nin: excludedDriverIds },
         "currentLocation.lat": { $exists: true },
         "currentLocation.lng": { $exists: true },
-        "currentLocation.lastUpdated": { $gte: fiveMinutesAgo }, // Issue #7: Filter stagnant drivers
+        "currentLocation.lastUpdated": { $gte: thirtyMinutesAgo }, 
       };
 
       // Use any to bypass "union type too complex" error
@@ -184,7 +185,7 @@ export class PriorityAlertService {
 
         // Set alert as driver's active alert
         firstDriver.activeAlerts = {
-          bookingId: alert.booking_id,
+          bookingId: alert.booking_id._id || alert.booking_id,
           alertSentAt: new Date(),
           expiresAt: alert.expiresAt,
           status: "pending",
@@ -229,24 +230,26 @@ export class PriorityAlertService {
         },
         data: {
           type: "ride_request",
-          bookingId: booking._id.toString(),
+          alertId: (alert._id as any).toString(), // Added alertId
+          alertSlug: alert.alert_id, // Added alert slug
+          bookingId: (booking._id as any).toString(),
           pickupAddress: booking.pickupAddress,
           dropAddress: booking.dropAddress,
           fare: booking.fare.toString(),
           customerName: booking.customerDetails?.name || "Customer",
-          customerMobile: booking.customerDetails?.mobile_number || "", // Changed from phone to mobile_number
-          distance: booking.distance?.toString() || "", // Added nullish coalescing
-          duration: booking.duration?.toString() || "", // Added nullish coalescing
-          timeout: (alert.expiresAt.getTime() - Date.now() > 0 ? (alert.expiresAt.getTime() - Date.now()) / 1000 : 0).toString(), // Calculate remaining timeout
+          customerMobile: booking.customerDetails?.mobile_number || "", 
+          distance: booking.distance?.toString() || "", 
+          duration: booking.duration?.toString() || "", 
+          timeout: (alert.expiresAt.getTime() - Date.now() > 0 ? (alert.expiresAt.getTime() - Date.now()) / 1000 : 0).toString(), 
         },
         android: {
-          priority: "high" as const, // Keep as const for type safety
+          priority: "high" as const, 
           notification: {
             sound: "default",
             channelId: "ride_requests",
             priority: "high",
             visibility: "public",
-            tag: "ride_request", // Added tag
+            tag: "ride_request",
           },
         },
         apns: {
