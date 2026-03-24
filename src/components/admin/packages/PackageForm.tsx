@@ -99,29 +99,51 @@ export default function PackageForm({
   }, [update_package]);
 
   // UTILITY FUNCTION
-  const handleSearchZones = async (
-    e: ChangeEvent<HTMLInputElement>,
-    onChangeFunc: (value: string) => void,
-    onClearFunc: () => void
-  ) => {
-    try {
-      const search = e.target.value.trim();
-
-      onChangeFunc(search);
-
-      if (search === "") {
-        setSearchedZones([]);
-        onClearFunc();
-        return;
-      }
-
-      const { data } = await GET_ALL_ZONES({ limit: 12, search, status: true });
-
-      setSearchedZones(data);
-    } catch (error) {
-      console.log(error);
+  // Debounced search for Main Zone
+  useEffect(() => {
+    if (!mainSearchInput.trim()) {
+      if (showMainZone) setSearchedZones([]);
+      return;
     }
-  };
+
+    const handler = setTimeout(async () => {
+      try {
+        const { data } = await GET_ALL_ZONES({ 
+          limit: 12, 
+          search: mainSearchInput, 
+          status: true 
+        });
+        setSearchedZones(data);
+      } catch (error) {
+        console.error(error);
+      }
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [mainSearchInput, showMainZone]);
+
+  // Debounced search for Service Zone
+  useEffect(() => {
+    if (!serviceSearchInput.trim()) {
+      if (showServiceZone) setSearchedZones([]);
+      return;
+    }
+
+    const handler = setTimeout(async () => {
+      try {
+        const { data } = await GET_ALL_ZONES({ 
+          limit: 12, 
+          search: serviceSearchInput, 
+          status: true 
+        });
+        setSearchedZones(data);
+      } catch (error) {
+        console.error(error);
+      }
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [serviceSearchInput, showServiceZone]);
 
   const handleAddNewZone = async (prevState: any, formData: FormData) => {
     try {
@@ -350,9 +372,10 @@ export default function PackageForm({
             placeholder="Search Zone by name or destination"
             value={mainSearchInput}
             onChange={(e) => {
-              handleSearchZones(e, setMainSearchInput, () =>
-                setMainZone(update_package?.main_zone || null)
-              );
+              setMainSearchInput(e.target.value);
+              if (!e.target.value) {
+                setMainZone(update_package?.main_zone || null);
+              }
               setShowMainZone(true);
             }}
           />
@@ -382,9 +405,10 @@ export default function PackageForm({
             placeholder="Search Zone by name or destination"
             value={serviceSearchInput}
             onChange={(e) => {
-              handleSearchZones(e, setServiceSearchInput, () =>
-                setServiceZone(update_package?.service_zone || null)
-              );
+              setServiceSearchInput(e.target.value);
+              if (!e.target.value) {
+                setServiceZone(update_package?.service_zone || null);
+              }
               setShowServiceZone(true);
             }}
           />

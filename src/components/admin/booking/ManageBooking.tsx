@@ -60,7 +60,7 @@ const ManageBooking = ({
   useEffect(() => {
     if (viewId && allBookings) {
       const booking = allBookings.find(
-        (b) => String(b._id) === viewId || b.booking_id === viewId
+        (b) => String(b._id) === viewId || b.booking_id === viewId,
       );
       if (booking) {
         setSelectedBooking(booking);
@@ -145,10 +145,14 @@ const ManageBooking = ({
     }
   };
 
-  // Initial fetch drivers
+  // Fetch drivers with search and pagination
   useEffect(() => {
-    fetchDrivers(1, driverSearchTerm);
-  }, []);
+    const handler = setTimeout(() => {
+      fetchDrivers(1, driverSearchTerm);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [driverSearchTerm]);
 
   // Countdown effects
   useEffect(() => {
@@ -194,12 +198,7 @@ const ManageBooking = ({
 
   // Handle driver search
   const handleDriverSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setDriverSearchTerm(value);
-    const timeoutId = setTimeout(() => {
-      fetchDrivers(1, value);
-    }, 500);
-    return () => clearTimeout(timeoutId);
+    setDriverSearchTerm(e.target.value);
   };
 
   // Handle driver page change
@@ -507,9 +506,6 @@ const ManageBooking = ({
     if (nextStatus) {
       let actionText = "";
       switch (nextStatus) {
-        case "assigned":
-          actionText = "Assign";
-          break;
         case "accepted":
           actionText = "Accept";
           break;

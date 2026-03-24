@@ -18,10 +18,18 @@ const CouponPageHeader = ({ fetchData }: { fetchData: any }) => {
   });
 
   const currentStatus = getParam("status") || "";
-  const currentSearch = getParam("search") || "";
   const currentCouponType = getParam("coupon_type") || "";
   const currentStartDate = getParam("startDate") || "";
   const currentEndDate = getParam("endDate") || "";
+  const [localSearch, setLocalSearch] = useState(getParam("search") || "");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      updateFilters("search", localSearch);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [localSearch, updateFilters]);
 
   const formatDateForDisplay = () => {
     if (currentStartDate && currentEndDate) {
@@ -144,8 +152,8 @@ const CouponPageHeader = ({ fetchData }: { fetchData: any }) => {
             <input
               type="text"
               placeholder="Search by Coupon Title/code"
-              value={currentSearch}
-              onChange={(e) => updateFilters("search", e.target.value)}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
               className="h-[2.5rem] text-sm outline-none placeholder:text-site-black flex-1 capitalize placeholder:capitalize"
             />
           </div>

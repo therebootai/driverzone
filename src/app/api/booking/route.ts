@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createBooking } from "@/actions/bookingAction";
 import { connectToDatabase, ensureModelsRegistered } from "@/db/connection";
-import { verifyCustomerToken, verifyDriverToken } from "@/utils/jwt";
+import { verifyAnyToken, verifyCustomerToken, verifyDriverToken } from "@/utils/jwt";
+
 import Booking from "@/models/Booking";
 import { VERIFY_PAYMENT } from "@/actions/razorpayAction";
 import Customer from "@/models/Customers";
@@ -141,9 +142,12 @@ export async function GET(req: NextRequest) {
     await connectToDatabase();
     await ensureModelsRegistered();
     if (token) {
-      user = await verifyCustomerToken(token.split("Bearer ")[1]);
-      driver = await verifyDriverToken(token.split("Bearer ")[1]);
+      const jwtToken = token.split("Bearer ")[1];
+      const { user: authUser, role } = await verifyAnyToken(jwtToken);
+      if (role === "customer") user = authUser;
+      if (role === "driver") driver = authUser;
     }
+
 
     const searchParams = req.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1");

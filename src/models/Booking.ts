@@ -94,6 +94,7 @@ const bookingSchema = new Schema<BookingDocument>(
       type: String,
       enum: ["one-way", "round-trip", "local", "outstation", "others"],
       default: "one-way",
+      index: true,
     },
 
     distance: { type: Number },
@@ -105,12 +106,14 @@ const bookingSchema = new Schema<BookingDocument>(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
       required: true,
+      index: true,
     },
 
     driverDetails: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Driver",
       default: null,
+      index: true,
     },
 
     otp: { type: String },
@@ -132,6 +135,7 @@ const bookingSchema = new Schema<BookingDocument>(
       type: String,
       enum: ["pending", "paid", "failed"],
       default: "pending",
+      index: true,
     },
 
     paid_amount: {
@@ -151,7 +155,9 @@ const bookingSchema = new Schema<BookingDocument>(
         "cancelled",
       ],
       default: "pending",
+      index: true,
     },
+
 
     cancelReason: { type: String },
 
@@ -182,8 +188,9 @@ const bookingSchema = new Schema<BookingDocument>(
     acceptedAt: { type: Date },
     arrivedAt: { type: Date },
     startedAt: { type: Date },
-    completedAt: { type: Date },
+    completedAt: { type: Date, index: true },
     cancelledAt: { type: Date },
+
 
     coupon: {
       type: mongoose.Schema.Types.ObjectId,

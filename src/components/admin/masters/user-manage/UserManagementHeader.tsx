@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiPlusCircle } from "react-icons/fi";
 import { IoSearch } from "react-icons/io5";
 import SidePopup from "@/ui/SidePopup";
@@ -12,6 +12,7 @@ export default function UserManagementHeader() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [localSearch, setLocalSearch] = useState(searchParams.get("search") || "");
 
   // Function to update searchParams
   const updateFilters = (key: string, value: string) => {
@@ -27,18 +28,20 @@ export default function UserManagementHeader() {
     router.push(`?${params.toString()}`, { scroll: false });
   };
 
-  // Function to handle search input with debounce
-  const handleSearch = (value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
+  // Debounced search update
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (localSearch && localSearch.trim() !== "") {
+        params.set("search", localSearch);
+      } else {
+        params.delete("search");
+      }
+      router.push(`?${params.toString()}`, { scroll: false });
+    }, 500);
 
-    if (value && value.trim() !== "") {
-      params.set("search", value);
-    } else {
-      params.delete("search");
-    }
-
-    router.push(`?${params.toString()}`, { scroll: false });
-  };
+    return () => clearTimeout(handler);
+  }, [localSearch, router, searchParams]);
 
   return (
     <>
@@ -76,7 +79,8 @@ export default function UserManagementHeader() {
             <IoSearch className="text-site-black size-5" />
             <input
               type="text"
-              onChange={(e) => handleSearch(e.target.value)}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
               placeholder="Search by name/mobile"
               className="h-[2.5rem] text-sm outline-none placeholder:text-site-black flex-1 capitalize placeholder:capitalize"
             />

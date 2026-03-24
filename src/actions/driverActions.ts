@@ -68,6 +68,9 @@ export async function createDriver(formData: FormData) {
           ? new Date(formData.get("pollution_expiry") as string)
           : undefined,
       },
+      maxDistance: formData.get("max_distance")
+        ? Number(formData.get("max_distance"))
+        : 20,
       verified: true,
     };
     //@ts-ignore
@@ -347,6 +350,11 @@ export async function updateDriver(driverId: string, formData: FormData) {
     const remarks = formData.get("remarks");
     if (remarks !== null) {
       driver.remarks = remarks as string;
+    }
+
+    const maxDistance = formData.get("max_distance");
+    if (maxDistance !== null) {
+      driver.maxDistance = Number(maxDistance);
     }
 
     // 4. Arrays: transmission & category
