@@ -1,4 +1,4 @@
-import { PriorityAlertService } from "@/actions/alertActions";
+import { alertService } from "@/services/alertService";
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import { verifyDriverToken } from "@/utils/jwt";
@@ -41,7 +41,6 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
     await ensureModelsRegistered();
 
-    const alertService = PriorityAlertService.getInstance();
     const cancelled = await alertService.cancelAlert(alertId);
 
     return NextResponse.json({

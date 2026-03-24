@@ -1,4 +1,4 @@
-import { PriorityAlertService } from "@/actions/alertActions";
+import { alertService } from "@/services/alertService";
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 
@@ -16,7 +16,6 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
     await ensureModelsRegistered();
 
-    const alertService = PriorityAlertService.getInstance();
     const alert = await alertService.initializeAlert(bookingId);
 
     return NextResponse.json({
