@@ -323,6 +323,38 @@ export async function PUT(
       .populate("driverDetails")
       .populate("package_type", "name description price");
 
+    // Update driver aggregate rating if a rating was provided
+    if (filteredUpdateData.driverRating && updatedBooking?.driverDetails?._id) {
+      const driverId = updatedBooking.driverDetails._id;
+      const newRatingValue = Number(filteredUpdateData.driverRating);
+      const oldRatingValue = Number(existingBooking.driverRating || 0);
+      const isNewRating = !existingBooking.driverRating;
+
+      await Driver.findByIdAndUpdate(driverId, [
+        {
+          $set: {
+            total_rating_sum: {
+              $add: ["$total_rating_sum", newRatingValue - oldRatingValue],
+            },
+            total_ratings: {
+              $add: ["$total_ratings", isNewRating ? 1 : 0],
+            },
+          },
+        },
+        {
+          $set: {
+            rating: {
+              $cond: {
+                if: { $gt: ["$total_ratings", 0] },
+                then: { $divide: ["$total_rating_sum", "$total_ratings"] },
+                else: 0,
+              },
+            },
+          },
+        },
+      ]);
+    }
+
     // If booking was completed, update driver earnings and clear active alerts
     if (
       updatedBooking?.status === "completed" &&

@@ -208,6 +208,7 @@ export async function GET(req: NextRequest) {
         active_range: "5 AM - 10 PM", // Hardcoded per image
         wallet_balance: driver.total_earnings || 0,
         available_balance: (driver.total_earnings || 0) * 0.8, // Example calculation
+        avg_rating: driver.rating || 0,
         graph_data,
         filter,
       },
