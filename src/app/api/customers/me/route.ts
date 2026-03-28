@@ -3,6 +3,7 @@
 import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Customers from "@/models/Customers";
 import { handleImageUpload } from "@/utils/handleImageUpload";
+import { verifyOTP } from "@/actions/OTPActions";
 import { verifyCustomerToken } from "@/utils/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -79,7 +80,28 @@ export async function PUT(request: NextRequest) {
       if (key === "profile_picture" || key === "cover_picture") continue;
 
       // Handle other fields
-      updateData[key] = value;
+      if (key !== "otp") {
+        updateData[key] = value;
+      }
+    }
+
+    if (updateData.mobile_number && updateData.mobile_number !== user.mobile_number) {
+      const otp = formData.get("otp") as string;
+      if (!otp) {
+        return NextResponse.json(
+          { message: "OTP is required for mobile update", success: false },
+          { status: 400 },
+        );
+      }
+      const { success, message } = await verifyOTP(
+        null,
+        updateData.mobile_number,
+        otp,
+        "update-profile",
+      );
+      if (!success) {
+        return NextResponse.json({ message, success: false }, { status: 400 });
+      }
     }
 
     const updatedUser = await Customers.findOneAndUpdate(
