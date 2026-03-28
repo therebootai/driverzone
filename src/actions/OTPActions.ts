@@ -31,7 +31,8 @@ async function createOTP(
     | "register"
     | "reset-password"
     | "verify-account"
-    | "booking-arrival" = "login",
+    | "booking-arrival"
+    | "update-profile" = "login",
 ) {
   await connectToDatabase();
   // Clean old OTPs for this user
@@ -67,7 +68,8 @@ async function verifyOTP(
     | "register"
     | "reset-password"
     | "verify-account"
-    | "booking-arrival" = "login",
+    | "booking-arrival"
+    | "update-profile" = "login",
 ) {
   await connectToDatabase();
   const otpRecord = await OTP.findOne({
@@ -129,7 +131,8 @@ async function resendOTP(
     | "register"
     | "reset-password"
     | "verify-account"
-    | "booking-arrival" = "login",
+    | "booking-arrival"
+    | "update-profile" = "login",
 ) {
   await connectToDatabase();
   // Check if there's an unverified OTP
