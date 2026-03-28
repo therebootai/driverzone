@@ -37,6 +37,7 @@ const otpSchema = new Schema<OTPDocument>(
         "reset-password",
         "verify-account",
         "booking-arrival",
+        "update-profile",
       ],
       default: "login",
     },
