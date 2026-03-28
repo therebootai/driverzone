@@ -95,7 +95,9 @@ export interface DriverDocument extends Document {
   fcmToken?: string;
 
   maxDistance?: number;
-
+  rating: number;
+  total_ratings: number;
+  total_rating_sum: number;
   rejectedAlerts: {
     bookingId: mongoose.Schema.Types.ObjectId | BookingDocument;
     rejectedAt: Date;
@@ -242,6 +244,19 @@ const driverSchema = new Schema<DriverDocument>(
     fcmToken: { type: String, unique: true, sparse: true },
 
     maxDistance: { type: Number, default: 20 }, // in kilometers
+
+    rating: {
+      type: Number,
+      default: 0,
+    },
+    total_ratings: {
+      type: Number,
+      default: 0,
+    },
+    total_rating_sum: {
+      type: Number,
+      default: 0,
+    },
 
     activeAlerts: {
       bookingId: { type: mongoose.Schema.Types.ObjectId, ref: "Booking" },
