@@ -928,11 +928,9 @@ export async function updateBooking(
         if (driver && (driver as any).fcmToken) {
           await sendPushNotification({
             token: (driver as any).fcmToken,
-            notification: {
+            data: {
               title: "You have been assigned a booking!",
               body: `Pickup: ${updatedBooking.pickupAddress} → Drop: ${updatedBooking.dropAddress}`,
-            },
-            data: {
               type: "booking_assigned",
               bookingId: serializedBooking.booking_id ?? bookingId,
               pickupAddress: updatedBooking.pickupAddress ?? "",
