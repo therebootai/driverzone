@@ -232,33 +232,24 @@ export class PriorityAlertService {
 
       const payload: any = {
         token: driver.fcmToken,
-        notification: {
+        data: {
           title: "New Ride Request",
           body: `New ride request from ${booking.pickupAddress}`,
-        },
-        data: {
           type: "ride_request",
-          alertId: (alert._id as any).toString(), 
-          alertSlug: alert.alert_id, 
+          alertId: (alert._id as any).toString(),
+          alertSlug: alert.alert_id,
           bookingId: (booking._id as any).toString(),
           pickupAddress: booking.pickupAddress,
           dropAddress: booking.dropAddress,
           fare: (booking.fare || "").toString(),
           customerName: booking.customerDetails?.name || "Customer",
-          customerMobile: booking.customerDetails?.mobile_number || "", 
-          distance: booking.distance?.toString() || "", 
-          tripDuration: booking.duration?.toString() || "", 
-          duration: (alert.expiresAt.getTime() - Date.now() > 0 ? Math.floor((alert.expiresAt.getTime() - Date.now()) / 1000) : 30).toString(), 
+          customerMobile: booking.customerDetails?.mobile_number || "",
+          distance: booking.distance?.toString() || "",
+          tripDuration: booking.duration?.toString() || "",
+          duration: (alert.expiresAt.getTime() - Date.now() > 0 ? Math.floor((alert.expiresAt.getTime() - Date.now()) / 1000) : 30).toString(),
         },
         android: {
-          priority: "high" as const, 
-          notification: {
-            sound: "default",
-            channelId: "ride_requests",
-            priority: "high",
-            visibility: "public",
-            tag: "ride_request",
-          },
+          priority: "high" as const,
         },
         apns: {
           payload: {
