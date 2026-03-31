@@ -104,6 +104,9 @@ export interface DriverDocument extends Document {
     reason: string;
   }[];
 
+  approvedDeviceId?: string;
+  pendingDeviceId?: string;
+
   activeAlerts: {
     bookingId: mongoose.Schema.Types.ObjectId | BookingDocument;
     alertSentAt: Date;
@@ -276,6 +279,9 @@ const driverSchema = new Schema<DriverDocument>(
         reason: { type: String },
       },
     ],
+
+    approvedDeviceId: { type: String },
+    pendingDeviceId: { type: String },
   },
   { timestamps: true },
 );
