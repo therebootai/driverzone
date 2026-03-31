@@ -90,6 +90,15 @@ export type DriverDocument = {
   mobile_number: string;
   emergency_number?: string;
 
+  currentLocation?: {
+    lat: number;
+    lng: number;
+    lastUpdated: Date | string;
+    address: string;
+  };
+
+  isOnline: boolean;
+
   address?: string;
   city_area?: string;
   landmark?: string;

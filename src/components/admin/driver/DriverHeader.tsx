@@ -15,6 +15,7 @@ const DriverHeader = () => {
   const status = getParam("status");
   const isOnline = getParam("isOnline");
   const verified = getParam("verified");
+  const pendingApproval = getParam("pendingApproval");
   const [localSearch, setLocalSearch] = useState(getParam("search") || "");
 
   useEffect(() => {
@@ -125,6 +126,38 @@ const DriverHeader = () => {
             </option>
             <option value="Not Verified" className=" text-site-black">
               Not Verified
+            </option>
+          </select>
+        </div>
+        <div>
+          <select
+            value={
+              pendingApproval === "true"
+                ? "Pending Approval"
+                : pendingApproval === "false"
+                  ? "Approved"
+                  : ""
+            }
+            onChange={(e) =>
+              updateFilters(
+                "pendingApproval",
+                e.target.value === "Pending Approval"
+                  ? "true"
+                  : e.target.value === "Approved"
+                    ? "false"
+                    : "",
+              )
+            }
+            className=" w-fit px-4 rounded-md h-[2.5rem] bg-custom-gray text-site-black font-semibold text-sm flex justify-center items-center"
+          >
+            <option value="" className=" text-site-black">
+              Device Status
+            </option>
+            <option value="Pending Approval" className=" text-site-black">
+              Pending Approval
+            </option>
+            <option value="Approved" className=" text-site-black">
+              Approved
             </option>
           </select>
         </div>

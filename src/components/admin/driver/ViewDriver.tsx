@@ -169,6 +169,34 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
               </span>
             }
           />
+          <Field
+            label="Is Online"
+            value={
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  driver.isOnline
+                    ? "bg-green-100 text-green-700"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                {driver.isOnline ? "Online" : "Offline"}
+              </span>
+            }
+          />
+          {driver.isOnline && driver.currentLocation && (
+            <Field
+              label="Current Location"
+              value={
+                <a
+                  href={`https://maps.google.com/?q=${driver.currentLocation.lat},${driver.currentLocation.lng}`}
+                  target="_blank"
+                  className="text-blue-600 underline font-medium"
+                >
+                  View on Google Maps
+                </a>
+              }
+            />
+          )}
         </div>
       </div>
 

@@ -14,10 +14,12 @@ const DriverManagement = async ({
     status?: string;
     isOnline?: string;
     verified?: string;
+    pendingApproval?: string;
   }>;
 }) => {
   await authorizeAccess("driver_management");
-  const { page, search, status, isOnline, verified } = await searchParams;
+  const { page, search, status, isOnline, verified, pendingApproval } =
+    await searchParams;
 
   const { data, paginations } = await getAllDriver({
     page: Number(page),
@@ -28,6 +30,12 @@ const DriverManagement = async ({
       isOnline === "true" ? true : isOnline === "false" ? false : undefined,
     verified:
       verified === "true" ? true : verified === "false" ? false : undefined,
+    pendingApproval:
+      pendingApproval === "true"
+        ? true
+        : pendingApproval === "false"
+          ? false
+          : undefined,
   });
 
   return (

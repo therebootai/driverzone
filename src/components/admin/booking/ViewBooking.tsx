@@ -88,17 +88,37 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
             Trip Overview
           </h3>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Booking Date" value={dayjs(booking.createdAt).format("DD MMM YYYY, hh:mm A")} />
+            <Field
+              label="Booking Date"
+              value={dayjs(booking.createdAt).format("DD MMM YYYY, hh:mm A")}
+            />
             <Field label="Status" value={getStatusBadge(booking.status)} />
-            <Field label="Trip Type" value={booking.tripType?.replace(/-/g, " ")?.toUpperCase() || "N/A"} />
-            <Field label="Distance / Duration" value={`${booking.distance || 0} km / ${booking.duration || 0} mins`} />
+            <Field
+              label="Trip Type"
+              value={
+                booking.tripType?.replace(/-/g, " ")?.toUpperCase() || "N/A"
+              }
+            />
+            <Field
+              label="Distance / Duration"
+              value={`${booking.distance || 0} km / ${
+                booking.duration
+                  ? `${booking.duration} mins`
+                  : booking.package_type?.duration
+                    ? `${booking.package_type.duration} hrs`
+                    : "0 mins"
+              }`}
+            />
             <Field label="Vehicle Type" value={booking.vehicleType || "N/A"} />
             <Field label="Insurance" value={booking.insurance ? "Yes" : "No"} />
             {booking.schedule_date && (
-                <Field label="Schedule Time" value={`${dayjs(booking.schedule_date).format("DD MMM YYYY")} at ${booking.schedule_time}`} />
+              <Field
+                label="Schedule Time"
+                value={`${dayjs(booking.schedule_date).format("DD MMM YYYY")} at ${booking.schedule_time}`}
+              />
             )}
             {booking.cancelReason && (
-                 <Field label="Cancel Reason" value={booking.cancelReason} />
+              <Field label="Cancel Reason" value={booking.cancelReason} />
             )}
           </div>
         </div>
@@ -109,7 +129,10 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
             Locations
           </h3>
           <div className="grid grid-cols-1 gap-4">
-            <Field label="Pickup Address" value={booking.pickupAddress || "-"} />
+            <Field
+              label="Pickup Address"
+              value={booking.pickupAddress || "-"}
+            />
             <Field label="Drop Address" value={booking.dropAddress || "-"} />
           </div>
         </div>
@@ -132,10 +155,19 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
                   </Link>
                 }
               />
-              <Field label="Phone" value={booking.customerDetails?.mobile_number || "-"} />
-              <Field label="Email" value={booking.customerDetails?.email || "-"} />
+              <Field
+                label="Phone"
+                value={booking.customerDetails?.mobile_number || "-"}
+              />
+              <Field
+                label="Email"
+                value={booking.customerDetails?.email || "-"}
+              />
               {booking.customerRating !== undefined && (
-                <Field label="Given Rating" value={`${booking.customerRating} ⭐`} />
+                <Field
+                  label="Given Rating"
+                  value={`${booking.customerRating} ⭐`}
+                />
               )}
             </div>
           </div>
@@ -162,10 +194,19 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
               />
               {booking.driverDetails && (
                 <>
-                  <Field label="Phone" value={booking.driverDetails.mobile_number || "-"} />
-                  <Field label="Vehicle Number" value={booking.driverDetails.vehicle_number || "-"} />
+                  <Field
+                    label="Phone"
+                    value={booking.driverDetails.mobile_number || "-"}
+                  />
+                  <Field
+                    label="Vehicle Number"
+                    value={booking.driverDetails.vehicle_number || "-"}
+                  />
                   {booking.driverRating !== undefined && (
-                    <Field label="Given Rating" value={`${booking.driverRating} ⭐`} />
+                    <Field
+                      label="Given Rating"
+                      value={`${booking.driverRating} ⭐`}
+                    />
                   )}
                 </>
               )}
@@ -179,27 +220,53 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
             Payment & Fare Details
           </h3>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Payment Status" value={getPaymentStatusBadge(booking.paymentStatus)} />
-            <Field label="Payment Method" value={booking.paymentMethod?.toUpperCase()} />
-            <Field label="Estimated Fare" value={`₹${booking.estimatedFare?.toLocaleString("en-IN") || "0"}`} />
-            <Field label="Total Fare" value={`₹${booking.fare?.toLocaleString("en-IN") || "0"}`} />
-            
+            <Field
+              label="Payment Status"
+              value={getPaymentStatusBadge(booking.paymentStatus)}
+            />
+            <Field
+              label="Payment Method"
+              value={booking.paymentMethod?.toUpperCase()}
+            />
+            <Field
+              label="Estimated Fare"
+              value={`₹${booking.estimatedFare?.toLocaleString("en-IN") || "0"}`}
+            />
+            <Field
+              label="Total Fare"
+              value={`₹${booking.fare?.toLocaleString("en-IN") || "0"}`}
+            />
+
             {booking.fare_details && (
               <div className="col-span-2 grid grid-cols-2 gap-4 mt-2 border-t pt-3">
-                <Field label="Company Charge" value={`₹${booking.fare_details.company_charge || 0}`} />
-                <Field label="Driver Charge" value={`₹${booking.fare_details.driver_charge || 0}`} />
-                <Field label="Fooding Charge" value={`₹${booking.fare_details.fooding_charge || 0}`} />
-                <Field label="Early/Late Charge" value={`₹${(booking.fare_details.early_morning_charge || 0) + (booking.fare_details.late_night_charge || 0)}`} />
+                <Field
+                  label="Company Charge"
+                  value={`₹${booking.fare_details.company_charge || 0}`}
+                />
+                <Field
+                  label="Driver Charge"
+                  value={`₹${booking.fare_details.driver_charge || 0}`}
+                />
+                <Field
+                  label="Fooding Charge"
+                  value={`₹${booking.fare_details.fooding_charge || 0}`}
+                />
+                <Field
+                  label="Early/Late Charge"
+                  value={`₹${(booking.fare_details.early_morning_charge || 0) + (booking.fare_details.late_night_charge || 0)}`}
+                />
               </div>
             )}
-            
-            {booking.package_type && (
-                <div className="col-span-2 grid grid-cols-2 gap-4 mt-2 border-t pt-3">
-                   <Field label="Package Name" value={booking.package_type.name} />
-                   <Field label="Package Price" value={`₹${booking.package_type.price}`} />
-                </div>
-            )}
 
+            {booking.package_type && (
+              <div className="col-span-2 grid grid-cols-2 gap-4 mt-2 border-t pt-3">
+                <Field label="Package Name" value={booking.package_type.name} />
+                <Field
+                  label="Package Price"
+                  value={`₹${booking.package_type.price || (booking.package_type as any).total_price || 0}`}
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -210,7 +277,10 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <Field label="OTP Sent" value={booking.otp || "-"} />
-            <Field label="OTP Verified" value={booking.otp_verified ? "Yes ✅" : "No ❌"} />
+            <Field
+              label="OTP Verified"
+              value={booking.otp_verified ? "Yes ✅" : "No ❌"}
+            />
           </div>
         </div>
       </div>
