@@ -24,6 +24,15 @@ export async function GET(request: NextRequest) {
       throw new Error("Unauthorized");
     }
 
+    const deviceId = request.headers.get("x-device-id");
+
+    if (user.approvedDeviceId && user.approvedDeviceId !== deviceId) {
+      return NextResponse.json(
+        { message: "This device is no longer approved. Please login again.", logout: true, success: false },
+        { status: 401 },
+      );
+    }
+
     // Calculate dynamic stats
     const total_rides = await Booking.countDocuments({
       driverDetails: user._id,

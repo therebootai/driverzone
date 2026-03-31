@@ -130,6 +130,9 @@ export type DriverDocument = {
   verified: boolean;
   total_earnings: number;
 
+  approvedDeviceId?: string;
+  pendingDeviceId?: string;
+
   createdAt?: string;
   updatedAt?: string;
 };

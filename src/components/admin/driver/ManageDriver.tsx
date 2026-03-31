@@ -5,7 +5,7 @@ import { useQueryParamsAdvanced } from "@/hooks/useQueryParamsAdvanced";
 import PaginationBox from "@/ui/PaginationBox";
 import SidePopup from "@/ui/SidePopup";
 import AddAndEditDriver from "./AddAndEditDriver";
-import { deleteDriver, updateDriverStatus } from "@/actions/driverActions";
+import { approveDevice, deleteDriver, updateDriverStatus } from "@/actions/driverActions";
 import ViewDriver from "./ViewDriver";
 
 const ManageDriver = ({
@@ -80,6 +80,7 @@ const ManageDriver = ({
           <div className=" w-[10%]">Licence</div>
           <div className=" w-[15%]">Verification</div>
           <div className=" w-[15%]">Status</div>
+          <div className=" w-[15%] text-center">Device</div>
           <div className=" w-[15%]">Action</div>
         </div>
         {allDrivers.map((item: DriverDocument) => (
@@ -134,6 +135,33 @@ const ManageDriver = ({
               >
                 {item.status ? "Active" : "Inactive"}
               </button>
+            </div>
+            <div className=" w-[15%] flex justify-center">
+              {item.pendingDeviceId ? (
+                <button
+                  className="px-3 h-[1.8rem] rounded-full flex justify-center items-center bg-[#FEF9C3] text-[#713F12] border border-[#CA8A04] hover:bg-[#CA8A04] hover:text-white transition-colors duration-300 cursor-pointer text-[10px]"
+                  onClick={async () => {
+                    if (
+                      window.confirm("Approve this new device for this driver?")
+                    ) {
+                      const res = await approveDevice(item.driver_id);
+                      if (res.success) {
+                        alert(res.message);
+                      } else {
+                        alert(res.message);
+                      }
+                    }
+                  }}
+                >
+                  Approve New
+                </button>
+              ) : item.approvedDeviceId ? (
+                <span className="text-[10px] text-gray-500 truncate max-w-[80px]">
+                  {item.approvedDeviceId}
+                </span>
+              ) : (
+                <span className="text-[10px] text-gray-400">No device</span>
+              )}
             </div>
             <div className=" w-[15%] flex flex-row gap-2 ">
               <button
