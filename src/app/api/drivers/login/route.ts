@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    const { otp, email, phone } = data;
+    const { otp, email, phone, deviceId } = data;
 
     await connectToDatabase();
     await ensureModelsRegistered();
@@ -33,6 +33,28 @@ export async function POST(request: NextRequest) {
         { message: "Your account is blocked" },
         { status: 400 },
       );
+    }
+
+    // New device login system
+    if (!driver.approvedDeviceId || driver.approvedDeviceId !== deviceId) {
+      if (deviceId) {
+        driver.pendingDeviceId = deviceId;
+        await driver.save();
+        return NextResponse.json(
+          {
+            message:
+              "New device detected. Please wait for admin approval before you can login.",
+            success: false,
+            deviceApprovalPending: true,
+          },
+          { status: 403 },
+        );
+      } else {
+         return NextResponse.json(
+          { message: "Device ID is required for login", success: false },
+          { status: 400 },
+        );
+      }
     }
 
     const token = generateToken({ userId: driver._id });
