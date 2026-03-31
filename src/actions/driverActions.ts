@@ -613,7 +613,7 @@ export async function updateDriverStatus({
     }
 
     const updatedDriver = await existing.save();
-    revalidatePath("/driver-managemant");
+    revalidatePath("/admin/driver-management");
 
     return {
       success: true,
@@ -650,3 +650,38 @@ export async function deleteDriver(driver_id: string) {
     return { success: false, message: "Internal server error" };
   }
 }
+
+export async function approveDevice(driverId: string) {
+  try {
+    await connectToDatabase();
+    const driver = await Drivers.findOne({
+      $or: [{ driver_id: driverId }, { _id: driverId }],
+    });
+
+    if (!driver) {
+      return { success: false, message: "Driver not found" };
+    }
+
+    if (!driver.pendingDeviceId) {
+      return { success: false, message: "No pending device approval" };
+    }
+
+    driver.approvedDeviceId = driver.pendingDeviceId;
+    driver.pendingDeviceId = undefined;
+
+    // Logout from all other devices by clearing FCM token (optional but good)
+    // driver.fcmToken = undefined;
+
+    await driver.save();
+    revalidatePath("/admin/driver-management");
+
+    return {
+      success: true,
+      message: "Device approved successfully, other devices logged out.",
+    };
+  } catch (error: any) {
+    console.error("Error approving device:", error);
+    return { success: false, message: error.message || "Internal server error" };
+  }
+}
+
