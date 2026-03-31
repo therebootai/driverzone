@@ -655,7 +655,12 @@ export async function approveDevice(driverId: string) {
   try {
     await connectToDatabase();
     const driver = await Drivers.findOne({
-      $or: [{ driver_id: driverId }, { _id: driverId }],
+      $or: [
+        { driver_id: driverId },
+        {
+          _id: mongoose.Types.ObjectId.isValid(driverId) ? driverId : null,
+        },
+      ],
     });
 
     if (!driver) {
@@ -681,7 +686,9 @@ export async function approveDevice(driverId: string) {
     };
   } catch (error: any) {
     console.error("Error approving device:", error);
-    return { success: false, message: error.message || "Internal server error" };
+    return {
+      success: false,
+      message: error.message || "Internal server error",
+    };
   }
 }
-
