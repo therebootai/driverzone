@@ -191,6 +191,7 @@ export async function getAllDriver({
   status,
   isOnline,
   verified,
+  pendingApproval,
 }: {
   page: number;
   limit: number;
@@ -198,6 +199,7 @@ export async function getAllDriver({
   status?: boolean;
   isOnline?: boolean;
   verified?: boolean;
+  pendingApproval?: boolean;
 }) {
   try {
     await connectToDatabase();
@@ -217,6 +219,20 @@ export async function getAllDriver({
 
     if (typeof verified === "boolean") {
       andConditions.push({ verified });
+    }
+
+    if (typeof pendingApproval === "boolean") {
+      if (pendingApproval) {
+        andConditions.push({ pendingDeviceId: { $exists: true, $ne: null } });
+      } else {
+        andConditions.push({
+          $or: [
+            { pendingDeviceId: { $exists: false } },
+            { pendingDeviceId: null },
+            { pendingDeviceId: "" },
+          ],
+        });
+      }
     }
 
     if (searchTerm && searchTerm.trim() !== "") {
@@ -592,6 +608,7 @@ export async function updateDriverStatus({
 
     await connectToDatabase();
 
+    //@ts-ignore
     const existing = await Drivers.findOne({
       $or: [
         { driver_id },
