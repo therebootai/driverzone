@@ -3,6 +3,7 @@ import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Booking, { BookingDocument } from "@/models/Booking";
 import Driver from "@/models/Drivers";
 import Customer from "@/models/Customers";
+import Package from "@/models/Packages";
 import { GetBookingsParams } from "@/types/types";
 import { generateCustomId } from "@/utils/generateCustomId";
 import { isValidObjectId, Types } from "mongoose";
@@ -22,7 +23,52 @@ function generateBookingOTP(length = 6) {
   return otp;
 }
 
+function getScheduleDateTime(date: Date, timeStr: string): Date {
+  const dt = new Date(date);
+  if (!timeStr) return dt;
+
+  const [time, modifier] = timeStr.split(" ");
+  let [hours, minutes] = (time || "").split(":").map(Number);
+
+  if (modifier === "PM" && hours < 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+
+  dt.setHours(hours || 0, minutes || 0, 0, 0);
+  return dt;
+}
+
+function getMinutesInRange(
+  start: Date,
+  end: Date,
+  slotStartHour: number,
+  slotEndHour: number,
+): number {
+  let minutes = 0;
+  let current = new Date(start);
+  current.setSeconds(0);
+  current.setMilliseconds(0);
+
+  const endTime = end.getTime();
+
+  while (current.getTime() < endTime) {
+    const hour = current.getHours();
+    let isInSlot = false;
+    if (slotStartHour > slotEndHour) {
+      isInSlot = hour >= slotStartHour || hour < slotEndHour;
+    } else {
+      isInSlot = hour >= slotStartHour && hour < slotEndHour;
+    }
+
+    if (isInSlot) minutes++;
+    current.setMinutes(current.getMinutes() + 1);
+  }
+  return minutes;
+}
+
 function calculateTotalFare(booking: any): number {
+  if (booking.status === "completed") {
+    return booking.fare || 0;
+  }
   let total = booking.fare || 0;
 
   if (booking.fare_details) {
@@ -346,15 +392,13 @@ export async function getBookings({
           driverRating: 1,
           customerRating: 1,
           package_type: {
-            _id: 1,
-            name: 1,
-            description: 1,
-            price: 1,
-            duration: 1,
-            features: 1,
-            is_active: 1,
-            createdAt: 1,
-            updatedAt: 1,
+            _id: "$package_type._id",
+            name: "$package_type.name",
+            price: "$package_type.total_price",
+            duration: "$package_type.duration",
+            status: "$package_type.status",
+            createdAt: "$package_type.createdAt",
+            updatedAt: "$package_type.updatedAt",
           },
           schedule_date: 1,
           schedule_time: 1,
@@ -510,7 +554,11 @@ export async function getBookings({
         // Add trip summary
         tripSummary: {
           distance: `${booking.distance || 0} km`,
-          duration: `${booking.duration || 0} mins`,
+          duration: booking.duration
+            ? `${booking.duration} mins`
+            : booking.package_type?.duration
+            ? `${booking.package_type.duration} hrs`
+            : "0 mins",
           type: booking.tripType,
         },
       };
@@ -866,6 +914,94 @@ export async function updateBooking(
     // Always update the updatedAt timestamp
     updateObject.updatedAt = new Date();
 
+    // Auto-calculate charges for completed bookings
+    if (isChangingStatus && newStatus === "completed") {
+      try {
+        const pkg = await Package.findById(existingBooking.package_type);
+        if (pkg) {
+          const completedAt = updateObject.completedAt || new Date();
+          const startedAt =
+            existingBooking.startedAt || existingBooking.schedule_date;
+          const arrivedAt = existingBooking.arrivedAt;
+
+          // 1. Late Night Charge (11 PM to 4 AM)
+          const lateNightMinutes = getMinutesInRange(
+            startedAt,
+            completedAt,
+            23,
+            4,
+          );
+          const lateNightCharge =
+            lateNightMinutes * (pkg.late_night_charge || 0);
+
+          // 2. Early Morning Charge (4 AM to 7 AM)
+          const earlyMorningMinutes = getMinutesInRange(
+            startedAt,
+            completedAt,
+            4,
+            7,
+          );
+          const earlyMorningCharge =
+            earlyMorningMinutes * (pkg.early_morning_charge || 0);
+
+          // 3. Overtime Customer Charge
+          const scheduleDateTime = getScheduleDateTime(
+            existingBooking.schedule_date,
+            existingBooking.schedule_time,
+          );
+          const packageDurationMs = (pkg.duration || 0) * 60 * 60 * 1000;
+          const baseEndTime = new Date(
+            scheduleDateTime.getTime() + packageDurationMs,
+          );
+          let overTimeCustomerCharge = 0;
+          if (completedAt > baseEndTime) {
+            const otMinutes = Math.floor(
+              (completedAt.getTime() - baseEndTime.getTime()) / 60000,
+            );
+            overTimeCustomerCharge =
+              otMinutes * (pkg.over_time_customer_charge || 0);
+          }
+
+          // 4. Overtime Driver Charge (Deduction)
+          let overTimeDriverCharge = 0;
+          if (arrivedAt && arrivedAt > scheduleDateTime) {
+            const otMinutes = Math.floor(
+              (arrivedAt.getTime() - scheduleDateTime.getTime()) / 60000,
+            );
+            overTimeDriverCharge =
+              otMinutes * (pkg.over_time_driver_charge || 0);
+          }
+
+          // Merge with existing or updated fare details
+          const currentFareDetails =
+            updateObject.fare_details || existingBooking.fare_details || {};
+          const newFareDetails = {
+            ...JSON.parse(JSON.stringify(currentFareDetails)),
+            late_night_charge: lateNightCharge,
+            early_morning_charge: earlyMorningCharge,
+            over_time_customer_charge: overTimeCustomerCharge,
+            over_time_driver_charge: overTimeDriverCharge,
+            driver_charge:
+              (currentFareDetails.driver_charge ||
+                existingBooking.fare_details?.driver_charge ||
+                0) - overTimeDriverCharge,
+          };
+
+          updateObject.fare_details = newFareDetails;
+
+          // Recalculate total fare (Add customer-side charges only)
+          const baseFare = existingBooking.fare || 0;
+          updateObject.fare =
+            baseFare +
+            lateNightCharge +
+            earlyMorningCharge +
+            overTimeCustomerCharge;
+        }
+      } catch (err) {
+        console.error("Calculation error in updateBooking:", err);
+      }
+    }
+
     // Perform the update
     const updatedBooking = (await Booking.findByIdAndUpdate(
       bookingId,
@@ -879,7 +1015,7 @@ export async function updateBooking(
       )
       .populate(
         "package_type",
-        "name description price duration features is_active",
+        "name total_price duration status",
       )) as any;
 
     if (!updatedBooking) {
@@ -892,6 +1028,10 @@ export async function updateBooking(
 
     // Serialize the response
     const serializedBooking = JSON.parse(JSON.stringify(updatedBooking));
+
+    if (serializedBooking.package_type && serializedBooking.package_type.total_price) {
+      serializedBooking.package_type.price = serializedBooking.package_type.total_price;
+    }
 
     // Notify driver if one was just assigned
     if (updateData.driverDetails) {
