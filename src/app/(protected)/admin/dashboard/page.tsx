@@ -2,6 +2,7 @@ import { GET_ANALYTICS } from "@/actions/dashboardActions";
 import DashboardCard from "@/components/admin/dashboard/DashboardCard";
 import AdminTemplate from "@/templates/AdminTemplate";
 import BookingTrendsChart from "@/components/admin/dashboard/BookingTrendsChart";
+import RealtimeRideNotification from "@/components/admin/RealtimeRideNotification";
 
 export default async function AdminDashBoardPage() {
   const { data } = await GET_ANALYTICS();
@@ -18,6 +19,9 @@ export default async function AdminDashBoardPage() {
       
       {/* Booking Trends Area Chart */}
       <BookingTrendsChart />
+
+      {/* Real-time Listeners */}
+      <RealtimeRideNotification />
     </AdminTemplate>
   );
 }
