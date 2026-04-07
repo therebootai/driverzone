@@ -5,7 +5,6 @@ import { BookingTypes } from "@/types/types";
 import dayjs from "dayjs";
 import { useQueryParamsAdvanced } from "@/hooks/useQueryParamsAdvanced";
 import PaginationBox from "@/ui/PaginationBox";
-import Field from "@/ui/Field";
 import SidePopup from "@/ui/SidePopup";
 import {
   checkBookingOTPStatus,
@@ -194,16 +193,6 @@ const ManageBooking = ({
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  // Handle driver search
-  const handleDriverSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDriverSearchTerm(e.target.value);
-  };
-
-  // Handle driver page change
-  const handleDriverPageChange = (page: number) => {
-    fetchDrivers(page, driverSearchTerm);
   };
 
   // Handle update actions
@@ -423,7 +412,7 @@ const ManageBooking = ({
       const response = await updateBooking(
         updateModal.bookingId,
         updateData,
-        options,
+        { ...options, isAdminAssignment: updateModal.action === "assign_driver" },
       );
 
       if (response.success) {
