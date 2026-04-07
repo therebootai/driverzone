@@ -49,9 +49,6 @@ export async function POST(req: Request) {
       "dropAddress",
       "dropLat",
       "dropLng",
-      "razorpay_order_id",
-      "razorpay_payment_id",
-      "razorpay_signature",
       "customerDetails", // Still required but now we might have populated it above
       "vehicleType",
       "package_type",
@@ -86,16 +83,24 @@ export async function POST(req: Request) {
       }
     }
 
-    const razorPayDetails = await VERIFY_PAYMENT({
-      razorpay_order_id: body.razorpay_order_id,
-      razorpay_payment_id: body.razorpay_payment_id,
-      razorpay_signature: body.razorpay_signature,
-    });
+    // Verify payment if razorpay details are provided
+    if (body.razorpay_order_id && body.razorpay_payment_id && body.razorpay_signature) {
+      const razorPayDetails = await VERIFY_PAYMENT({
+        razorpay_order_id: body.razorpay_order_id,
+        razorpay_payment_id: body.razorpay_payment_id,
+        razorpay_signature: body.razorpay_signature,
+      });
 
-    if (razorPayDetails.success) {
-      body.paid_amount = (razorPayDetails.payment?.amount as number) / 100;
-      body.paymentStatus = "paid";
-      body.paymentMethod = razorPayDetails.payment?.method as string;
+      if (razorPayDetails.success) {
+        body.paid_amount = (razorPayDetails.payment?.amount as number) / 100;
+        body.paymentStatus = "paid";
+        body.paymentMethod = razorPayDetails.payment?.method as string;
+      }
+    } else {
+      // Default to cash and pending if no payment details at creation
+      body.paymentMethod = body.paymentMethod || "cash";
+      body.paymentStatus = body.paymentStatus || "pending";
+      body.paid_amount = 0;
     }
 
     const newBooking = await createBooking(body);

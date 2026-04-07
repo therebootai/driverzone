@@ -11,6 +11,7 @@ import { createOTP, resendOTP, verifyOTP } from "./OTPActions";
 import OTP from "@/models/OTP";
 import { SEND_BY_WHATSAPP } from "./waActions";
 import { sendPushNotification } from "./notificationAction";
+import Notification from "@/models/Notification";
 
 await ensureModelsRegistered();
 
@@ -618,6 +619,7 @@ export async function updateBooking(
     updateCustomerRating?: boolean;
     updateDriverRating?: boolean;
     forceStatusChange?: boolean;
+    isAdminAssignment?: boolean;
   } = {},
 ) {
   try {
@@ -1045,43 +1047,62 @@ export async function updateBooking(
         //@ts-ignore
         const driver = (await Driver.findById(driverIdStr)) as any;
         if (driver) {
-          // Add to activeAlerts
-          if (
-            !driver.activeAlerts ||
-            driver.activeAlerts.bookingId?.toString() !==
-              updatedBooking?._id?.toString()
-          ) {
-            driver.activeAlerts = {
-              bookingId: updatedBooking._id,
-              alertSentAt: new Date(),
-              expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 mins
-              status: "accepted",
-            };
-          } else {
-            driver.activeAlerts.status = "accepted";
+          // If it's a direct assignment, we don't set activeAlerts
+          // as we don't want the modal/sound to trigger Accept/Reject
+          if (!options.isAdminAssignment) {
+            if (
+              !driver.activeAlerts ||
+              driver.activeAlerts.bookingId?.toString() !==
+                updatedBooking?._id?.toString()
+            ) {
+              driver.activeAlerts = {
+                bookingId: updatedBooking._id,
+                alertSentAt: new Date(),
+                expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 mins
+                status: "accepted",
+              };
+            } else {
+              driver.activeAlerts.status = "accepted";
+            }
           }
+          
           driver.markModified("activeAlerts");
           driver.currentBooking = updatedBooking._id;
           await driver.save();
         }
 
         if (driver && (driver as any).fcmToken) {
+          const notificationData = {
+            title: options.isAdminAssignment ? "New Booking Assigned (Direct)" : "You have been assigned a booking!",
+            body: `Pickup: ${updatedBooking.pickupAddress} → Drop: ${updatedBooking.dropAddress}`,
+            type: options.isAdminAssignment ? "direct_assignment" : "booking_assigned",
+            bookingId: serializedBooking.booking_id ?? bookingId,
+            pickupAddress: updatedBooking.pickupAddress ?? "",
+            dropAddress: updatedBooking.dropAddress ?? "",
+            fare: String(updatedBooking.fare ?? ""),
+            customerName:
+              (updatedBooking.customerDetails as any)?.name ?? "Customer",
+            customerMobile:
+              (updatedBooking.customerDetails as any)?.mobile_number ?? "",
+          };
+
+          // Create notification in DB
+          await Notification.create({
+            recipientId: driver._id,
+            recipientType: "driver",
+            title: notificationData.title,
+            body: notificationData.body,
+            data: notificationData,
+          });
+
           await sendPushNotification({
             token: (driver as any).fcmToken,
-            data: {
-              title: "You have been assigned a booking!",
-              body: `Pickup: ${updatedBooking.pickupAddress} → Drop: ${updatedBooking.dropAddress}`,
-              type: "booking_assigned",
-              bookingId: serializedBooking.booking_id ?? bookingId,
-              pickupAddress: updatedBooking.pickupAddress ?? "",
-              dropAddress: updatedBooking.dropAddress ?? "",
-              fare: String(updatedBooking.fare ?? ""),
-              customerName:
-                (updatedBooking.customerDetails as any)?.name ?? "Customer",
-              customerMobile:
-                (updatedBooking.customerDetails as any)?.mobile_number ?? "",
+            data: notificationData as Record<string, string>,
+            notification: {
+              title: notificationData.title,
+              body: notificationData.body,
             },
-            android: { priority: "high" },
+            android: { priority: options.isAdminAssignment ? "normal" : "high" },
           });
         }
       } catch (notifError) {
