@@ -29,7 +29,7 @@ export interface BookingDocument extends Document {
   otp_verified_at?: Date;
   otp_attempts?: number;
 
-  paymentMethod: "cash" | "upi" | "card" | "wallet" | "netbanking";
+  paymentMethod: "cash" | "online" | "upi" | "card" | "wallet" | "netbanking";
   paymentStatus: "pending" | "paid" | "failed";
   paid_amount?: number;
 
@@ -127,7 +127,7 @@ const bookingSchema = new Schema<BookingDocument>(
 
     paymentMethod: {
       type: String,
-      enum: ["cash", "upi", "card", "wallet", "netbanking"],
+      enum: ["cash", "online", "upi", "card", "wallet", "netbanking"],
       default: "cash",
     },
 

@@ -37,6 +37,8 @@ const ALLOWED_FIELDS = [
   "duration",
   "vehicleType",
   "paymentMethod",
+  "paymentStatus",
+  "paid_amount",
   "cancelReason", // Only for cancellation
   "schedule_date",
   "schedule_time",
@@ -149,6 +151,19 @@ export async function PUT(
       }
     }
 
+    // Security check: If customer is updating, ensure it's their own booking
+    if (user && existingBooking.customerDetails) {
+      if (existingBooking.customerDetails.toString() !== user._id.toString()) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Unauthorized: This is not your booking",
+          },
+          { status: 403 },
+        );
+      }
+    }
+
     // Filter and validate update data
     const filteredUpdateData: any = {};
     const errors: string[] = [];
@@ -175,7 +190,7 @@ export async function PUT(
 
         if (
           key === "paymentMethod" &&
-          !["cash", "upi", "card", "wallet"].includes(updateData[key])
+          !["cash", "online", "upi", "card", "wallet"].includes(updateData[key])
         ) {
           errors.push(`Invalid value for paymentMethod`);
           return;
