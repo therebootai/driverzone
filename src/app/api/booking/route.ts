@@ -7,6 +7,7 @@ import Booking from "@/models/Booking";
 import { VERIFY_PAYMENT } from "@/actions/razorpayAction";
 import Customer from "@/models/Customers";
 import { alertService } from "@/services/alertService";
+import { eventEmitter, EVENTS } from "@/utils/eventEmitter";
 
 export async function POST(req: Request) {
   try {
@@ -113,6 +114,13 @@ export async function POST(req: Request) {
     }
 
     await alertService.initializeAlert(newBooking._id as string);
+
+    // Emit real-time event
+    eventEmitter.emit(EVENTS.BOOKING_CREATED, {
+      type: EVENTS.BOOKING_CREATED,
+      bookingId: (newBooking._id as any).toString(),
+      booking: newBooking,
+    });
 
     return NextResponse.json(
       {

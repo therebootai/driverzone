@@ -7,6 +7,7 @@ import Alert from "@/models/Alert";
 import { handleImageUpload } from "@/utils/handleImageUpload";
 import { verifyDriverToken } from "@/utils/jwt";
 import { NextRequest, NextResponse } from "next/server";
+import { eventEmitter, EVENTS } from "@/utils/eventEmitter";
 
 export async function GET(request: NextRequest) {
   try {
@@ -198,6 +199,7 @@ export async function PUT(request: NextRequest) {
       throw new Error("User not found after update");
     }
 
+
     // Calculate dynamic stats for updated user
     const total_rides = await Booking.countDocuments({
       driverDetails: updatedUser._id,
@@ -220,6 +222,16 @@ export async function PUT(request: NextRequest) {
       driverDetails: updatedUser._id,
       status: { $in: ["accepted", "arrived", "started"] }
     }).populate("customerDetails package_type coupon").lean();
+
+    // Emit real-time location event if present
+    if (updateData.currentLocation) {
+      eventEmitter.emit(EVENTS.DRIVER_LOCATION_UPDATED, {
+        type: EVENTS.DRIVER_LOCATION_UPDATED,
+        driverId: updatedUser._id.toString(),
+        location: updateData.currentLocation,
+        bookingId: currentBooking?._id?.toString(), // If on a ride, notify specific booking
+      });
+    }
 
     const userWithStats = {
       ...updatedUser,

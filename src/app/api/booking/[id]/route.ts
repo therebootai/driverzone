@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import mongoose from "mongoose";
+import { eventEmitter, EVENTS } from "@/utils/eventEmitter";
 
 dayjs.extend(customParseFormat);
 
@@ -416,11 +417,17 @@ export async function PUT(
       // Here you would recalculate fare based on new locations
       // This is a placeholder - implement your fare calculation logic
       console.log("Location changed, fare may need recalculation");
+    }
 
-      // You might want to:
-      // 1. Call a fare calculation service
-      // 2. Update the fare field
-      // 3. Re-estimate with new distance/duration
+    // Emit real-time event
+    if (updatedBooking) {
+      eventEmitter.emit(EVENTS.BOOKING_UPDATED, {
+        type: EVENTS.BOOKING_UPDATED,
+        bookingId: (updatedBooking._id as any).toString(),
+        status: updatedBooking.status,
+        driverDetails: (updatedBooking as any).driverDetails,
+        otp: (updatedBooking as any).otp,
+      });
     }
 
     return NextResponse.json({
