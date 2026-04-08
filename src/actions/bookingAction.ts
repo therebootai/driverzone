@@ -1168,22 +1168,57 @@ export async function updateBooking(
       (newStatus === "completed" || newStatus === "cancelled")
     ) {
       try {
-        if (updatedBooking.driverDetails) {
-          const driverIdToCleanup =
-            updatedBooking.driverDetails instanceof Types.ObjectId
-              ? updatedBooking.driverDetails
-              : (updatedBooking.driverDetails as any)._id;
+        const driverIdToCleanup =
+          updatedBooking.driverDetails instanceof Types.ObjectId
+            ? updatedBooking.driverDetails
+            : (updatedBooking.driverDetails as any)?._id;
 
+        if (driverIdToCleanup) {
+          // If cancelled, send push notification to the driver before cleaning up currentBooking
+          if (newStatus === "cancelled") {
+            const driver = await Driver.findById(driverIdToCleanup);
+            if (driver && driver.fcmToken) {
+              const notificationData = {
+                title: "Ride Cancelled",
+                body: `The ride spanning from ${updatedBooking.pickupAddress} has been cancelled.`,
+                type: "ride_cancelled",
+                bookingId: serializedBooking.booking_id ?? bookingId,
+              };
+
+              // Create notification in DB
+              await Notification.create({
+                recipientId: driver._id,
+                recipientType: "driver",
+                title: notificationData.title,
+                body: notificationData.body,
+                data: notificationData,
+              });
+
+              // Send push
+              await sendPushNotification({
+                token: driver.fcmToken,
+                data: notificationData as any,
+                notification: {
+                  title: notificationData.title,
+                  body: notificationData.body,
+                },
+                android: { priority: "high" },
+              });
+            }
+          }
+
+          // Cleanup driver's active state
           await Driver.findByIdAndUpdate(driverIdToCleanup, {
             $set: { activeAlerts: null, currentBooking: null },
           });
         }
       } catch (cleanupError) {
-        console.error("Failed to cleanup activeAlerts:", cleanupError);
+        console.error("Failed to cleanup activeAlerts and notify driver:", cleanupError);
       }
     }
 
     return {
+
       success: true,
       message: "Booking updated successfully",
       data: serializedBooking,
