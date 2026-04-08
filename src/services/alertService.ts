@@ -148,10 +148,18 @@ export class PriorityAlertService {
         "currentLocation.lastUpdated": { $gte: thirtyMinutesAgo }, 
       };
 
+      // Diagnostic logging
+      const onlineDriversCount = await Driver.countDocuments({ isOnline: true });
+      const onlineAndVerifiedCount = await Driver.countDocuments({ isOnline: true, verified: true });
+      const onlineVerifiedWithTokenCount = await Driver.countDocuments({ isOnline: true, verified: true, fcmToken: { $exists: true, $ne: "" } });
+      console.log(`[AlertService] Diagnostic: Online: ${onlineDriversCount}, Verified: ${onlineAndVerifiedCount}, With Token: ${onlineVerifiedWithTokenCount}`);
+
       // Use any to bypass "union type too complex" error
       const drivers = (await (Driver as any)
         .find(filter)
         .exec()) as DriverDocument[];
+      
+      console.log(`[AlertService] Found ${drivers.length} potential drivers after DB query (status/token filters)`);
 
       // Calculate distances and filter by radius
       const driversWithDistance = drivers
@@ -232,6 +240,10 @@ export class PriorityAlertService {
 
       const payload: any = {
         token: driver.fcmToken,
+        notification: {
+          title: "New Ride Request",
+          body: `New ride request from ${booking.pickupAddress}`,
+        },
         data: {
           title: "New Ride Request",
           body: `New ride request from ${booking.pickupAddress}`,
