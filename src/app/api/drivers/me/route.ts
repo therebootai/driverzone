@@ -177,7 +177,15 @@ export async function PUT(request: NextRequest) {
       } else if (key === "currentLocation.lastUpdated") {
         updateData[key] = new Date(formData.get(key) as string);
       } else {
-        updateData[key] = formData.get(key);
+        const value = formData.get(key);
+        // Handle boolean strings
+        if (value === "true") {
+          updateData[key] = true;
+        } else if (value === "false") {
+          updateData[key] = false;
+        } else {
+          updateData[key] = value;
+        }
       }
     }
 
