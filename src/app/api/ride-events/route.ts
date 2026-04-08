@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { eventEmitter, EVENTS } from "@/utils/eventEmitter";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300; // Explicitly set to Vercel's Pro max duration
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -27,7 +28,12 @@ export async function GET(req: NextRequest) {
         // Include type in the data blob and send as unnamed event (message)
         const payload = { ...data, type };
         const formattedData = `data: ${JSON.stringify(payload)}\n\n`;
-        controller.enqueue(encoder.encode(formattedData));
+        try {
+          controller.enqueue(encoder.encode(formattedData));
+        } catch (e) {
+          // Controller might be closed
+          cleanup();
+        }
       };
 
       // Listen for various events
@@ -39,20 +45,40 @@ export async function GET(req: NextRequest) {
       eventEmitter.on(EVENTS.BOOKING_UPDATED, onBookingUpdated);
       eventEmitter.on(EVENTS.DRIVER_LOCATION_UPDATED, onLocationUpdated);
 
-      // Keep connection alive with heartbeat every 30 seconds
+      // Keep connection alive with heartbeat every 20 seconds
       const heartbeat = setInterval(() => {
-        controller.enqueue(encoder.encode(": heartbeat\n\n"));
-      }, 30000);
+        try {
+          controller.enqueue(encoder.encode(": heartbeat\n\n"));
+        } catch (e) {
+          cleanup();
+        }
+      }, 20000);
 
-      // Cleanup when connection is closed
-      req.signal.addEventListener("abort", () => {
+      const cleanup = () => {
         clearInterval(heartbeat);
+        clearTimeout(vercelTimeout);
         eventEmitter.off(EVENTS.BOOKING_CREATED, onBookingCreated);
         eventEmitter.off(EVENTS.BOOKING_UPDATED, onBookingUpdated);
         eventEmitter.off(EVENTS.DRIVER_LOCATION_UPDATED, onLocationUpdated);
-        controller.close();
+        try {
+          controller.close();
+        } catch (e) {}
+      };
+
+      // Vercel Serverless Task Timeout Prevention
+      // Close connection just before the 300s limit to allow clean reconnection
+      const vercelTimeout = setTimeout(() => {
+        cleanup();
+      }, 250000); // 250 seconds (4.16 minutes)
+
+      // Cleanup when connection is closed by client
+      req.signal.addEventListener("abort", () => {
+        cleanup();
       });
     },
+    cancel() {
+       // This is called when the stream is cancelled by the consumer
+    }
   });
 
   return new Response(stream, { headers: responseHeaders });
