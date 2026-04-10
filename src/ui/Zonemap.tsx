@@ -14,17 +14,15 @@ import { useEffect, useRef } from "react";
 const MapController = ({
   onMapClick,
   center,
+  bounds,
 }: {
   onMapClick: (latlng: L.LatLng) => void;
   center?: [number, number];
+  bounds?: L.LatLngBoundsExpression;
 }) => {
-  useMapEvents({
-    click: (e: L.LeafletMouseEvent) => {
-      onMapClick(e.latlng);
-    },
-  });
   const map = useMap();
   const prevCenterRef = useRef<[number, number] | undefined>(center);
+  const prevBoundsRef = useRef<string | undefined>(undefined);
 
   useMapEvents({
     click: (e: L.LeafletMouseEvent) => {
@@ -33,8 +31,13 @@ const MapController = ({
   });
 
   useEffect(() => {
-    // Only update if center actually changed
-    if (
+    if (bounds) {
+      const boundsStr = JSON.stringify(bounds);
+      if (prevBoundsRef.current !== boundsStr) {
+        map.fitBounds(bounds);
+        prevBoundsRef.current = boundsStr;
+      }
+    } else if (
       center &&
       (!prevCenterRef.current ||
         center[0] !== prevCenterRef.current[0] ||
@@ -43,7 +46,8 @@ const MapController = ({
       map.setView([center[0], center[1]], map.getZoom());
       prevCenterRef.current = center;
     }
-  }, [center, map]);
+  }, [center, bounds, map]);
+
   return null;
 };
 
@@ -69,12 +73,6 @@ const ZoneMap = ({
         .getLatLngs()[0]
         .map((latLng: L.LatLng) => [latLng.lng, latLng.lat]);
 
-      // const newZone = {
-      //   id: layer._leaflet_id,
-      //   name: `Zone ${zones.length + 1}`,
-      //   coordinates: coordinates,
-      //   color: "#3388ff",
-      // };
       onZoneCreate && onZoneCreate(coordinates);
     }
   };
@@ -87,16 +85,13 @@ const ZoneMap = ({
           const latLngs = layer.getLatLngs();
           let coordinates: [number, number][] = [];
 
-          // Extract coordinates based on the polygon type
           if (latLngs.length > 0) {
             if (latLngs[0] instanceof L.LatLng) {
-              // Simple polygon
               coordinates = (latLngs as L.LatLng[]).map((latLng: L.LatLng) => [
                 latLng.lng,
                 latLng.lat,
               ]);
             } else if (Array.isArray(latLngs[0])) {
-              // Polygon with holes - take the outer ring (first array)
               const outerRing = latLngs[0] as L.LatLng[];
               coordinates = outerRing.map((latLng: L.LatLng) => [
                 latLng.lng,
@@ -121,6 +116,11 @@ const ZoneMap = ({
       onZoneDelete && onZoneDelete(layer?._leaflet_id);
     });
   };
+
+  const bounds =
+    existingZones && existingZones.length > 0
+      ? L.latLngBounds(existingZones.map((coord) => [coord[1], coord[0]]))
+      : undefined;
 
   return (
     <div style={{ height: "500px", width: "100%" }} className="relative">
@@ -163,7 +163,6 @@ const ZoneMap = ({
           )}
         </FeatureGroup>
 
-        {/* Render existing zones */}
         {existingZones && Array.isArray(existingZones) && (
           <Polygon
             positions={existingZones?.map((coord: number[]) => [
@@ -176,6 +175,7 @@ const ZoneMap = ({
 
         <MapController
           center={defaultCenter}
+          bounds={bounds?.isValid() ? bounds : undefined}
           onMapClick={(latlng) => console.log("Map clicked:", latlng)}
         />
       </MapContainer>
