@@ -1,4 +1,3 @@
-import { PackageDocument } from "@/models/Packages";
 import { Types } from "mongoose";
 
 export type UserNameForm = {
@@ -141,6 +140,8 @@ export type DriverDocument = {
 
   approvedDeviceId?: string;
   pendingDeviceId?: string;
+  total_rides: number;
+  rating: number;
 
   createdAt?: string;
   updatedAt?: string;
