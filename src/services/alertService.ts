@@ -52,6 +52,7 @@ export class PriorityAlertService {
           alert.assignedDrivers = [] as any;
           alert.expiresAt = new Date(Date.now() + 5 * 60 * 1000);
           await alert.save();
+          this.processAlert(((alert as any)._id).toString());
         }
         return alert;
       }

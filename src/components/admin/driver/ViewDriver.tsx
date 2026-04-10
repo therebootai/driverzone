@@ -134,6 +134,8 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Field label="Driver Name" value={driver.driver_name} />
           <Field label="Mobile Number" value={driver.mobile_number} />
+          <Field label="Total Rides" value={driver.total_rides || 0} />
+          <Field label="Average Rating" value={driver.rating || "0.0"} />
           <Field label="Emergency Number" value={driver.emergency_number} />
           <Field label="City / Area" value={driver.city_area} />
           <Field label="Address" value={driver.address} />
