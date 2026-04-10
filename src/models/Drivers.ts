@@ -113,6 +113,7 @@ export interface DriverDocument extends Document {
     expiresAt: Date;
     status: "pending" | "accepted" | "rejected" | "expired";
   } | null;
+  total_rides: number;
 }
 
 const vehicleDetailsSchema = new Schema<VehicleDetails>({
@@ -282,6 +283,7 @@ const driverSchema = new Schema<DriverDocument>(
 
     approvedDeviceId: { type: String },
     pendingDeviceId: { type: String },
+    total_rides: { type: Number, default: 0 },
   },
   { timestamps: true },
 );
