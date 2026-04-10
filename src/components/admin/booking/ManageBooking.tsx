@@ -90,6 +90,7 @@ const ManageBooking = ({
   });
   const [driverSearchTerm, setDriverSearchTerm] = useState("");
   const [isLoadingDrivers, setIsLoadingDrivers] = useState(false);
+  const [isTriggering, setIsTriggering] = useState<string | null>(null);
 
   // OTP flow states
   const [otpStep, setOtpStep] = useState<
@@ -433,7 +434,7 @@ const ManageBooking = ({
 
   // Manual Trigger Alert
   const handleManualTrigger = async (bookingId: string) => {
-    setIsLoading(true);
+    setIsTriggering(bookingId);
     setError("");
     setSuccess("");
     try {
@@ -447,7 +448,7 @@ const ManageBooking = ({
     } catch (err: any) {
       setError(err.message || "An error occurred");
     } finally {
-      setIsLoading(false);
+      setIsTriggering(null);
     }
   };
 
@@ -483,10 +484,10 @@ const ManageBooking = ({
         <button
           key="trigger"
           onClick={() => handleManualTrigger(booking._id)}
-          disabled={isLoading}
-          className={`px-3 py-1 rounded bg-orange-600 text-white text-sm hover:bg-orange-700 transition-colors ${isLoading ? "opacity-50" : ""}`}
+          disabled={isTriggering === booking._id}
+          className={`px-3 py-1 rounded bg-orange-600 text-white text-sm hover:bg-orange-700 transition-colors ${isTriggering === booking._id ? "opacity-50" : ""}`}
         >
-          {isLoading ? "Triggering..." : "Trigger Alert"}
+          {isTriggering === booking._id ? "Triggering..." : "Trigger Alert"}
         </button>,
       );
     }
