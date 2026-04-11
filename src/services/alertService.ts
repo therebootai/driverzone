@@ -4,6 +4,7 @@ import Driver, { DriverDocument } from "@/models/Drivers";
 import { calculateDistance } from "@/utils/distanceCalculator";
 import mongoose from "mongoose";
 import { sendPushNotification } from "@/actions/notificationAction";
+import { socketService, EVENTS } from "@/lib/socket";
 
 export class PriorityAlertService {
   private static instance: PriorityAlertService;
@@ -74,6 +75,12 @@ export class PriorityAlertService {
 
       // Start the alert process
       this.processAlert(((alert as any)._id).toString());
+
+      // Notify admin of new active alert
+      socketService.emit(EVENTS.BOOKING_CREATED, { 
+        bookingId: booking._id, 
+        alertId: alert._id 
+      }, "admin");
 
       return alert;
     } catch (error) {
@@ -227,6 +234,16 @@ export class PriorityAlertService {
 
         // Send push notification to the first driver
         await this.sendDriverAlert(firstDriver, alert);
+
+        // Also emit via socket for instant delivery if driver is connected
+        socketService.emit(EVENTS.RIDE_REQUEST, {
+          alertId: (alert._id as any).toString(),
+          alertSlug: alert.alert_id,
+          bookingId: (alert.booking_id._id || alert.booking_id).toString(),
+          pickupAddress: alert.booking_id.pickupAddress,
+          fare: alert.booking_id.fare,
+          expiresAt: alert.expiresAt
+        }, `driver:${firstDriver._id}`);
 
         alert.currentDriverIndex = 0;
         await alert.save();
@@ -428,6 +445,20 @@ export class PriorityAlertService {
 
       // Notify other drivers that ride is taken
       await this.notifyOtherDrivers(alert, (driver._id as any).toString());
+
+      // Notify customer and admin of acceptance
+      socketService.emit(EVENTS.BOOKING_ACCEPTED, {
+        bookingId: alert.booking_id,
+        driverId: driver._id,
+        driverName: driver.driver_name,
+        driverPhone: driver.mobile_number,
+        vehicleNumber: driver.vehicle_details?.vehicle_number
+      }, `ride:${alert.booking_id}`);
+      
+      socketService.emit(EVENTS.BOOKING_UPDATED, {
+        bookingId: alert.booking_id,
+        status: "assigned"
+      }, "admin");
     } catch (error) {
       console.error("Error handling driver acceptance:", error);
     }
@@ -689,6 +720,16 @@ export class PriorityAlertService {
       alert.status = "cancelled";
       alert.cancelledAt = new Date();
       await alert.save();
+
+      // Notify relevant parties via socket
+      socketService.emit(EVENTS.BOOKING_CANCELLED, {
+        bookingId: alert.booking_id,
+        reason: "Cancelled by Admin/Service"
+      }, `ride:${alert.booking_id}`);
+      
+      socketService.emit(EVENTS.ALERT_CANCELLED, {
+        alertId: alert.alert_id
+      }, "admin");
 
       // Notify all assigned drivers
       await this.notifyDriversOfCancellation(alert);

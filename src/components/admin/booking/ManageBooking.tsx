@@ -16,6 +16,7 @@ import {
 import { getAllDriver } from "@/actions/driverActions";
 import { triggerDriverAlert } from "@/actions/alertActions";
 import ViewBooking from "./ViewBooking";
+import { useSocket } from "@/hooks/useSocket";
 
 type UpdateActionType =
   | "assign_driver"
@@ -55,6 +56,29 @@ const ManageBooking = ({
 
   const { getParam, updateFilters } = useQueryParamsAdvanced();
   const viewId = getParam("view");
+
+  const { socket } = useSocket("admin");
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleUpdate = () => {
+      console.log("Admin received live sync event, refreshing bookings...");
+      fetchData(pagination.currentPage);
+    };
+
+    socket.on("booking:created", handleUpdate);
+    socket.on("booking:updated", handleUpdate);
+    socket.on("booking:cancelled", handleUpdate);
+    socket.on("booking:accepted", handleUpdate);
+
+    return () => {
+      socket.off("booking:created", handleUpdate);
+      socket.off("booking:updated", handleUpdate);
+      socket.off("booking:cancelled", handleUpdate);
+      socket.off("booking:accepted", handleUpdate);
+    };
+  }, [socket, pagination.currentPage, fetchData]);
 
   useEffect(() => {
     if (viewId && allBookings) {
