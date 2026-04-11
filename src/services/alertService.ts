@@ -133,8 +133,23 @@ export class PriorityAlertService {
     excludedDriverIds: mongoose.Types.ObjectId[] = [],
   ) {
     try {
-      // 30 minutes ago - increased from 5 minutes to be more lenient
-      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+      // 2 hours ago - increased from 30 minutes to be more lenient as per user request
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+      // Auto-offline drivers whose location is older than 2 hours
+      const offlineResult = await Driver.updateMany(
+        {
+          isOnline: true,
+          "currentLocation.lastUpdated": { $lt: twoHoursAgo }
+        },
+        {
+          $set: { isOnline: false }
+        }
+      );
+
+      if (offlineResult.modifiedCount > 0) {
+        console.log(`[AlertService] Auto-offlined ${offlineResult.modifiedCount} stale drivers (last update > 2h)`);
+      }
 
       // Find online drivers
       const filter: any = {
@@ -146,7 +161,7 @@ export class PriorityAlertService {
         _id: { $nin: excludedDriverIds },
         "currentLocation.lat": { $exists: true },
         "currentLocation.lng": { $exists: true },
-        "currentLocation.lastUpdated": { $gte: thirtyMinutesAgo }, 
+        "currentLocation.lastUpdated": { $gte: twoHoursAgo }, 
       };
 
       // Diagnostic logging
