@@ -7,6 +7,7 @@ export const EVENTS = {
   BOOKING_UPDATED: "booking:updated",
   BOOKING_ACCEPTED: "booking:accepted",
   BOOKING_CANCELLED: "booking:cancelled",
+  BOOKING_ASSIGNED: "booking:assigned",
   
   // Alert events
   RIDE_REQUEST: "ride:request",

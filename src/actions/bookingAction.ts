@@ -1104,6 +1104,21 @@ export async function updateBooking(
             },
             android: { priority: options.isAdminAssignment ? "normal" : "high" },
           });
+
+          // Emit socket event for realtime UI update
+          try {
+            const { socketService, EVENTS } = await import("@/lib/socket");
+            socketService.emit(
+              EVENTS.BOOKING_ASSIGNED,
+              notificationData,
+              `driver:${driver._id}`,
+            );
+          } catch (socketError) {
+            console.error(
+              "Failed to emit booking:assigned to driver:",
+              socketError,
+            );
+          }
         }
       } catch (notifError) {
         console.error(
