@@ -5,6 +5,7 @@ import { calculateDistance } from "@/utils/distanceCalculator";
 import mongoose from "mongoose";
 import { sendPushNotification } from "@/actions/notificationAction";
 import { socketService, EVENTS } from "@/lib/socket";
+import { autoOfflineStaleDrivers } from "@/utils/driverUtils";
 
 export class PriorityAlertService {
   private static instance: PriorityAlertService;
@@ -140,23 +141,8 @@ export class PriorityAlertService {
     excludedDriverIds: mongoose.Types.ObjectId[] = [],
   ) {
     try {
-      // 2 hours ago - increased from 30 minutes to be more lenient as per user request
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-
-      // Auto-offline drivers whose location is older than 2 hours
-      const offlineResult = await Driver.updateMany(
-        {
-          isOnline: true,
-          "currentLocation.lastUpdated": { $lt: twoHoursAgo }
-        },
-        {
-          $set: { isOnline: false }
-        }
-      );
-
-      if (offlineResult.modifiedCount > 0) {
-        console.log(`[AlertService] Auto-offlined ${offlineResult.modifiedCount} stale drivers (last update > 2h)`);
-      }
+      await autoOfflineStaleDrivers();
 
       // Find online drivers
       const filter: any = {

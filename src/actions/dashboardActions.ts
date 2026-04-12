@@ -3,12 +3,14 @@ import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import Customers from "@/models/Customers";
 import Drivers from "@/models/Drivers";
 import Booking from "@/models/Booking";
+import { autoOfflineStaleDrivers } from "@/utils/driverUtils";
 
 await ensureModelsRegistered();
 
 export const GET_ANALYTICS = async () => {
   try {
     await connectToDatabase();
+    await autoOfflineStaleDrivers();
     // Get driver counts
     const totalDrivers = await Drivers.countDocuments();
     const activeDrivers = await Drivers.countDocuments({ status: true });

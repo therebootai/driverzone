@@ -288,6 +288,9 @@ const driverSchema = new Schema<DriverDocument>(
   { timestamps: true },
 );
 
+// Compound index for optimized stale driver cleanup
+driverSchema.index({ isOnline: 1, "currentLocation.lastUpdated": 1 });
+
 driverSchema.pre("findOneAndUpdate", async function (next) {
   const update = this.getUpdate() as any;
 

@@ -2,6 +2,8 @@ import { createServer } from "http";
 import { parse } from "url";
 import next from "next";
 import { socketService } from "./src/lib/socket";
+import cron from "node-cron";
+import { autoOfflineStaleDrivers } from "./src/utils/driverUtils";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -33,5 +35,12 @@ app.prepare().then(() => {
   httpServer.listen(port, () => {
     console.log(`> Ready on http://${hostname}:${port}`);
     console.log(`> Real-time Socket.io server initialized`);
+
+    // Schedule stale driver cleanup every 15 minutes
+    cron.schedule("*/15 * * * *", async () => {
+      console.log("[Cron] Running stale driver cleanup...");
+      await autoOfflineStaleDrivers();
+    });
+    console.log(`> Background cron worker initialized (15m interval)`);
   });
 });
