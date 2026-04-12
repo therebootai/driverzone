@@ -121,6 +121,19 @@ export async function POST(req: Request) {
     await alertService.initializeAlert(newBooking._id as string);
 
     // Emit real-time event
+    try {
+      const { socketService } = await import("@/lib/socket");
+      socketService.emit("booking:created", {
+        bookingId: (newBooking._id as any).toString(),
+        pickupAddress: newBooking.pickupAddress,
+        dropAddress: newBooking.dropAddress,
+        fare: newBooking.fare || newBooking.estimatedFare,
+        customerName: (newBooking as any).customerDetails?.name,
+      }, "admin");
+    } catch (socketError) {
+      console.error("Failed to emit booking:created to admin:", socketError);
+    }
+
     eventEmitter.emit(EVENTS.BOOKING_CREATED, {
       type: EVENTS.BOOKING_CREATED,
       bookingId: (newBooking._id as any).toString(),
