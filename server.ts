@@ -1,18 +1,28 @@
 import { createServer } from "http";
 import { parse } from "url";
 import next from "next";
-import { socketService } from "./src/lib/socket";
-import cron from "node-cron";
-import { autoOfflineStaleDrivers } from "./src/utils/driverUtils";
+import { loadEnvConfig } from "@next/env";
 
-const dev = process.env.NODE_ENV !== "production";
-const hostname = "localhost";
-const port = parseInt(process.env.PORT || "3000", 10);
+// 1. Load environment variables first
+const projectDir = process.cwd();
+loadEnvConfig(projectDir);
 
-const app = next({ dev, hostname, port });
-const handle = app.getRequestHandler();
+// 2. Start the application
+const startServer = async () => {
+  const dev = process.env.NODE_ENV !== "production";
+  const hostname = "localhost";
+  const port = parseInt(process.env.PORT || "3000", 10);
 
-app.prepare().then(() => {
+  const app = next({ dev, hostname, port });
+  const handle = app.getRequestHandler();
+
+  // Dynamically import services that depend on the database/env
+  const { socketService } = await import("./src/lib/socket");
+  const cron = (await import("node-cron")).default;
+  const { autoOfflineStaleDrivers } = await import("./src/utils/driverUtils");
+
+  await app.prepare();
+
   const httpServer = createServer((req, res) => {
     try {
       const parsedUrl = parse(req.url!, true);
@@ -43,4 +53,9 @@ app.prepare().then(() => {
     });
     console.log(`> Background cron worker initialized (15m interval)`);
   });
+};
+
+startServer().catch((err) => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
 });
