@@ -788,19 +788,23 @@ export class PriorityAlertService {
         if (assignedDriver.driverId) {
           const driverIdStr = assignedDriver.driverId.toString();
           socketService.emit(EVENTS.ALERT_CANCELLED, {
-            alertId: alert.alert_id,
+            alertId: (alert._id as any).toString(),
+            alertSlug: alert.alert_id,
             bookingId: alert.booking_id.toString(),
             message: "Ride alert has been cancelled",
           }, `driver:${driverIdStr}`);
         }
 
+        //@ts-ignore
         const driver = await Driver.findById(assignedDriver.driverId);
         if (driver && driver.fcmToken) {
           await sendPushNotification({
             token: driver.fcmToken,
             data: {
               type: "alert_cancelled",
-              alertId: alert.alert_id,
+              alertId: (alert._id as any).toString(),
+              alertSlug: alert.alert_id,
+              bookingId: alert.booking_id.toString(),
               message: "Ride alert has been cancelled",
             },
           });
