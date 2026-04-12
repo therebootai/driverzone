@@ -1173,38 +1173,18 @@ export async function updateBooking(
             ? updatedBooking.driverDetails
             : (updatedBooking.driverDetails as any)?._id;
 
+        if (newStatus === "cancelled") {
+          // 1. Cancel the alert process and notify drivers
+          const { alertService } = await import("@/services/alertService");
+          await alertService.cancelAlertByBookingId(bookingId);
+        }
+
         if (driverIdToCleanup) {
           // If cancelled, send push notification to the driver before cleaning up currentBooking
-          if (newStatus === "cancelled") {
-            const driver = await Driver.findById(driverIdToCleanup);
-            if (driver && driver.fcmToken) {
-              const notificationData = {
-                title: "Ride Cancelled",
-                body: `The ride spanning from ${updatedBooking.pickupAddress} has been cancelled.`,
-                type: "ride_cancelled",
-                bookingId: serializedBooking.booking_id ?? bookingId,
-              };
-
-              // Create notification in DB
-              await Notification.create({
-                recipientId: driver._id,
-                recipientType: "driver",
-                title: notificationData.title,
-                body: notificationData.body,
-                data: notificationData,
-              });
-
-              // Send push
-              await sendPushNotification({
-                token: driver.fcmToken,
-                data: notificationData as any,
-                notification: {
-                  title: notificationData.title,
-                  body: notificationData.body,
-                },
-                android: { priority: "high" },
-              });
-            }
+          // Note: alertService.cancelAlertByBookingId already handles notifying assigned drivers,
+          // but if the driver is already assigned to the BOOKING object, we might want extra notification
+          if (newStatus === "cancelled" && !updatedBooking.driverDetails) {
+            // Already handled by alertService
           }
 
           // Cleanup driver's active state
