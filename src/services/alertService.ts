@@ -223,6 +223,7 @@ export class PriorityAlertService {
 
         // Also emit via socket for instant delivery if driver is connected
         socketService.emit(EVENTS.RIDE_REQUEST, {
+          type: EVENTS.RIDE_REQUEST,
           alertId: (alert._id as any).toString(),
           alertSlug: alert.alert_id,
           bookingId: (alert.booking_id._id || alert.booking_id).toString(),
@@ -428,6 +429,27 @@ export class PriorityAlertService {
 
       // Clear any pending timeouts
       this.clearAlertTimeout((alert._id as any).toString());
+
+      // Notify relevant parties via socket
+      socketService.emit(EVENTS.BOOKING_ACCEPTED, {
+        type: EVENTS.BOOKING_ACCEPTED,
+        bookingId: alert.booking_id.toString(),
+        status: "assigned",
+        driverDetails: {
+          _id: driver._id,
+          driver_name: driver.driver_name,
+          mobile_number: driver.mobile_number,
+          vehicle_number: driver.vehicle_number,
+          currentLocation: driver.currentLocation,
+        }
+      }, `ride:${alert.booking_id}`);
+
+      // Notify admin
+      socketService.emit(EVENTS.BOOKING_UPDATED, {
+        type: EVENTS.BOOKING_UPDATED,
+        bookingId: alert.booking_id.toString(),
+        status: "assigned",
+      }, "admin");
 
       // Notify other drivers that ride is taken
       await this.notifyOtherDrivers(alert, (driver._id as any).toString());
@@ -738,12 +760,14 @@ export class PriorityAlertService {
 
       // Notify relevant parties via socket
       socketService.emit(EVENTS.BOOKING_CANCELLED, {
-        bookingId: alert.booking_id,
+        type: EVENTS.BOOKING_CANCELLED,
+        bookingId: alert.booking_id.toString(),
         reason: "Cancelled by Admin/Service"
       }, `ride:${alert.booking_id}`);
 
       // Also notify admin room
       socketService.emit(EVENTS.BOOKING_CANCELLED, {
+        type: EVENTS.BOOKING_CANCELLED,
         bookingId: alert.booking_id.toString(),
         reason: "Cancelled by Admin/Service"
       }, "admin");
@@ -788,6 +812,7 @@ export class PriorityAlertService {
         if (assignedDriver.driverId) {
           const driverIdStr = assignedDriver.driverId.toString();
           socketService.emit(EVENTS.ALERT_CANCELLED, {
+            type: EVENTS.ALERT_CANCELLED,
             alertId: (alert._id as any).toString(),
             alertSlug: alert.alert_id,
             bookingId: alert.booking_id.toString(),
