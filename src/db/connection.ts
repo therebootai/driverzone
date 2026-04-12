@@ -3,11 +3,7 @@ import mongoose from "mongoose";
 import dns from "dns";
 
 
-const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI is not defined in environment variables");
-}
+const getMongoUri = () => process.env.MONGO_URI || process.env.MONGODB_URI;
 
 // Interface for cached connection
 interface MongooseCache {
@@ -48,8 +44,13 @@ export async function connectToDatabase() {
       socketTimeoutMS: 45000,
     };
     
+    const MONGODB_URI = getMongoUri();
+    if (!MONGODB_URI) {
+      throw new Error("MONGODB_URI is not defined in environment variables");
+    }
+
     cached.promise = mongoose
-    .connect(MONGODB_URI as string, opts)
+      .connect(MONGODB_URI as string, opts)
     .then((mongooseInstance) => {
         console.log("✅ MongoDB connected successfully");
         return mongooseInstance;
