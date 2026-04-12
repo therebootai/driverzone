@@ -407,23 +407,27 @@ export async function PUT(
       }
     }
 
-    // If booking was cancelled, send notification
+    // If booking was cancelled, send notification and stop alerts
     if (filteredUpdateData.status === "cancelled") {
-      // Here you would typically:
-      // 1. Send cancellation notification to driver if assigned
-      // 2. Process refund if payment was made
-      // 3. Update driver's availability
-
-      // Example notification logic (you'd implement your actual notification service)
-      if (updatedBooking?.driverDetails) {
-        console.log(
-          `Send cancellation notification to driver: ${updatedBooking.driverDetails._id}`,
-        );
+      // 1. Cancel the alert process and notify drivers
+      try {
+        const { alertService } = await import("@/services/alertService");
+        await alertService.cancelAlertByBookingId(bookingId);
+        console.log(`Alert cancelled for booking: ${bookingId}`);
+      } catch (err) {
+        console.error("Failed to cancel alert in route handler:", err);
       }
 
-      // If payment was made, initiate refund
+      // 2. Process refund if payment was made
       if (updatedBooking?.paymentStatus === "paid") {
         console.log(`Initiate refund for booking: ${bookingId}`);
+        // Add actual refund logic here if needed
+      }
+
+      // 3. Send additional notification to driver if assigned
+      if (updatedBooking?.driverDetails) {
+        // (Previously it was just logging, now it's handled by alertService.cancelAlertByBookingId 
+        // which calls notifyDriversOfCancellation, but we can do extra logic here if needed)
       }
     }
 

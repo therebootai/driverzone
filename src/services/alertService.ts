@@ -340,7 +340,7 @@ export class PriorityAlertService {
 
       // Find driver in assigned list
       const driverIndex = alert.assignedDrivers.findIndex(
-        (d) => d.driverId.toString() === driverId,
+        (d) => d.driverId?.toString() === driverId,
       );
 
       if (driverIndex === -1) {
@@ -356,7 +356,7 @@ export class PriorityAlertService {
       // Update driver's alert status
       if (
         driver.activeAlerts &&
-        driver.activeAlerts.bookingId.toString() === alert.booking_id.toString()
+        driver.activeAlerts.bookingId?.toString() === alert.booking_id?.toString()
       ) {
         driver.activeAlerts.status =
           response === "accepted" ? "accepted" : "rejected";
@@ -652,6 +652,35 @@ export class PriorityAlertService {
   }
 
   /**
+   * Cancel alert by booking ID
+   */
+  async cancelAlertByBookingId(bookingId: string): Promise<boolean> {
+    try {
+      const alert = await Alert.findOne({
+        $or: [
+          { booking_id: mongoose.Types.ObjectId.isValid(bookingId) ? new mongoose.Types.ObjectId(bookingId) : null },
+          { booking_id: bookingId }
+        ],
+        status: "active"
+      });
+      
+      if (!alert) {
+        // Even if alert is not found, we should ensure any driver's activeAlerts are cleared for this booking
+        await Driver.updateMany(
+          { "activeAlerts.bookingId": bookingId },
+          { $set: { activeAlerts: null } }
+        );
+        return false;
+      }
+      
+      return this.cancelAlert((alert._id as any).toString());
+    } catch (error) {
+      console.error("Error cancelling alert by booking ID:", error);
+      return false;
+    }
+  }
+
+  /**
    * Notify other drivers that ride has been accepted
    */
   private async notifyOtherDrivers(
@@ -712,6 +741,12 @@ export class PriorityAlertService {
         bookingId: alert.booking_id,
         reason: "Cancelled by Admin/Service"
       }, `ride:${alert.booking_id}`);
+
+      // Also notify admin room
+      socketService.emit(EVENTS.BOOKING_CANCELLED, {
+        bookingId: alert.booking_id.toString(),
+        reason: "Cancelled by Admin/Service"
+      }, "admin");
       
       socketService.emit(EVENTS.ALERT_CANCELLED, {
         alertId: alert.alert_id
@@ -749,6 +784,16 @@ export class PriorityAlertService {
   private async notifyDriversOfCancellation(alert: any): Promise<void> {
     try {
       for (const assignedDriver of alert.assignedDrivers) {
+        // Notify via socket for instant dismissal
+        if (assignedDriver.driverId) {
+          const driverIdStr = assignedDriver.driverId.toString();
+          socketService.emit(EVENTS.ALERT_CANCELLED, {
+            alertId: alert.alert_id,
+            bookingId: alert.booking_id.toString(),
+            message: "Ride alert has been cancelled",
+          }, `driver:${driverIdStr}`);
+        }
+
         const driver = await Driver.findById(assignedDriver.driverId);
         if (driver && driver.fcmToken) {
           await sendPushNotification({
