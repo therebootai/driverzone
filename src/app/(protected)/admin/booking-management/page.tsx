@@ -7,6 +7,7 @@ import { GetBookingsParams } from "@/types/types";
 import ManageBooking from "@/components/admin/booking/ManageBooking";
 import { revalidatePath } from "next/cache";
 import { authorizeAccess } from "@/utils/authorizeAccess";
+import RealtimeRideNotification from "@/components/admin/RealtimeRideNotification";
 
 const BookingManagement = async ({
   searchParams,
@@ -47,6 +48,7 @@ const BookingManagement = async ({
 
   return (
     <AdminTemplate className="p-6 flex flex-col gap-6">
+      <RealtimeRideNotification />
       <BookingPageHeader />
       <Suspense
         fallback={

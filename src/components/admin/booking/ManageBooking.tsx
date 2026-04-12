@@ -17,6 +17,7 @@ import { getAllDriver } from "@/actions/driverActions";
 import { triggerDriverAlert } from "@/actions/alertActions";
 import ViewBooking from "./ViewBooking";
 import { useSocket } from "@/hooks/useSocket";
+import { useRouter } from "next/navigation";
 
 type UpdateActionType =
   | "assign_driver"
@@ -58,6 +59,7 @@ const ManageBooking = ({
   const viewId = getParam("view");
 
   const { socket } = useSocket("admin");
+  const router = useRouter();
 
   useEffect(() => {
     if (!socket) return;
@@ -65,6 +67,7 @@ const ManageBooking = ({
     const handleUpdate = () => {
       console.log("Admin received live sync event, refreshing bookings...");
       fetchData(pagination.currentPage);
+      router.refresh();
     };
 
     socket.on("booking:created", handleUpdate);
