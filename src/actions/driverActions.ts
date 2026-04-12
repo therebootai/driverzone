@@ -8,6 +8,8 @@ import { revalidatePath } from "next/cache";
 import fs from "fs/promises";
 import mongoose from "mongoose";
 
+import { autoOfflineStaleDrivers } from "@/utils/driverUtils";
+
 await ensureModelsRegistered();
 
 export async function createDriver(formData: FormData) {
@@ -203,6 +205,7 @@ export async function getAllDriver({
 }) {
   try {
     await connectToDatabase();
+    await autoOfflineStaleDrivers();
 
     const _page = Math.max(1, Number(page) || 1);
     const _limit = Math.max(1, Math.min(100, Number(limit) || 20));
