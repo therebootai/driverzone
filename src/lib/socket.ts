@@ -70,7 +70,39 @@ export class SocketService {
       });
     });
 
+    // Bridge internal eventEmitter to Socket.io
+    this.setupEventBridge();
+
     return this.io;
+  }
+
+  private async setupEventBridge() {
+    try {
+      const { eventEmitter, EVENTS: EM_EVENTS } = await import("@/utils/eventEmitter");
+      
+      // Handle booking updates
+      eventEmitter.on(EM_EVENTS.BOOKING_UPDATED, (data) => {
+        console.log("[SocketBridge] Broadcasting booking:updated", data.bookingId);
+        // Ensure type is present for frontend listeners
+        const payload = { ...data, type: EM_EVENTS.BOOKING_UPDATED };
+        
+        if (data.bookingId) {
+          this.emit(EVENTS.BOOKING_UPDATED, payload, `ride:${data.bookingId}`);
+        }
+        // Always sync with admin
+        this.emit(EVENTS.BOOKING_UPDATED, payload, "admin");
+      });
+
+      // Handle new bookings
+      eventEmitter.on(EM_EVENTS.BOOKING_CREATED, (data) => {
+        console.log("[SocketBridge] Broadcasting booking:created", data.bookingId);
+        const payload = { ...data, type: EM_EVENTS.BOOKING_CREATED };
+        this.emit(EVENTS.BOOKING_CREATED, payload, "admin");
+      });
+
+    } catch (error) {
+      console.error("[SocketBridge] Failed to setup event bridge:", error);
+    }
   }
 
   public getIO(): SocketIOServer {
