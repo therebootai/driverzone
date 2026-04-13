@@ -19,7 +19,7 @@ export default function PackageTable({
     useState<PackageDocument | null>();
 
   const [sidePopupVisible, setSidePopupVisible] = useState<"view" | "edit">(
-    "view"
+    "view",
   );
 
   const handleDelete = async (id: string) => {
@@ -171,7 +171,7 @@ export default function PackageTable({
                   value={
                     selectedPackage?.company_charge
                       ? `₹${selectedPackage.company_charge.toLocaleString(
-                          "en-IN"
+                          "en-IN",
                         )}`
                       : "-"
                   }
@@ -182,7 +182,7 @@ export default function PackageTable({
                   value={
                     selectedPackage?.driver_charge
                       ? `₹${selectedPackage.driver_charge.toLocaleString(
-                          "en-IN"
+                          "en-IN",
                         )}`
                       : "-"
                   }
@@ -193,7 +193,7 @@ export default function PackageTable({
                   value={
                     selectedPackage?.total_price
                       ? `₹${selectedPackage.total_price.toLocaleString(
-                          "en-IN"
+                          "en-IN",
                         )}`
                       : "-"
                   }
@@ -203,7 +203,7 @@ export default function PackageTable({
                   <Field
                     label="Fooding Charge"
                     value={`₹${selectedPackage.fooding_charge.toLocaleString(
-                      "en-IN"
+                      "en-IN",
                     )}`}
                   />
                 )}
@@ -212,7 +212,7 @@ export default function PackageTable({
                   <Field
                     label="Early Morning Charge"
                     value={`₹${selectedPackage.early_morning_charge.toLocaleString(
-                      "en-IN"
+                      "en-IN",
                     )}`}
                   />
                 )}
@@ -221,7 +221,7 @@ export default function PackageTable({
                   <Field
                     label="Late Night Charge"
                     value={`₹${selectedPackage.late_night_charge.toLocaleString(
-                      "en-IN"
+                      "en-IN",
                     )}`}
                   />
                 )}
@@ -237,8 +237,8 @@ export default function PackageTable({
                   value={
                     selectedPackage?.over_time_customer_charge
                       ? `₹${selectedPackage.over_time_customer_charge.toLocaleString(
-                          "en-IN"
-                        )}/hour`
+                          "en-IN",
+                        )}/min`
                       : "-"
                   }
                 />
@@ -248,8 +248,8 @@ export default function PackageTable({
                   value={
                     selectedPackage?.over_time_driver_charge
                       ? `₹${selectedPackage.over_time_driver_charge.toLocaleString(
-                          "en-IN"
-                        )}/hour`
+                          "en-IN",
+                        )}/min`
                       : "-"
                   }
                 />
@@ -280,7 +280,7 @@ export default function PackageTable({
                         selectedPackage?.discount_type === "percentage"
                           ? `${selectedPackage.discount}%`
                           : `₹${selectedPackage.discount?.toLocaleString(
-                              "en-IN"
+                              "en-IN",
                             )}`
                       }
                     />
@@ -310,7 +310,7 @@ export default function PackageTable({
                           year: "numeric",
                           hour: "2-digit",
                           minute: "2-digit",
-                        }
+                        },
                       )
                     : "-"
                 }
@@ -328,7 +328,7 @@ export default function PackageTable({
                           year: "numeric",
                           hour: "2-digit",
                           minute: "2-digit",
-                        }
+                        },
                       )
                     : "-"
                 }

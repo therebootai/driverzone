@@ -179,6 +179,17 @@ export async function createBooking(data: any): Promise<BookingDocument> {
       });
     }
 
+    // Automatically trigger Alert system for driver matching
+    try {
+      const { PriorityAlertService } = await import("@/services/alertService");
+      const alertService = PriorityAlertService.getInstance();
+      // Use the string booking_id which is explicitly typed in BookingDocument
+      await alertService.initializeAlert(newBooking.booking_id);
+    } catch (alertError) {
+      console.error("Failed to initialize alerts automatically:", alertError);
+      // We don't throw here to avoid failing the booking creation if just the alert trigger fails
+    }
+
     return newBooking;
   } catch (error: any) {
     console.error("CREATE BOOKING ERROR:", error);
@@ -1152,6 +1163,31 @@ export async function updateBooking(
       }
     }
 
+    // If driver rating is provided, update the driver's total stats
+    if (options.updateDriverRating && updateData.driverRating && updatedBooking.driverDetails) {
+      try {
+        const driverId = updatedBooking.driverDetails._id;
+        const driver = await Driver.findById(driverId);
+        if (driver) {
+          const newRating = Number(updateData.driverRating);
+          const currentSum = driver.total_rating_sum || 0;
+          const currentCount = driver.total_ratings || 0;
+
+          const newSum = currentSum + newRating;
+          const newCount = currentCount + 1;
+          const newAvg = newSum / newCount;
+
+          driver.total_rating_sum = newSum;
+          driver.total_ratings = newCount;
+          driver.rating = Number(newAvg.toFixed(2));
+
+          await driver.save();
+        }
+      } catch (driverRatingError) {
+        console.error("Failed to update driver rating stats:", driverRatingError);
+      }
+    }
+
     if (
       isChangingStatus &&
       newStatus === "completed"
@@ -1205,9 +1241,13 @@ export async function updateBooking(
           // Cleanup driver's active state
           const driverUpdate: any = { activeAlerts: null, currentBooking: null };
           
-          // Update total_earnings if completed
-          if (newStatus === "completed" && updatedBooking.fare_details?.driver_charge) {
-            driverUpdate.$inc = { total_earnings: updatedBooking.fare_details.driver_charge };
+          // Update total_earnings and total_rides if completed
+          if (newStatus === "completed") {
+            const incFields: any = { total_rides: 1 };
+            if (updatedBooking.fare_details?.driver_charge) {
+              incFields.total_earnings = updatedBooking.fare_details.driver_charge;
+            }
+            driverUpdate.$inc = incFields;
           }
 
           await Driver.findByIdAndUpdate(driverIdToCleanup, driverUpdate);
