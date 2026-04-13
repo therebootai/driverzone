@@ -922,35 +922,15 @@ export async function updateBooking(
         const pkg = await Package.findById(existingBooking.package_type);
         if (pkg) {
           const completedAt = updateObject.completedAt || new Date();
-          const startedAt =
-            existingBooking.startedAt || existingBooking.schedule_date;
           const arrivedAt = existingBooking.arrivedAt;
 
-          // 1. Late Night Charge (11 PM to 4 AM)
-          const lateNightMinutes = getMinutesInRange(
-            startedAt,
-            completedAt,
-            23,
-            4,
-          );
-          const lateNightCharge =
-            lateNightMinutes * (pkg.late_night_charge || 0);
-
-          // 2. Early Morning Charge (4 AM to 7 AM)
-          const earlyMorningMinutes = getMinutesInRange(
-            startedAt,
-            completedAt,
-            4,
-            7,
-          );
-          const earlyMorningCharge =
-            earlyMorningMinutes * (pkg.early_morning_charge || 0);
-
-          // 3. Overtime Customer Charge
           const scheduleDateTime = getScheduleDateTime(
             existingBooking.schedule_date,
             existingBooking.schedule_time,
           );
+          const scheduleHour = scheduleDateTime.getHours();
+
+          // 1. Overtime Customer Charge
           const packageDurationMs = (pkg.duration || 0) * 60 * 60 * 1000;
           const baseEndTime = new Date(
             scheduleDateTime.getTime() + packageDurationMs,
@@ -964,7 +944,7 @@ export async function updateBooking(
               otMinutes * (pkg.over_time_customer_charge || 0);
           }
 
-          // 4. Overtime Driver Charge (Deduction)
+          // 2. Overtime Driver Charge (Deduction - do not update fare)
           let overTimeDriverCharge = 0;
           if (arrivedAt && arrivedAt > scheduleDateTime) {
             const otMinutes = Math.floor(
@@ -972,6 +952,24 @@ export async function updateBooking(
             );
             overTimeDriverCharge =
               otMinutes * (pkg.over_time_driver_charge || 0);
+          }
+
+          // 3. Early Morning Charge (4 AM to 7 AM)
+          let earlyMorningCharge = 0;
+          if (scheduleHour >= 4 && scheduleHour < 7) {
+            earlyMorningCharge = pkg.early_morning_charge || 0;
+          }
+
+          // 4. Late Night Charge (11 PM to 4 AM)
+          let lateNightCharge = 0;
+          if (scheduleHour >= 23 || scheduleHour < 4) {
+            lateNightCharge = pkg.late_night_charge || 0;
+          }
+
+          // 5. Fooding Charge (if duration > 8h)
+          let foodingCharge = 0;
+          if (pkg.duration > 8) {
+            foodingCharge = pkg.fooding_charge || 0;
           }
 
           // Merge with existing or updated fare details
@@ -983,6 +981,7 @@ export async function updateBooking(
             early_morning_charge: earlyMorningCharge,
             over_time_customer_charge: overTimeCustomerCharge,
             over_time_driver_charge: overTimeDriverCharge,
+            fooding_charge: foodingCharge,
             driver_charge:
               (currentFareDetails.driver_charge ||
                 existingBooking.fare_details?.driver_charge ||
@@ -997,7 +996,8 @@ export async function updateBooking(
             baseFare +
             lateNightCharge +
             earlyMorningCharge +
-            overTimeCustomerCharge;
+            overTimeCustomerCharge +
+            foodingCharge;
         }
       } catch (err) {
         console.error("Calculation error in updateBooking:", err);
@@ -1203,9 +1203,14 @@ export async function updateBooking(
           }
 
           // Cleanup driver's active state
-          await Driver.findByIdAndUpdate(driverIdToCleanup, {
-            $set: { activeAlerts: null, currentBooking: null },
-          });
+          const driverUpdate: any = { activeAlerts: null, currentBooking: null };
+          
+          // Update total_earnings if completed
+          if (newStatus === "completed" && updatedBooking.fare_details?.driver_charge) {
+            driverUpdate.$inc = { total_earnings: updatedBooking.fare_details.driver_charge };
+          }
+
+          await Driver.findByIdAndUpdate(driverIdToCleanup, driverUpdate);
         }
       } catch (cleanupError) {
         console.error("Failed to cleanup activeAlerts and notify driver:", cleanupError);
