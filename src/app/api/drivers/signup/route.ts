@@ -23,9 +23,9 @@ export async function POST(request: Request) {
     const vehicle_transmission_type = (formData.get(
       "vehicle_transmission_type",
     ) as string) || "Automatic+Manual";
-    const vehicle_category_type = formData.get(
+    const vehicle_category_type = formData.getAll(
       "vehicle_category_type",
-    ) as string;
+    ) as string[];
 
     await connectToDatabase();
     await ensureModelsRegistered();
