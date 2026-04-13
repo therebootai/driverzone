@@ -94,7 +94,7 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
           setPage((prev: number) => prev + 1);
         }
       },
-      { threshold: 1.0 }
+      { threshold: 1.0 },
     );
 
     const target = document.getElementById("scroll-trigger");
@@ -135,6 +135,7 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
           <Field label="Driver Name" value={driver.driver_name} />
           <Field label="Mobile Number" value={driver.mobile_number} />
           <Field label="Total Rides" value={driver.total_rides || 0} />
+          <Field label="Total Earnings" value={driver.total_earnings || 0} />
           <Field label="Average Rating" value={driver.rating || "0.0"} />
           <Field label="Emergency Number" value={driver.emergency_number} />
           <Field label="City / Area" value={driver.city_area} />
@@ -211,7 +212,10 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <div className="grid grid-cols-1 gap-4">
               <Field label="Identity Type" value={driver.identity_id_type} />
-              <Field label="Identity Number" value={driver.identity_id_number} />
+              <Field
+                label="Identity Number"
+                value={driver.identity_id_number}
+              />
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-medium text-gray-700">
                   Identity Proof
@@ -288,7 +292,10 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
               <div className="flex flex-wrap gap-4">
                 {vd.car_images_and_rc && vd.car_images_and_rc.length > 0 ? (
                   vd.car_images_and_rc.map((img, index) => (
-                    <div key={index} className="group relative border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div
+                      key={index}
+                      className="group relative border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                    >
                       <Image
                         src={img.secure_url}
                         alt="car image"
@@ -297,16 +304,18 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
                         className="object-cover"
                       />
                       <Link
-                         href={img.secure_url}
-                         target="_blank"
-                         className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity"
+                        href={img.secure_url}
+                        target="_blank"
+                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity"
                       >
                         View Full
                       </Link>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-gray-500">No car images uploaded.</p>
+                  <p className="text-sm text-gray-500">
+                    No car images uploaded.
+                  </p>
                 )}
               </div>
             </div>
@@ -317,7 +326,9 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
           </h2>
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="flex flex-col gap-4">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Insurance</h3>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Insurance
+              </h3>
               <Field label="Insurance Number" value={vd.insurance_number} />
               <Field
                 label="Insurance Expiry"
@@ -328,13 +339,17 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
                 }
               />
               <div className="flex flex-col gap-2">
-                <span className="text-xs font-medium text-gray-700">Document Preview</span>
+                <span className="text-xs font-medium text-gray-700">
+                  Document Preview
+                </span>
                 <FilePreview file={vd.insurance_document} />
               </div>
             </div>
 
             <div className="flex flex-col gap-4 border-l border-gray-100 pl-8">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Road Tax</h3>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Road Tax
+              </h3>
               <Field label="Road Tax Number" value={vd.road_tax_number} />
               <Field
                 label="Road Tax Expiry"
@@ -345,13 +360,17 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
                 }
               />
               <div className="flex flex-col gap-2">
-                <span className="text-xs font-medium text-gray-700">Document Preview</span>
+                <span className="text-xs font-medium text-gray-700">
+                  Document Preview
+                </span>
                 <FilePreview file={vd.road_tax_document} />
               </div>
             </div>
 
             <div className="flex flex-col gap-4 border-l border-gray-100 pl-8">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pollution (PUC)</h3>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Pollution (PUC)
+              </h3>
               <Field label="Pollution Number" value={vd.pollution_number} />
               <Field
                 label="Pollution Expiry"
@@ -362,7 +381,9 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
                 }
               />
               <div className="flex flex-col gap-2">
-                <span className="text-xs font-medium text-gray-700">Document Preview</span>
+                <span className="text-xs font-medium text-gray-700">
+                  Document Preview
+                </span>
                 <FilePreview file={vd.pollution_document} />
               </div>
             </div>
@@ -406,7 +427,6 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {bookings.map((booking: BookingTypes) => (
-
                 <Link
                   key={booking._id}
                   href={`/admin/booking-management?view=${booking._id}`}
@@ -485,6 +505,5 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
     </div>
   );
 };
-
 
 export default ViewDriver;
