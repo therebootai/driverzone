@@ -4,6 +4,7 @@ import Driver from "@/models/Drivers";
 import { handleImageUpload } from "@/utils/handleImageUpload";
 import { generateCustomId } from "@/utils/generateCustomId";
 import { NextResponse } from "next/server";
+import { verifyOTP } from "@/actions/OTPActions";
 import { generateToken } from "@/utils/jwt";
 
 export async function POST(request: Request) {
@@ -29,9 +30,19 @@ export async function POST(request: Request) {
 
     const deviceId = request.headers.get("x-device-id");
     const fcmToken = formData.get("fcmToken") as string;
+    const otp = formData.get("otp") as string;
 
     await connectToDatabase();
     await ensureModelsRegistered();
+
+    // Verify OTP first
+    const otpResult = await verifyOTP(null, mobile_number, otp, "register");
+    if (!otpResult.success) {
+      return NextResponse.json(
+        { message: otpResult.message, success: false },
+        { status: 400 },
+      );
+    }
 
     //@ts-ignore
     const driver = await Driver.findOne({ mobile_number });
