@@ -232,7 +232,7 @@ const driverSchema = new Schema<DriverDocument>(
     verified: {
       type: Boolean,
       required: true,
-      default: false,
+      default: true,
     },
 
     avatar: {
