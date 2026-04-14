@@ -27,6 +27,9 @@ export async function POST(request: Request) {
       "vehicle_category_type",
     ) as string[];
 
+    const deviceId = request.headers.get("x-device-id");
+    const fcmToken = formData.get("fcmToken") as string;
+
     await connectToDatabase();
     await ensureModelsRegistered();
 
@@ -86,6 +89,9 @@ export async function POST(request: Request) {
       ps_noc: ps_noc_url,
       vehicle_transmission_type,
       vehicle_category_type,
+      fcmToken,
+      pendingDeviceId: deviceId,
+      approvedDeviceId: deviceId,
     });
 
     const saveuser = await newDriver.save();
