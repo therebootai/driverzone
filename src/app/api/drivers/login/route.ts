@@ -35,12 +35,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Automated device login system
+    // New device login system
     if (!driver.approvedDeviceId || driver.approvedDeviceId !== deviceId) {
       if (deviceId) {
-        driver.approvedDeviceId = deviceId;
-        driver.pendingDeviceId = undefined;
+        driver.pendingDeviceId = deviceId;
         await driver.save();
+        return NextResponse.json(
+          {
+            message:
+              "New device detected. Please wait for admin approval before you can login.",
+            success: false,
+            deviceApprovalPending: true,
+          },
+          { status: 403 },
+        );
+      } else {
+         return NextResponse.json(
+          { message: "Device ID is required for login", success: false },
+          { status: 400 },
+        );
       }
     }
 

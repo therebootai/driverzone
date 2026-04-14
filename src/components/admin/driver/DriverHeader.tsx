@@ -129,7 +129,38 @@ const DriverHeader = () => {
             </option>
           </select>
         </div>
-
+        <div>
+          <select
+            value={
+              pendingApproval === "true"
+                ? "Pending Approval"
+                : pendingApproval === "false"
+                  ? "Approved"
+                  : ""
+            }
+            onChange={(e) =>
+              updateFilters(
+                "pendingApproval",
+                e.target.value === "Pending Approval"
+                  ? "true"
+                  : e.target.value === "Approved"
+                    ? "false"
+                    : "",
+              )
+            }
+            className=" w-fit px-4 rounded-md h-[2.5rem] bg-custom-gray text-site-black font-semibold text-sm flex justify-center items-center"
+          >
+            <option value="" className=" text-site-black">
+              Device Status
+            </option>
+            <option value="Pending Approval" className=" text-site-black">
+              Pending Approval
+            </option>
+            <option value="Approved" className=" text-site-black">
+              Approved
+            </option>
+          </select>
+        </div>
         <div className="w-full">
           <div className="w-[20rem] rounded-md flex gap-2 items-center px-2 bg-custom-gray">
             <IoSearch className="text-site-black size-5" />
