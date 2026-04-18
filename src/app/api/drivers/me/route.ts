@@ -7,7 +7,7 @@ import Alert from "@/models/Alert";
 import { handleImageUpload } from "@/utils/handleImageUpload";
 import { verifyDriverToken } from "@/utils/jwt";
 import { NextRequest, NextResponse } from "next/server";
-import { eventEmitter, EVENTS } from "@/utils/eventEmitter";
+import { socketService, EVENTS as SOCKET_EVENTS } from "@/lib/socket";
 
 export async function GET(request: NextRequest) {
   try {
@@ -233,12 +233,19 @@ export async function PUT(request: NextRequest) {
 
     // Emit real-time location event if present
     if (updateData.currentLocation) {
-      eventEmitter.emit(EVENTS.DRIVER_LOCATION_UPDATED, {
-        type: EVENTS.DRIVER_LOCATION_UPDATED,
+      const locationPayload = {
         driverId: updatedUser._id.toString(),
         location: updateData.currentLocation,
-        bookingId: currentBooking?._id?.toString(), // If on a ride, notify specific booking
-      });
+        bookingId: currentBooking?._id?.toString(),
+      };
+      
+      // Emit to admin
+      socketService.emit(SOCKET_EVENTS.DRIVER_LOCATION, locationPayload, "admin");
+      
+      // If on a ride, notify specific booking
+      if (currentBooking?._id) {
+        socketService.emit(SOCKET_EVENTS.DRIVER_LOCATION, locationPayload, `ride:${currentBooking._id.toString()}`);
+      }
     }
 
     const userWithStats = {
