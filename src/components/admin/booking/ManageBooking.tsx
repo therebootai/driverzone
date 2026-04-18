@@ -61,13 +61,38 @@ const ManageBooking = ({
   const { socket } = useSocket("admin");
   const router = useRouter();
 
+  const [bookings, setBookings] = useState<BookingTypes[]>(allBookings);
+
+  useEffect(() => {
+    setBookings(allBookings);
+  }, [allBookings]);
+
   useEffect(() => {
     if (!socket) return;
 
-    const handleUpdate = () => {
-      console.log("Admin received live sync event, refreshing bookings...");
-      fetchData(pagination.currentPage);
+    const handleUpdate = (data: any) => {
+      console.log("Admin received live sync event:", data);
+      
+      // If we received the full booking object, we can update state directly
+      if (data && data.booking) {
+        setBookings(prev => {
+          const index = prev.findIndex(b => b._id === data.bookingId || b._id === data.booking?._id);
+          if (index !== -1) {
+            // Update existing booking
+            const newBookings = [...prev];
+            newBookings[index] = { ...newBookings[index], ...data.booking };
+            return newBookings;
+          } else if (data.type === "booking:created") {
+            // Add new booking to top
+            return [data.booking, ...prev];
+          }
+          return prev;
+        });
+      }
+
+      // Still refresh to ensure pagination and server-side state is in sync
       router.refresh();
+      if (fetchData) fetchData();
     };
 
     socket.on("booking:created", handleUpdate);
@@ -81,7 +106,7 @@ const ManageBooking = ({
       socket.off("booking:cancelled", handleUpdate);
       socket.off("booking:accepted", handleUpdate);
     };
-  }, [socket, pagination.currentPage, fetchData]);
+  }, [socket, router, fetchData]);
 
   useEffect(() => {
     if (viewId && allBookings) {
@@ -293,7 +318,7 @@ const ManageBooking = ({
         setCountdown(30);
         setOtpExpiry(10 * 60); // 10 minutes expiry
 
-        fetchData(pagination.currentPage);
+        fetchData();
       } else {
         setError(response.error || "Failed to send OTP");
       }
@@ -340,7 +365,7 @@ const ManageBooking = ({
         if (updateResponse.success) {
           setSuccess("Driver marked as arrived successfully!");
           setTimeout(() => {
-            fetchData(pagination.currentPage);
+            fetchData();
             resetModal();
           }, 1500);
         } else {
@@ -376,7 +401,7 @@ const ManageBooking = ({
         setOtpExpiry(10 * 60);
         setOtpInput("");
 
-        fetchData(pagination.currentPage);
+        fetchData();
       } else {
         setError(response.error || "Failed to resend OTP");
         if (response.waitTime) {
@@ -446,7 +471,7 @@ const ManageBooking = ({
       if (response.success) {
         setSuccess(`${updateModal.action.replace("_", " ")} successful!`);
         setTimeout(() => {
-          fetchData(pagination.currentPage);
+          fetchData();
           resetModal();
         }, 1500);
       } else {
@@ -804,12 +829,12 @@ const ManageBooking = ({
           <div className="w-[15%]">Actions</div>
         </div>
 
-        {allBookings.length === 0 ? (
+        {bookings.length === 0 ? (
           <div className="p-6 text-center text-sm text-gray-500">
             No bookings found.
           </div>
         ) : (
-          allBookings.map((booking) => (
+          bookings.map((booking) => (
             <div
               key={booking._id}
               className="w-full flex items-center p-3 border-b text-sm hover:bg-gray-50"
@@ -968,7 +993,7 @@ const ManageBooking = ({
                   >
                     <option value="">Select status</option>
                     {getAvailableStatuses(
-                      allBookings.find(
+                      bookings.find(
                         (b) => b._id === updateModal.bookingId,
                       ) || null,
                     ).map((status) => (
