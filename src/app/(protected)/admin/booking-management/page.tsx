@@ -53,10 +53,6 @@ const BookingManagement = async ({
       <RealtimeRideNotification />
       <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <BookingPageHeader />
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-200 text-green-700 text-[10px] font-bold uppercase tracking-wider animate-pulse shadow-sm">
-          <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-          Live Sync Active
-        </div>
       </div>
       <Suspense
         fallback={
