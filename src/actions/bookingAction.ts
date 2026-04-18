@@ -13,6 +13,8 @@ import { SEND_BY_WHATSAPP } from "./waActions";
 import { sendPushNotification } from "./notificationAction";
 import Notification from "@/models/Notification";
 
+import { socketService, EVENTS as SOCKET_EVENTS } from "@/lib/socket";
+
 await ensureModelsRegistered();
 
 function generateBookingOTP(length = 6) {
@@ -107,7 +109,7 @@ export async function createBooking(data: any): Promise<BookingDocument> {
       data.otp = generateBookingOTP();
     }
 
-    const newBooking = await Booking.create({
+    const newBooking: BookingDocument = await Booking.create({
       booking_id: data.booking_id,
 
       fare: data.fare,
@@ -189,6 +191,13 @@ export async function createBooking(data: any): Promise<BookingDocument> {
       console.error("Failed to initialize alerts automatically:", alertError);
       // We don't throw here to avoid failing the booking creation if just the alert trigger fails
     }
+
+    // Emit event for real-time updates via Socket.io
+    socketService.emit(SOCKET_EVENTS.BOOKING_CREATED, {
+      bookingId: (newBooking._id as any).toString(),
+      booking: newBooking,
+      type: SOCKET_EVENTS.BOOKING_CREATED,
+    }, "admin");
 
     return newBooking;
   } catch (error: any) {
@@ -1257,8 +1266,22 @@ export async function updateBooking(
       }
     }
 
-    return {
+    // Emit event for real-time updates via Socket.io
+    const payload = {
+      bookingId: serializedBooking._id,
+      booking: serializedBooking,
+      type: SOCKET_EVENTS.BOOKING_UPDATED,
+    };
+    
+    // Sync with admin
+    socketService.emit(SOCKET_EVENTS.BOOKING_UPDATED, payload, "admin");
+    
+    // Sync with specific ride room if available
+    if (serializedBooking._id) {
+      socketService.emit(SOCKET_EVENTS.BOOKING_UPDATED, payload, `ride:${serializedBooking._id}`);
+    }
 
+    return {
       success: true,
       message: "Booking updated successfully",
       data: serializedBooking,
