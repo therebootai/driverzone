@@ -101,7 +101,6 @@ export async function POST(request: Request) {
       vehicle_transmission_type,
       vehicle_category_type,
       fcmToken,
-      verified: true,
       approvedDeviceId: deviceId,
     });
 
