@@ -9,6 +9,8 @@ import { revalidatePath } from "next/cache";
 import { authorizeAccess } from "@/utils/authorizeAccess";
 import RealtimeRideNotification from "@/components/admin/RealtimeRideNotification";
 
+export const dynamic = "force-dynamic";
+
 const BookingManagement = async ({
   searchParams,
 }: {
@@ -49,10 +51,16 @@ const BookingManagement = async ({
   return (
     <AdminTemplate className="p-6 flex flex-col gap-6">
       <RealtimeRideNotification />
-      <BookingPageHeader />
+      <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <BookingPageHeader />
+        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-200 text-green-700 text-[10px] font-bold uppercase tracking-wider animate-pulse shadow-sm">
+          <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+          Live Sync Active
+        </div>
+      </div>
       <Suspense
         fallback={
-          <div className="flex justify-center items-center flex-1">
+          <div className="flex justify-center items-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
             <Loader />
           </div>
         }

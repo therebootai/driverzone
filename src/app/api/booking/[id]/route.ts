@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import mongoose from "mongoose";
-import { eventEmitter, EVENTS } from "@/utils/eventEmitter";
+import { socketService, EVENTS as SOCKET_EVENTS } from "@/lib/socket";
 
 dayjs.extend(customParseFormat);
 
@@ -505,13 +505,17 @@ export async function PUT(
 
     // Emit real-time event
     if (updatedBooking) {
-      eventEmitter.emit(EVENTS.BOOKING_UPDATED, {
-        type: EVENTS.BOOKING_UPDATED,
+      const payload = {
+        type: SOCKET_EVENTS.BOOKING_UPDATED,
         bookingId: (updatedBooking._id as any).toString(),
+        booking: updatedBooking, // FULL BOOKING
         status: updatedBooking.status,
         driverDetails: (updatedBooking as any).driverDetails,
         otp: (updatedBooking as any).otp,
-      });
+      };
+
+      socketService.emit(SOCKET_EVENTS.BOOKING_UPDATED, payload, "admin");
+      socketService.emit(SOCKET_EVENTS.BOOKING_UPDATED, payload, `ride:${(updatedBooking._id as any).toString()}`);
     }
 
     return NextResponse.json({
