@@ -4,41 +4,41 @@ import { io, Socket } from "socket.io-client";
 
 export const useSocket = (room?: string) => {
   const [isConnected, setIsConnected] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
     // Only run on client
     if (typeof window === "undefined") return;
 
-    const socket = io({
-      path: "/socket.io", // This depends on how Next.js/tsx handles it
-      transports: ["websocket"],
+    const socketInstance = io({
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
-    socket.on("connect", () => {
-      console.log("Admin Socket connected:", socket.id);
+    socketInstance.on("connect", () => {
+      console.log("Socket connected:", socketInstance.id);
       setIsConnected(true);
       if (room) {
-        socket.emit("join:room", room);
+        socketInstance.emit("join:room", room);
       }
     });
 
-    socket.on("disconnect", () => {
+    socketInstance.on("disconnect", () => {
       setIsConnected(false);
     });
 
-    socketRef.current = socket;
+    setSocket(socketInstance);
 
     return () => {
       if (room) {
-        socket.emit("leave:room", room);
+        socketInstance.emit("leave:room", room);
       }
-      socket.disconnect();
+      socketInstance.disconnect();
     };
   }, [room]);
 
   return {
-    socket: socketRef.current,
+    socket,
     isConnected,
   };
 };
