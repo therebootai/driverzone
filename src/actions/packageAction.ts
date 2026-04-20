@@ -166,6 +166,8 @@ export async function GET_ALL_PACKAGES({
     }
 
     const packages = await Packages.find(query)
+      .populate("main_zone")
+      .populate("service_zone")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
