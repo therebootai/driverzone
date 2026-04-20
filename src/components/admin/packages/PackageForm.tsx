@@ -27,8 +27,12 @@ export default function PackageForm({
 
   // UTILITY STATE
   const [searchedZones, setSearchedZones] = useState<ZoneDocument[]>([]);
-  const [mainSearchInput, setMainSearchInput] = useState<string>("");
-  const [serviceSearchInput, setServiceSearchInput] = useState<string>("");
+  const [mainSearchInput, setMainSearchInput] = useState<string>(
+    update_package?.main_zone?.name || ""
+  );
+  const [serviceSearchInput, setServiceSearchInput] = useState<string>(
+    update_package?.service_zone?.name || ""
+  );
   const [showMainZone, setShowMainZone] = useState<boolean>(false);
   const [showServiceZone, setShowServiceZone] = useState<boolean>(false);
 
@@ -93,6 +97,8 @@ export default function PackageForm({
       setTotalPrice(update_package?.total_price);
       setMainZone(update_package?.main_zone);
       setServiceZone(update_package?.service_zone);
+      setMainSearchInput(update_package?.main_zone?.name || "");
+      setServiceSearchInput(update_package?.service_zone?.name || "");
       setDiscountType(update_package?.discount_type);
       setDiscount(update_package?.discount ?? 0);
     }
