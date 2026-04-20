@@ -57,7 +57,7 @@ const ManageCoupon = ({
 
   // Handler for delete with confirmation
   const handleDeleteCoupon = async (coupon_id: string) => {
-    if (window.confirm("Do you want to delete this Product?")) {
+    if (window.confirm("Do you want to delete this Coupon?")) {
       await deleteCoupon(coupon_id);
       if (fetchData) fetchData();
     }

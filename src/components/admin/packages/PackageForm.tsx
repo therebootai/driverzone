@@ -349,8 +349,8 @@ export default function PackageForm({
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         <BasicInput
-          label="Over Time Driver Charge"
-          placeholder="Over Time Driver Charge"
+          label="Driver Late Penalty"
+          placeholder="Driver Late Penalty"
           name="over_time_driver_charge"
           type="number"
           value={over_time_driver_charge}
@@ -368,7 +368,7 @@ export default function PackageForm({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         <div className="flex flex-col gap-1.5 relative group">
           <BasicInput
-            label="Main Booking Zone"
+            label="Free Serviceable Area"
             placeholder="Search Zone by name or destination"
             value={mainSearchInput}
             onChange={(e) => {
@@ -401,7 +401,7 @@ export default function PackageForm({
         </div>
         <div className="flex flex-col gap-1.5 relative group">
           <BasicInput
-            label="Service Booking Zone"
+            label="Chargeable Service Area"
             placeholder="Search Zone by name or destination"
             value={serviceSearchInput}
             onChange={(e) => {
