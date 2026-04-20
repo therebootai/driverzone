@@ -23,6 +23,8 @@ export default function PackageTable({
   );
 
   const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this package?"))
+      return;
     try {
       await DELETE_PACKAGE(id);
       toast.success("Package deleted successfully");
