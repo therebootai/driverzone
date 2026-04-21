@@ -42,7 +42,7 @@ export default function PackageForm({
     update_package?.destination || ""
   );
   const [package_type, setPackageType] = useState<string>(
-    update_package?.package_type || "city_tour"
+    update_package?.package_type || "in_city"
   );
   const [duration, setDuration] = useState<string>("");
   const [company_charge, setCompanyCharge] = useState<number>(
@@ -64,6 +64,9 @@ export default function PackageForm({
   );
   const [late_night_charge, setLateNightCharge] = useState<number>(
     update_package?.late_night_charge || 0
+  );
+  const [service_booking_charge, setServiceBookingCharge] = useState<number>(
+    update_package?.service_booking_charge || 0
   );
   const [total_price, setTotalPrice] = useState<number>(
     update_package?.total_price || company_charge + driver_charge
@@ -94,6 +97,7 @@ export default function PackageForm({
       setOverTimeDriverCharge(update_package?.over_time_driver_charge);
       setEarlyMorningCharge(update_package?.early_morning_charge ?? 0);
       setLateNightCharge(update_package?.late_night_charge ?? 0);
+      setServiceBookingCharge(update_package?.service_booking_charge ?? 0);
       setTotalPrice(update_package?.total_price);
       setMainZone(update_package?.main_zone);
       setServiceZone(update_package?.service_zone);
@@ -157,7 +161,7 @@ export default function PackageForm({
         name: string;
         destination: string;
         package_type:
-          | "city_tour"
+          | "in_city"
           | "mini_outstation"
           | "outstation"
           | "hills_tour"
@@ -171,6 +175,7 @@ export default function PackageForm({
         over_time_driver_charge: number;
         early_morning_charge: number;
         late_night_charge: number;
+        service_booking_charge: number;
         total_price: number;
         main_zone?: string;
         service_zone?: string;
@@ -180,14 +185,14 @@ export default function PackageForm({
         name,
         destination,
         package_type:
-          package_type === "city_tour" ||
+          package_type === "in_city" ||
           package_type === "outstation" ||
           package_type === "mini_outstation" ||
           package_type === "hills_tour" ||
           package_type === "long_tour" ||
           package_type === "drop_pickup_service"
             ? package_type
-            : "city_tour",
+            : "in_city",
         duration: convertTime(duration, "toHours").value,
         company_charge,
         driver_charge,
@@ -196,6 +201,7 @@ export default function PackageForm({
         over_time_driver_charge,
         early_morning_charge,
         late_night_charge,
+        service_booking_charge,
         total_price,
         main_zone: main_zone ? main_zone._id : undefined,
         service_zone: service_zone ? service_zone._id : undefined,
@@ -274,8 +280,8 @@ export default function PackageForm({
         onChange={(e) => setPackageType(e.target.value)}
         opts={[
           {
-            label: "City Tour",
-            value: "city_tour",
+            label: "In City",
+            value: "in_city",
           },
           {
             label: "Mini Outstation",
@@ -351,6 +357,16 @@ export default function PackageForm({
           type="number"
           value={early_morning_charge}
           onChange={(e) => setEarlyMorningCharge(Number(e.target.value))}
+        />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+        <BasicInput
+          label="Service Booking Charge (outside main zone)"
+          placeholder="Service Booking Charge"
+          name="service_booking_charge"
+          type="number"
+          value={service_booking_charge}
+          onChange={(e) => setServiceBookingCharge(Number(e.target.value))}
         />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
