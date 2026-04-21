@@ -181,7 +181,7 @@ export type BookingTypes = {
   };
   otp: string;
   otp_verified: boolean;
-  paymentMethod: "cash" | "upi" | "card" | "wallet";
+  paymentMethod: "cash" | "upi" | "card" | "wallet" | "online" | "netbanking";
   paymentStatus: "pending" | "paid" | "failed";
   paid_amount?: number;
   status:
