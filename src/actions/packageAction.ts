@@ -52,6 +52,10 @@ export async function ADD_PACKAGE({
   service_zone?: string;
 }) {
   try {
+    if (discount_type !== "none" && (!discount || discount <= 0)) {
+      throw new Error("Discount value is required when discount type is not 'none'");
+    }
+
     await connectToDatabase();
     const package_id = await generateCustomId(
       Packages,
@@ -219,6 +223,9 @@ export async function DELETE_PACKAGE(package_id: string) {
 
 export async function UPDATE_PACKAGE(package_id: string, data: any) {
   try {
+    if (data.discount_type && data.discount_type !== "none" && (!data.discount || data.discount <= 0)) {
+      throw new Error("Discount value is required when discount type is not 'none'");
+    }
     await connectToDatabase();
     const updatedPackage = await Packages.updateOne(
       {

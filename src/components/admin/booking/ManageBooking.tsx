@@ -16,6 +16,7 @@ import {
 import { getAllDriver } from "@/actions/driverActions";
 import { triggerDriverAlert } from "@/actions/alertActions";
 import ViewBooking from "./ViewBooking";
+import EditBookingForm from "./EditBookingForm";
 import { useSocket } from "@/hooks/useSocket";
 import { useRouter } from "next/navigation";
 
@@ -25,7 +26,8 @@ type UpdateActionType =
   | "verify_otp"
   | "cancel_booking"
   | "complete_booking"
-  | "mark_arrived";
+  | "mark_arrived"
+  | "edit_booking";
 
 const ManageBooking = ({
   allBookings,
@@ -848,7 +850,6 @@ const ManageBooking = ({
               <div className="w-[10%]">
                 ₹
                 {booking.fare?.toLocaleString("en-IN") ||
-                  booking.estimatedFare?.toLocaleString("en-IN") ||
                   "-"}
               </div>
               <div
@@ -879,6 +880,14 @@ const ManageBooking = ({
                 >
                   View
                 </button>
+                {!["completed", "cancelled"].includes(booking.status) && (
+                  <button
+                    onClick={() => handleUpdateAction("edit_booking", booking._id)}
+                    className="px-3 py-1 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
+                  >
+                    Edit
+                  </button>
+                )}
                 {renderActionButtons(booking)}
               </div>
             </div>
@@ -916,43 +925,35 @@ const ManageBooking = ({
               {updateModal.action === "update_status" && "Update Status"}
               {updateModal.action === "cancel_booking" && "Cancel Booking"}
               {updateModal.action === "complete_booking" && "Complete Booking"}
-              {updateModal.action === "mark_arrived" &&
-                "Mark Driver as Arrived"}
+              {updateModal.action === "mark_arrived" && "Mark Driver as Arrived"}
+              {updateModal.action === "edit_booking" && "Edit Booking"}
             </h2>
-            <button
-              onClick={resetModal}
-              className="text-gray-400 hover:text-gray-600"
-              disabled={isLoading}
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
           </div>
 
-          {error && (
+          {error && updateModal.action !== "edit_booking" && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
               {error}
             </div>
           )}
 
-          {success && (
+          {success && updateModal.action !== "edit_booking" && (
             <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg">
               {success}
             </div>
           )}
 
           <div className="space-y-4">
+            {updateModal.action === "edit_booking" && updateModal.bookingId && (
+              <EditBookingForm
+                booking={bookings.find(b => b._id === updateModal.bookingId)!}
+                onClose={resetModal}
+                onSuccess={() => {
+                  fetchData();
+                  resetModal();
+                }}
+              />
+            )}
+
             {updateModal.action === "mark_arrived" && renderArrivalOTPModal()}
 
             {updateModal.action === "assign_driver" && (
@@ -1031,94 +1032,96 @@ const ManageBooking = ({
             )}
           </div>
 
-          <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
-            {updateModal.action === "mark_arrived" ? (
-              <>
-                {otpStep === "initial" && (
-                  <button
-                    onClick={handleSendOTP}
-                    disabled={isLoading}
-                    className={`flex-1 px-4 py-2 rounded-lg font-medium ${
-                      isLoading
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-blue-600 hover:bg-blue-700 text-white"
-                    }`}
-                  >
-                    {isLoading ? "Sending..." : "Send OTP to Customer"}
-                  </button>
-                )}
+          {updateModal.action !== "edit_booking" && (
+            <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+              {updateModal.action === "mark_arrived" ? (
+                <>
+                  {otpStep === "initial" && (
+                    <button
+                      onClick={handleSendOTP}
+                      disabled={isLoading}
+                      className={`flex-1 px-4 py-2 rounded-lg font-medium ${
+                        isLoading
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-blue-600 hover:bg-blue-700 text-white"
+                      }`}
+                    >
+                      {isLoading ? "Sending..." : "Send OTP to Customer"}
+                    </button>
+                  )}
 
-                {otpStep === "sent" && otpInput.length === 6 && (
-                  <button
-                    onClick={handleVerifyOTP}
-                    disabled={isLoading}
-                    className={`flex-1 px-4 py-2 rounded-lg font-medium ${
-                      isLoading
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-green-600 hover:bg-green-700 text-white"
-                    }`}
-                  >
-                    {isLoading ? "Verifying..." : "Verify OTP"}
-                  </button>
-                )}
+                  {otpStep === "sent" && otpInput.length === 6 && (
+                    <button
+                      onClick={handleVerifyOTP}
+                      disabled={isLoading}
+                      className={`flex-1 px-4 py-2 rounded-lg font-medium ${
+                        isLoading
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-green-600 hover:bg-green-700 text-white"
+                      }`}
+                    >
+                      {isLoading ? "Verifying..." : "Verify OTP"}
+                    </button>
+                  )}
 
-                {otpStep === "sent" && otpInput.length !== 6 && (
-                  <button
-                    disabled
-                    className="flex-1 px-4 py-2 rounded-lg font-medium bg-gray-300 text-gray-500 cursor-not-allowed"
-                  >
-                    Enter 6-digit OTP
-                  </button>
-                )}
+                  {otpStep === "sent" && otpInput.length !== 6 && (
+                    <button
+                      disabled
+                      className="flex-1 px-4 py-2 rounded-lg font-medium bg-gray-300 text-gray-500 cursor-not-allowed"
+                    >
+                      Enter 6-digit OTP
+                    </button>
+                  )}
 
-                {(otpStep === "verifying" || otpStep === "verified") && (
-                  <button
-                    disabled
-                    className="flex-1 px-4 py-2 rounded-lg font-medium bg-gray-300 text-gray-500 cursor-not-allowed"
-                  >
-                    {otpStep === "verifying" ? "Processing..." : "Success!"}
-                  </button>
-                )}
-              </>
-            ) : (
-              <button
-                onClick={handleSubmitUpdate}
-                disabled={
-                  isLoading ||
-                  (updateModal.action === "assign_driver" && !selectedDriver) ||
-                  (updateModal.action === "update_status" && !newStatus) ||
-                  (updateModal.action === "cancel_booking" && !cancelReason)
-                }
-                className={`flex-1 px-4 py-2 rounded-lg font-medium ${
-                  isLoading
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : updateModal.action === "cancel_booking"
-                      ? "bg-red-600 hover:bg-red-700 text-white"
-                      : updateModal.action === "complete_booking"
-                        ? "bg-green-600 hover:bg-green-700 text-white"
-                        : "bg-blue-600 hover:bg-blue-700 text-white"
-                }`}
-              >
-                {isLoading
-                  ? "Processing..."
-                  : updateModal.action === "assign_driver"
-                    ? "Assign Driver"
-                    : updateModal.action === "update_status"
-                      ? "Update Status"
+                  {(otpStep === "verifying" || otpStep === "verified") && (
+                    <button
+                      disabled
+                      className="flex-1 px-4 py-2 rounded-lg font-medium bg-gray-300 text-gray-500 cursor-not-allowed"
+                    >
+                      {otpStep === "verifying" ? "Processing..." : "Success!"}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <button
+                  onClick={handleSubmitUpdate}
+                  disabled={
+                    isLoading ||
+                    (updateModal.action === "assign_driver" && !selectedDriver) ||
+                    (updateModal.action === "update_status" && !newStatus) ||
+                    (updateModal.action === "cancel_booking" && !cancelReason)
+                  }
+                  className={`flex-1 px-4 py-2 rounded-lg font-medium ${
+                    isLoading
+                      ? "bg-gray-400 cursor-not-allowed"
                       : updateModal.action === "cancel_booking"
-                        ? "Cancel Booking"
-                        : "Complete Booking"}
-              </button>
-            )}
+                        ? "bg-red-600 hover:bg-red-700 text-white"
+                        : updateModal.action === "complete_booking"
+                          ? "bg-green-600 hover:bg-green-700 text-white"
+                          : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}
+                >
+                  {isLoading
+                    ? "Processing..."
+                    : updateModal.action === "assign_driver"
+                      ? "Assign Driver"
+                      : updateModal.action === "update_status"
+                        ? "Update Status"
+                        : updateModal.action === "cancel_booking"
+                          ? "Cancel Booking"
+                          : "Complete Booking"}
+                </button>
+              )}
 
-            <button
-              onClick={resetModal}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              disabled={isLoading}
-            >
-              Cancel
-            </button>
-          </div>
+              <button
+                onClick={resetModal}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </SidePopup>
       )}
     </div>

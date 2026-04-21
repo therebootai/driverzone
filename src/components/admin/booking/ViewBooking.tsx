@@ -103,7 +103,7 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
               label="Distance / Duration"
               value={`${booking.distance || 0} km / ${
                 booking.duration
-                  ? `${booking.duration} mins`
+                  ? `${booking.duration} hours`
                   : booking.package_type?.duration
                     ? `${booking.package_type.duration} hrs`
                     : "0 mins"
@@ -227,10 +227,6 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
             <Field
               label="Payment Method"
               value={booking.paymentMethod?.toUpperCase()}
-            />
-            <Field
-              label="Estimated Fare"
-              value={`₹${booking.estimatedFare?.toLocaleString("en-IN") || "0"}`}
             />
             <Field
               label="Total Fare"

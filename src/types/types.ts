@@ -151,7 +151,6 @@ export type BookingTypes = {
   _id: string;
   booking_id: string;
   fare: number;
-  estimatedFare: number;
   pickupAddress: string;
   pickupLat: number;
   pickupLng: number;
@@ -184,6 +183,7 @@ export type BookingTypes = {
   otp_verified: boolean;
   paymentMethod: "cash" | "upi" | "card" | "wallet";
   paymentStatus: "pending" | "paid" | "failed";
+  paid_amount?: number;
   status:
     | "pending"
     | "assigned"
