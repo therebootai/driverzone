@@ -145,7 +145,7 @@ export default function PackageTable({
                 label="Package Type"
                 value={
                   selectedPackage?.package_type
-                    ? selectedPackage.package_type
+                    ? selectedPackage?.package_type
                         .replace(/_/g, " ")
                         .replace(/\b\w/g, (l) => l.toUpperCase())
                     : "-"
@@ -156,7 +156,7 @@ export default function PackageTable({
                 label="Duration"
                 value={
                   selectedPackage?.duration
-                    ? `${selectedPackage.duration} hours`
+                    ? `${selectedPackage?.duration} hours`
                     : "-"
                 }
               />
@@ -172,7 +172,7 @@ export default function PackageTable({
                   label="Company Charge"
                   value={
                     selectedPackage?.company_charge
-                      ? `₹${selectedPackage.company_charge.toLocaleString(
+                      ? `₹${selectedPackage?.company_charge.toLocaleString(
                           "en-IN",
                         )}`
                       : "-"
@@ -183,7 +183,7 @@ export default function PackageTable({
                   label="Driver Charge"
                   value={
                     selectedPackage?.driver_charge
-                      ? `₹${selectedPackage.driver_charge.toLocaleString(
+                      ? `₹${selectedPackage?.driver_charge.toLocaleString(
                           "en-IN",
                         )}`
                       : "-"
@@ -194,7 +194,7 @@ export default function PackageTable({
                   label="Total Price"
                   value={
                     selectedPackage?.total_price
-                      ? `₹${selectedPackage.total_price.toLocaleString(
+                      ? `₹${selectedPackage?.total_price.toLocaleString(
                           "en-IN",
                         )}`
                       : "-"
@@ -204,7 +204,7 @@ export default function PackageTable({
                 {selectedPackage?.fooding_charge !== undefined && (
                   <Field
                     label="Fooding Charge"
-                    value={`₹${selectedPackage.fooding_charge.toLocaleString(
+                    value={`₹${selectedPackage?.fooding_charge.toLocaleString(
                       "en-IN",
                     )}`}
                   />
@@ -213,7 +213,7 @@ export default function PackageTable({
                 {selectedPackage?.early_morning_charge !== undefined && (
                   <Field
                     label="Early Morning Charge"
-                    value={`₹${selectedPackage.early_morning_charge.toLocaleString(
+                    value={`₹${selectedPackage?.early_morning_charge.toLocaleString(
                       "en-IN",
                     )}`}
                   />
@@ -222,7 +222,16 @@ export default function PackageTable({
                 {selectedPackage?.late_night_charge !== undefined && (
                   <Field
                     label="Late Night Charge"
-                    value={`₹${selectedPackage.late_night_charge.toLocaleString(
+                    value={`₹${selectedPackage?.late_night_charge.toLocaleString(
+                      "en-IN",
+                    )}`}
+                  />
+                )}
+
+                {selectedPackage?.service_booking_charge !== undefined && (
+                  <Field
+                    label="Service Booking Charge"
+                    value={`₹${selectedPackage?.service_booking_charge.toLocaleString(
                       "en-IN",
                     )}`}
                   />
@@ -238,7 +247,7 @@ export default function PackageTable({
                   label="Customer Overtime Charge"
                   value={
                     selectedPackage?.over_time_customer_charge
-                      ? `₹${selectedPackage.over_time_customer_charge.toLocaleString(
+                      ? `₹${selectedPackage?.over_time_customer_charge.toLocaleString(
                           "en-IN",
                         )}/min`
                       : "-"
@@ -249,7 +258,7 @@ export default function PackageTable({
                   label="Driver Overtime Charge"
                   value={
                     selectedPackage?.over_time_driver_charge
-                      ? `₹${selectedPackage.over_time_driver_charge.toLocaleString(
+                      ? `₹${selectedPackage?.over_time_driver_charge.toLocaleString(
                           "en-IN",
                         )}/min`
                       : "-"
@@ -257,37 +266,50 @@ export default function PackageTable({
                 />
               </div>
 
-              {selectedPackage?.discount_type !== "none" &&
-                selectedPackage?.discount && (
-                  <div className="border-t border-gray-200 pt-2 mt-2">
-                    <h2 className="text-lg font-medium text-gray-800 mb-3">
-                      Discount
-                    </h2>
+              <div className="border-t border-gray-200 pt-2 mt-2">
+                <h2 className="text-lg font-medium text-gray-800 mb-3">
+                  Service Areas
+                </h2>
+                <Field
+                  label="Free Serviceable Area"
+                  value={selectedPackage?.main_zone?.name || "All Zones"}
+                />
+                <Field
+                  label="Chargeable Service Area"
+                  value={selectedPackage?.service_zone?.name || "None"}
+                />
+              </div>
 
-                    <Field
-                      label="Discount Type"
-                      value={
-                        selectedPackage?.discount_type
-                          ? selectedPackage.discount_type
-                              .charAt(0)
-                              .toUpperCase() +
-                            selectedPackage.discount_type.slice(1)
-                          : "-"
-                      }
-                    />
+              <div className="border-t border-gray-200 pt-2 mt-2">
+                <h2 className="text-lg font-medium text-gray-800 mb-3">
+                  Discount Details
+                </h2>
 
-                    <Field
-                      label="Discount Value"
-                      value={
-                        selectedPackage?.discount_type === "percentage"
-                          ? `${selectedPackage.discount}%`
-                          : `₹${selectedPackage.discount?.toLocaleString(
-                              "en-IN",
-                            )}`
-                      }
-                    />
-                  </div>
+                <Field
+                  label="Discount Type"
+                  value={
+                    selectedPackage?.discount_type
+                      ? selectedPackage?.discount_type
+                          .charAt(0)
+                          .toUpperCase() +
+                        selectedPackage?.discount_type.slice(1)
+                      : "None"
+                  }
+                />
+
+                {selectedPackage?.discount_type !== "none" && (
+                  <Field
+                    label="Discount Value"
+                    value={
+                      selectedPackage?.discount_type === "percentage"
+                        ? `${selectedPackage?.discount}%`
+                        : `₹${selectedPackage?.discount?.toLocaleString(
+                            "en-IN",
+                          )}`
+                    }
+                  />
                 )}
+              </div>
 
               <Field
                 label="Status"
@@ -300,7 +322,7 @@ export default function PackageTable({
                 }
               />
 
-              <Field
+              {/* <Field
                 label="Created At"
                 value={
                   selectedPackage?.createdAt
@@ -334,7 +356,7 @@ export default function PackageTable({
                       )
                     : "-"
                 }
-              />
+              /> */}
             </div>
           </>
         ) : (
