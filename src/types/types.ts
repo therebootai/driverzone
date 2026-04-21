@@ -158,7 +158,7 @@ export type BookingTypes = {
   dropAddress: string;
   dropLat: number;
   dropLng: number;
-  tripType: "one-way" | "round-trip" | "local" | "outstation";
+  tripType: "one-way" | "round-trip";
   distance: number;
   duration: number;
   vehicleType: string;
@@ -213,6 +213,7 @@ export type BookingTypes = {
     over_time_driver_charge: number;
     early_morning_charge: number;
     late_night_charge: number;
+    service_booking_charge?: number;
   };
   insurance: boolean;
   createdAt: Date;
@@ -235,7 +236,7 @@ export type GetBookingsParams = {
     | "completed"
     | "cancelled";
   paymentStatus?: "pending" | "paid" | "failed";
-  tripType?: "one-way" | "round-trip" | "local" | "outstation";
+  tripType?: "one-way" | "round-trip";
   startDate?: string | Date;
   endDate?: string | Date;
   sort?: any;
