@@ -5,7 +5,6 @@ import Driver from "@/models/Drivers";
 import Customer from "@/models/Customers";
 import Package from "@/models/Packages";
 import { GetBookingsParams } from "@/types/types";
-import Zone from "@/models/Zones";
 import { isPointInPolygon } from "@/utils/geospatialUtils";
 import { generateCustomId } from "@/utils/generateCustomId";
 import { isValidObjectId, Types } from "mongoose";
