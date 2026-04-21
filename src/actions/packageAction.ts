@@ -11,7 +11,7 @@ await ensureModelsRegistered();
 export async function ADD_PACKAGE({
   name,
   duration,
-  package_type = "city_tour",
+  package_type = "in_city",
   company_charge,
   driver_charge,
   fooding_charge,
@@ -19,6 +19,7 @@ export async function ADD_PACKAGE({
   over_time_driver_charge,
   early_morning_charge,
   late_night_charge,
+  service_booking_charge,
   total_price,
   destination,
   discount_type = "none",
@@ -29,7 +30,7 @@ export async function ADD_PACKAGE({
   name: string;
   duration: number;
   package_type:
-    | "city_tour"
+    | "in_city"
     | "mini_outstation"
     | "outstation"
     | "hills_tour"
@@ -42,6 +43,7 @@ export async function ADD_PACKAGE({
   over_time_driver_charge: number;
   early_morning_charge?: number;
   late_night_charge?: number;
+  service_booking_charge?: number;
   total_price: number;
   destination?: string;
   discount_type: "percentage" | "fixed" | "none";
@@ -69,6 +71,7 @@ export async function ADD_PACKAGE({
       over_time_driver_charge,
       early_morning_charge,
       late_night_charge,
+      service_booking_charge,
       total_price,
       destination,
       discount_type,
@@ -105,7 +108,7 @@ export async function GET_ALL_PACKAGES({
   min_price?: number;
   max_price?: number;
   package_type?:
-    | "city_tour"
+    | "in_city"
     | "mini_outstation"
     | "outstation"
     | "hills_tour"
