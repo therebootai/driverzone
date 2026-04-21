@@ -153,6 +153,14 @@ export default function PackageForm({
 
   const handleAddNewZone = async (prevState: any, formData: FormData) => {
     try {
+      const form_discount_type = formData.get("discount_type") as string;
+      const form_discount = Number(formData.get("discount"));
+
+      if (form_discount_type !== "none" && (!form_discount || form_discount <= 0)) {
+        toast.error("Please provide a valid discount value");
+        return;
+      }
+
       const payload: {
         name: string;
         destination: string;

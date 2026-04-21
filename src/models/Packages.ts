@@ -61,11 +61,17 @@ const PackageSchema = new Schema<PackageDocument>(
       enum: ["percentage", "fixed", "none"],
       default: "none",
     },
+    discount: {
+      type: Number,
+      required: function () {
+        return this.discount_type !== "none";
+      },
+    },
     main_zone: { type: Schema.Types.ObjectId, ref: "Zones" },
     service_zone: { type: Schema.Types.ObjectId, ref: "Zones" },
     status: { type: Boolean, required: true, default: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const Package: Model<PackageDocument> =
