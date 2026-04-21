@@ -139,7 +139,6 @@ export async function createBooking(data: any): Promise<BookingDocument> {
       booking_id: data.booking_id,
 
       fare: (data.fare || 0) + serviceBookingCharge,
-      estimatedFare: data.estimatedFare,
 
       pickupAddress: data.pickupAddress,
       pickupLat: data.pickupLat,
@@ -399,7 +398,6 @@ export async function getBookings({
         $project: {
           booking_id: 1,
           fare: 1,
-          estimatedFare: 1,
           pickupAddress: 1,
           pickupLat: 1,
           pickupLng: 1,
@@ -889,7 +887,6 @@ export async function updateBooking(
     // Build update object
     const allowedFields = [
       "fare",
-      "estimatedFare",
       "pickupAddress",
       "pickupLat",
       "pickupLng",

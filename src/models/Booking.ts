@@ -4,7 +4,6 @@ export interface BookingDocument extends Document {
   booking_id: string;
 
   fare: number;
-  estimatedFare: number;
 
   pickupAddress: string;
   pickupLat: number;
@@ -81,7 +80,6 @@ const bookingSchema = new Schema<BookingDocument>(
     booking_id: { type: String, required: true, unique: true, index: true },
 
     fare: { type: Number },
-    estimatedFare: { type: Number },
 
     pickupAddress: { type: String },
     pickupLat: { type: Number },

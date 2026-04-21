@@ -151,7 +151,6 @@ export type BookingTypes = {
   _id: string;
   booking_id: string;
   fare: number;
-  estimatedFare: number;
   pickupAddress: string;
   pickupLat: number;
   pickupLng: number;
