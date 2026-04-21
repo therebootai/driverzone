@@ -5,6 +5,7 @@ import Driver from "@/models/Drivers";
 import Customer from "@/models/Customers";
 import Package from "@/models/Packages";
 import { GetBookingsParams } from "@/types/types";
+import { isPointInPolygon } from "@/utils/geospatialUtils";
 import { generateCustomId } from "@/utils/generateCustomId";
 import { isValidObjectId, Types } from "mongoose";
 import { createOTP, resendOTP, verifyOTP } from "./OTPActions";
@@ -109,10 +110,35 @@ export async function createBooking(data: any): Promise<BookingDocument> {
       data.otp = generateBookingOTP();
     }
 
+    // Check if service_booking_charge should apply
+    let serviceBookingCharge = 0;
+    if (data.package_type && data.pickupLat && data.pickupLng) {
+      const pkg = await Package.findById(data.package_type)
+        .populate("main_zone", "coordinates")
+        .populate("service_zone", "coordinates");
+      if (pkg && pkg.main_zone && pkg.service_zone && pkg.service_booking_charge) {
+        const pickupPoint = {
+          latitude: data.pickupLat,
+          longitude: data.pickupLng,
+        };
+        const inMainZone = isPointInPolygon(
+          pickupPoint,
+          pkg.main_zone.coordinates || []
+        );
+        const inServiceZone = isPointInPolygon(
+          pickupPoint,
+          pkg.service_zone.coordinates || []
+        );
+        if (!inMainZone && inServiceZone) {
+          serviceBookingCharge = pkg.service_booking_charge;
+        }
+      }
+    }
+
     const newBooking: BookingDocument = await Booking.create({
       booking_id: data.booking_id,
 
-      fare: data.fare,
+      fare: (data.fare || 0) + serviceBookingCharge,
       estimatedFare: data.estimatedFare,
 
       pickupAddress: data.pickupAddress,
@@ -160,6 +186,7 @@ export async function createBooking(data: any): Promise<BookingDocument> {
         over_time_driver_charge: 0,
         early_morning_charge: data.early_morning_charge,
         late_night_charge: data.late_night_charge,
+        service_booking_charge: serviceBookingCharge,
       },
 
       insurance: data.insurance,
@@ -350,6 +377,7 @@ export async function getBookings({
                   { $ifNull: ["$fare_details.over_time_customer_charge", 0] },
                   { $ifNull: ["$fare_details.early_morning_charge", 0] },
                   { $ifNull: ["$fare_details.late_night_charge", 0] },
+                  { $ifNull: ["$fare_details.service_booking_charge", 0] },
                 ],
               },
               else: null,
