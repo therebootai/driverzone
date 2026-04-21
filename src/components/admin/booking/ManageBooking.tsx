@@ -27,7 +27,8 @@ type UpdateActionType =
   | "cancel_booking"
   | "complete_booking"
   | "mark_arrived"
-  | "edit_booking";
+  | "edit_booking"
+  | "refund_booking";
 
 const ManageBooking = ({
   allBookings,
@@ -74,11 +75,13 @@ const ManageBooking = ({
 
     const handleUpdate = (data: any) => {
       console.log("Admin received live sync event:", data);
-      
+
       // If we received the full booking object, we can update state directly
       if (data && data.booking) {
-        setBookings(prev => {
-          const index = prev.findIndex(b => b._id === data.bookingId || b._id === data.booking?._id);
+        setBookings((prev) => {
+          const index = prev.findIndex(
+            (b) => b._id === data.bookingId || b._id === data.booking?._id,
+          );
           if (index !== -1) {
             // Update existing booking
             const newBookings = [...prev];
@@ -462,13 +465,18 @@ const ManageBooking = ({
         case "complete_booking":
           updateData.status = "completed";
           break;
+
+        case "refund_booking":
+          updateData.refundInitiated = true;
+          updateData.refundStatus = "completed";
+          updateData.refundCompletedAt = new Date().toISOString();
+          break;
       }
 
-      const response = await updateBooking(
-        updateModal.bookingId,
-        updateData,
-        { ...options, isAdminAssignment: updateModal.action === "assign_driver" },
-      );
+      const response = await updateBooking(updateModal.bookingId, updateData, {
+        ...options,
+        isAdminAssignment: updateModal.action === "assign_driver",
+      });
 
       if (response.success) {
         setSuccess(`${updateModal.action.replace("_", " ")} successful!`);
@@ -595,6 +603,39 @@ const ManageBooking = ({
           Cancel
         </button>,
       );
+    }
+
+    if (booking.status === "cancelled") {
+      if (
+        (booking as any).refundInitiated &&
+        (booking as any).refundStatus === "completed"
+      ) {
+        actions.push(
+          <span
+            key="refunded"
+            className="px-3 py-1 rounded bg-green-100 text-green-700 text-sm font-medium inline-flex items-center gap-1"
+          >
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Refunded
+          </span>,
+        );
+      } else {
+        actions.push(
+          <button
+            key="refund"
+            onClick={() => handleUpdateAction("refund_booking", booking._id)}
+            className="px-3 py-1 rounded bg-purple-600 text-white text-sm hover:bg-purple-700 transition-colors"
+          >
+            Refund
+          </button>,
+        );
+      }
     }
 
     return actions;
@@ -819,8 +860,8 @@ const ManageBooking = ({
       </h1>
 
       {/* Table */}
-      <div className="flex flex-col">
-        <div className="w-full flex items-center bg-site-stone p-3 py-4 text-site-black text-sm font-semibold">
+      <div className="flex flex-col overflow-x-auto pb-4">
+        <div className="min-w-[1200px] flex items-center bg-site-stone p-3 py-4 text-site-black text-sm font-semibold">
           <div className="w-[15%]">Booking ID</div>
           <div className="w-[15%]">Date</div>
           <div className="w-[10%]">Fare</div>
@@ -839,7 +880,7 @@ const ManageBooking = ({
           bookings.map((booking) => (
             <div
               key={booking._id}
-              className="w-full flex items-center p-3 border-b text-sm hover:bg-gray-50"
+              className="min-w-[1200px] flex items-center p-3 border-b text-sm hover:bg-gray-50"
             >
               <div className="w-[15%] break-all font-medium">
                 {booking.booking_id}
@@ -848,9 +889,7 @@ const ManageBooking = ({
                 {dayjs(booking.createdAt).format("DD MMM YYYY")}
               </div>
               <div className="w-[10%]">
-                ₹
-                {booking.fare?.toLocaleString("en-IN") ||
-                  "-"}
+                ₹{booking.fare?.toLocaleString("en-IN") || "-"}
               </div>
               <div
                 className="w-[10%] truncate"
@@ -870,7 +909,7 @@ const ManageBooking = ({
                   ?.replace(/\b\w/g, (l) => l.toUpperCase()) || "-"}
               </div>
               <div className="w-[15%]">{getStatusBadge(booking.status)}</div>
-              <div className="w-[15%] flex gap-2">
+              <div className="w-[15%] flex flex-wrap gap-2">
                 <button
                   onClick={() => {
                     setSelectedBooking(booking);
@@ -882,7 +921,9 @@ const ManageBooking = ({
                 </button>
                 {!["completed", "cancelled"].includes(booking.status) && (
                   <button
-                    onClick={() => handleUpdateAction("edit_booking", booking._id)}
+                    onClick={() =>
+                      handleUpdateAction("edit_booking", booking._id)
+                    }
                     className="px-3 py-1 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
                   >
                     Edit
@@ -917,7 +958,7 @@ const ManageBooking = ({
         <SidePopup
           showPopUp={updateModal.show}
           handleClose={resetModal}
-          clsprops="px-6 max-w-md"
+          clsprops="px-6"
         >
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-site-black">
@@ -925,8 +966,10 @@ const ManageBooking = ({
               {updateModal.action === "update_status" && "Update Status"}
               {updateModal.action === "cancel_booking" && "Cancel Booking"}
               {updateModal.action === "complete_booking" && "Complete Booking"}
-              {updateModal.action === "mark_arrived" && "Mark Driver as Arrived"}
+              {updateModal.action === "mark_arrived" &&
+                "Mark Driver as Arrived"}
               {updateModal.action === "edit_booking" && "Edit Booking"}
+              {updateModal.action === "refund_booking" && "Process Refund"}
             </h2>
           </div>
 
@@ -945,7 +988,7 @@ const ManageBooking = ({
           <div className="space-y-4">
             {updateModal.action === "edit_booking" && updateModal.bookingId && (
               <EditBookingForm
-                booking={bookings.find(b => b._id === updateModal.bookingId)!}
+                booking={bookings.find((b) => b._id === updateModal.bookingId)!}
                 onClose={resetModal}
                 onSuccess={() => {
                   fetchData();
@@ -994,9 +1037,8 @@ const ManageBooking = ({
                   >
                     <option value="">Select status</option>
                     {getAvailableStatuses(
-                      bookings.find(
-                        (b) => b._id === updateModal.bookingId,
-                      ) || null,
+                      bookings.find((b) => b._id === updateModal.bookingId) ||
+                        null,
                     ).map((status) => (
                       <option key={status} value={status}>
                         {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -1027,6 +1069,21 @@ const ManageBooking = ({
                 <p className="text-sm text-blue-700">
                   Are you sure you want to mark this trip as completed? This
                   action cannot be undone.
+                </p>
+              </div>
+            )}
+
+            {updateModal.action === "refund_booking" && (
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <p className="text-sm text-purple-700">
+                  Are you sure you want to process this refund? This action
+                  cannot be undone.
+                </p>
+                <p className="text-sm text-purple-700 mt-2">
+                  Refund amount: ₹
+                  {bookings
+                    .find((b) => b._id === updateModal.bookingId)
+                    ?.fare?.toLocaleString("en-IN") || "0"}
                 </p>
               </div>
             )}
@@ -1087,7 +1144,8 @@ const ManageBooking = ({
                   onClick={handleSubmitUpdate}
                   disabled={
                     isLoading ||
-                    (updateModal.action === "assign_driver" && !selectedDriver) ||
+                    (updateModal.action === "assign_driver" &&
+                      !selectedDriver) ||
                     (updateModal.action === "update_status" && !newStatus) ||
                     (updateModal.action === "cancel_booking" && !cancelReason)
                   }
@@ -1098,7 +1156,9 @@ const ManageBooking = ({
                         ? "bg-red-600 hover:bg-red-700 text-white"
                         : updateModal.action === "complete_booking"
                           ? "bg-green-600 hover:bg-green-700 text-white"
-                          : "bg-blue-600 hover:bg-blue-700 text-white"
+                          : updateModal.action === "refund_booking"
+                            ? "bg-purple-600 hover:bg-purple-700 text-white"
+                            : "bg-blue-600 hover:bg-blue-700 text-white"
                   }`}
                 >
                   {isLoading
@@ -1109,7 +1169,9 @@ const ManageBooking = ({
                         ? "Update Status"
                         : updateModal.action === "cancel_booking"
                           ? "Cancel Booking"
-                          : "Complete Booking"}
+                          : updateModal.action === "refund_booking"
+                            ? "Process Refund"
+                            : "Complete Booking"}
                 </button>
               )}
 

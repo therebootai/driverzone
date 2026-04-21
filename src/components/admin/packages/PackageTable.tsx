@@ -94,7 +94,7 @@ export default function PackageTable({
                   {item.status ? "Active" : "Inactive"}
                 </button>
               </td>
-              <td className="flex flex-row gap-2 py-2 px-2.5">
+              <td className="flex flex-row flex-wrap gap-2 py-2 px-2.5">
                 <button
                   className="cursor-pointer"
                   onClick={() => {
