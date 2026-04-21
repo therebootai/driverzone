@@ -117,7 +117,7 @@ export function calculateBookingCharges(params: {
   packageConfig: PackageChargeConfig;
   scheduleDate: Date;
   scheduleTime: string;
-  arrivedAt: Date;
+  arrivedAt?: Date;
   completedAt: Date;
   existingOvertimeDriverCharge?: number;
 }): BookingChargeBreakdown {
@@ -167,7 +167,7 @@ export function calculateBookingCharges(params: {
     overTimeDriverCharge = existingOvertimeDriverCharge;
   } else {
     overTimeDriverCharge = 0;
-    if (dayjs(arrivedAt).isAfter(scheduleDateTime)) {
+    if (arrivedAt && dayjs(arrivedAt).isAfter(scheduleDateTime)) {
       const otMinutes = dayjs(arrivedAt).diff(scheduleDateTime, "minute");
       overTimeDriverCharge = otMinutes * (pkg.over_time_driver_charge || 0);
     }
