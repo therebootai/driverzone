@@ -14,7 +14,7 @@ export interface BookingDocument extends Document {
   dropLat: number;
   dropLng: number;
 
-  tripType: "one-way" | "round-trip" | "local" | "outstation" | "others";
+  tripType: "one-way" | "round-trip";
   distance: number;
   duration: number;
 
@@ -61,6 +61,7 @@ export interface BookingDocument extends Document {
     over_time_driver_charge: number;
     early_morning_charge?: number;
     late_night_charge?: number;
+    service_booking_charge?: number;
   };
 
   insurance?: boolean;
@@ -92,7 +93,7 @@ const bookingSchema = new Schema<BookingDocument>(
 
     tripType: {
       type: String,
-      enum: ["one-way", "round-trip", "local", "outstation", "others"],
+      enum: ["one-way", "round-trip"],
       default: "one-way",
       index: true,
     },
@@ -181,6 +182,7 @@ const bookingSchema = new Schema<BookingDocument>(
       over_time_driver_charge: { type: Number, default: 0 },
       early_morning_charge: { type: Number },
       late_night_charge: { type: Number },
+      service_booking_charge: { type: Number, default: 0 },
     },
 
     insurance: { type: Boolean, default: false },
