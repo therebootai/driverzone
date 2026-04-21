@@ -377,6 +377,7 @@ export async function getBookings({
                   { $ifNull: ["$fare_details.over_time_customer_charge", 0] },
                   { $ifNull: ["$fare_details.early_morning_charge", 0] },
                   { $ifNull: ["$fare_details.late_night_charge", 0] },
+                  { $ifNull: ["$fare_details.service_booking_charge", 0] },
                 ],
               },
               else: null,
