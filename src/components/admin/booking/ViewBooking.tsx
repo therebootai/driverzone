@@ -229,10 +229,6 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
               value={booking.paymentMethod?.toUpperCase()}
             />
             <Field
-              label="Estimated Fare"
-              value={`₹${booking.estimatedFare?.toLocaleString("en-IN") || "0"}`}
-            />
-            <Field
               label="Total Fare"
               value={`₹${booking.fare?.toLocaleString("en-IN") || "0"}`}
             />

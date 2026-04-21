@@ -850,7 +850,6 @@ const ManageBooking = ({
               <div className="w-[10%]">
                 ₹
                 {booking.fare?.toLocaleString("en-IN") ||
-                  booking.estimatedFare?.toLocaleString("en-IN") ||
                   "-"}
               </div>
               <div
