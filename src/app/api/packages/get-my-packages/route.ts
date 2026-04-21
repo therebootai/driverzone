@@ -24,6 +24,7 @@ function formatPackage(pkg: any, outsideMainZone: boolean = false) {
     total_price: pkg.total_price,
     destination: pkg.destination,
     discount_type: pkg.discount_type,
+    discount: pkg.discount,
     main_zone: pkg.main_zone,
     service_zone: pkg.service_zone
       ? {

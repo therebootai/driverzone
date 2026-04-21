@@ -17,8 +17,11 @@ const BookingTrendsChart = () => {
   const [loading, setLoading] = useState(true);
   
   const currentDate = new Date();
-  const [month, setMonth] = useState(currentDate.getMonth() + 1);
-  const [year, setYear] = useState(currentDate.getFullYear());
+  const currentMonth = currentDate.getMonth() + 1;
+  const currentYear = currentDate.getFullYear();
+
+  const [month, setMonth] = useState(currentMonth);
+  const [year, setYear] = useState(currentYear);
   const [total, setTotal] = useState(0);
 
   const months = [
@@ -36,8 +39,16 @@ const BookingTrendsChart = () => {
     { value: 12, label: "December" },
   ];
 
-  const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+
+  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedYear = Number(e.target.value);
+    setYear(selectedYear);
+
+    if (selectedYear === currentYear && month > currentMonth) {
+      setMonth(currentMonth);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,7 +71,6 @@ const BookingTrendsChart = () => {
           <h3 className="text-gray-600 font-medium">Booking Trends</h3>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-xl font-bold text-gray-900">{total}</span>
-            {/* The +12.5% is static per the image mockup since we don't have month over month data setup right now */}
             <span className="text-sm text-green-500 font-medium flex items-center">
               +12.5%
             </span>
@@ -74,15 +84,24 @@ const BookingTrendsChart = () => {
             onChange={(e) => setMonth(Number(e.target.value))}
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
           >
-            {months.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
+            {months.map((m) => {
+              const isFutureMonth = year === currentYear && m.value > currentMonth;
+              
+              return (
+                <option 
+                  key={m.value} 
+                  value={m.value} 
+                  disabled={isFutureMonth}
+                  className={isFutureMonth ? "text-gray-300" : ""}
+                >
+                  {m.label}
+                </option>
+              );
+            })}
           </select>
           <select
             value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
+            onChange={handleYearChange}
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
           >
             {years.map((y) => (

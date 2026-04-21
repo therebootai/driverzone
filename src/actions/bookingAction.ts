@@ -139,7 +139,6 @@ export async function createBooking(data: any): Promise<BookingDocument> {
       booking_id: data.booking_id,
 
       fare: (data.fare || 0) + serviceBookingCharge,
-      estimatedFare: data.estimatedFare,
 
       pickupAddress: data.pickupAddress,
       pickupLat: data.pickupLat,
@@ -399,7 +398,6 @@ export async function getBookings({
         $project: {
           booking_id: 1,
           fare: 1,
-          estimatedFare: 1,
           pickupAddress: 1,
           pickupLat: 1,
           pickupLng: 1,
@@ -693,6 +691,23 @@ export async function updateBooking(
       };
     }
 
+    // Prevent editing completed or cancelled bookings
+    if (["completed", "cancelled"].includes(existingBooking.status)) {
+      // Allow only ratings updates if the booking is already completed/cancelled
+      const updateKeys = Object.keys(updateData);
+      const isRatingUpdate = updateKeys.every((key) =>
+        ["customerRating", "driverRating"].includes(key),
+      );
+
+      if (!isRatingUpdate) {
+        return {
+          success: false,
+          error: `Cannot edit a booking that is already ${existingBooking.status}`,
+          data: null,
+        };
+      }
+    }
+
     // Prepare update object with validation
     const updateObject: any = {};
     const validationErrors: string[] = [];
@@ -807,6 +822,7 @@ export async function updateBooking(
       updateData.paymentStatus !== existingBooking.paymentStatus
     ) {
       if (
+        !options.forceStatusChange &&
         existingBooking.paymentStatus === "paid" &&
         updateData.paymentStatus !== "paid"
       ) {
@@ -814,6 +830,7 @@ export async function updateBooking(
       }
 
       if (
+        !options.forceStatusChange &&
         updateData.paymentStatus === "paid" &&
         existingBooking.status !== "completed"
       ) {
@@ -852,7 +869,7 @@ export async function updateBooking(
     // Validate dates
     if (updateData.schedule_date) {
       const scheduleDate = new Date(updateData.schedule_date as any);
-      if (scheduleDate < new Date()) {
+      if (!options.forceStatusChange && scheduleDate < new Date()) {
         validationErrors.push("Schedule date cannot be in the past");
       }
     }
@@ -870,7 +887,6 @@ export async function updateBooking(
     // Build update object
     const allowedFields = [
       "fare",
-      "estimatedFare",
       "pickupAddress",
       "pickupLat",
       "pickupLng",
