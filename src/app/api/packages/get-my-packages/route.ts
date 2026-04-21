@@ -6,7 +6,7 @@ import Zone from "@/models/Zones";
 import { isPointInPolygon } from "@/utils/geospatialUtils";
 import { NextRequest, NextResponse } from "next/server";
 
-function formatPackage(pkg: any) {
+function formatPackage(pkg: any, outsideMainZone: boolean = false) {
   return {
     _id: pkg._id,
     package_id: pkg.package_id,
@@ -20,6 +20,7 @@ function formatPackage(pkg: any) {
     over_time_driver_charge: pkg.over_time_driver_charge,
     early_morning_charge: pkg.early_morning_charge,
     late_night_charge: pkg.late_night_charge,
+    service_booking_charge: pkg.service_booking_charge || 0,
     total_price: pkg.total_price,
     destination: pkg.destination,
     discount_type: pkg.discount_type,
@@ -32,6 +33,7 @@ function formatPackage(pkg: any) {
           coordinates: pkg.service_zone.coordinates,
         }
       : null,
+    outside_main_zone: outsideMainZone,
     status: pkg.status,
     created_at: pkg.createdAt || pkg.created_at,
     updated_at: pkg.updatedAt || pkg.updated_at,
@@ -62,42 +64,17 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const latitude = searchParams.get("latitude");
     const longitude = searchParams.get("longitude");
-    const distanceParam = searchParams.get("distance");
+    const packageTypeParam = searchParams.get("package_type");
+    const tripTypeParam = searchParams.get("tripType");
 
     let zoneIds: any[] = [];
     let isLocationInServiceZone = false;
     let point = null;
-    let distanceFilterType = null; // null, 'short', 'medium', 'long'
-    let excludedPackageTypes: string[] = [];
 
     await connectToDatabase();
     await ensureModelsRegistered();
 
-    // Parse and validate distance parameter
-    let distanceKm: number | null = null;
-    if (distanceParam) {
-      distanceKm = parseFloat(distanceParam);
-      if (isNaN(distanceKm) || distanceKm < 0) {
-        return NextResponse.json(
-          {
-            message: "Invalid distance value. Must be a positive number.",
-            success: false,
-          },
-          { status: 400 },
-        );
-      }
-
-      // Determine distance filter type based on thresholds
-      if (distanceKm <= 20) {
-        distanceFilterType = "short"; // All package types allowed
-      } else if (distanceKm <= 40) {
-        distanceFilterType = "medium"; // Exclude city_tour
-        excludedPackageTypes = ["city_tour"];
-      } else {
-        distanceFilterType = "long"; // Exclude city_tour and mini_outstation
-        excludedPackageTypes = ["city_tour", "mini_outstation"];
-      }
-    }
+    // Distance-based filtering removed as requested
 
     // Check if coordinates are provided
     if (latitude && longitude) {
@@ -128,33 +105,7 @@ export async function GET(request: NextRequest) {
       zoneIds = containingZones.map((zone) => zone._id);
       isLocationInServiceZone = containingZones.length > 0;
 
-      // If distance is provided and point is not in any service zone,
-      // calculate distance to the nearest zone center
-      if (distanceKm !== null && !isLocationInServiceZone && zones.length > 0) {
-        // Find the nearest zone center
-        let minDistance = Infinity;
-        zones.forEach((zone) => {
-          if (
-            zone.center &&
-            zone.center.coordinates &&
-            zone.center.coordinates.length === 2
-          ) {
-            const zoneLng = zone.center.coordinates[0];
-            const zoneLat = zone.center.coordinates[1];
-            const dist = calculateDistance(lat, lng, zoneLat, zoneLng);
-            if (dist < minDistance) {
-              minDistance = dist;
-            }
-          }
-        });
-
-        // If we're within the calculated distance, treat as inside service zone
-        if (minDistance <= distanceKm) {
-          // Get all zone IDs since we're within distance threshold
-          zoneIds = zones.map((zone) => zone._id);
-          isLocationInServiceZone = true;
-        }
-      }
+      // Distance calculation to zone centers removed
     }
 
     // Build query
@@ -162,22 +113,21 @@ export async function GET(request: NextRequest) {
       status: true,
     };
 
+    if (packageTypeParam) {
+      packageQuery.package_type = packageTypeParam;
+    }
+
     // Build OR conditions
     const orConditions: any[] = [];
 
     // Always include drop_pickup_service
     orConditions.push({ package_type: "drop_pickup_service" });
 
-    // Add service zone packages if inside service zone or within distance
+    // Add service zone packages if inside service zone
     if (isLocationInServiceZone) {
       const serviceZoneCondition: any = {
         service_zone: { $in: zoneIds },
       };
-
-      // Apply distance-based package type filtering if distance is provided
-      if (distanceFilterType && excludedPackageTypes.length > 0) {
-        serviceZoneCondition.package_type = { $nin: excludedPackageTypes };
-      }
 
       orConditions.push(serviceZoneCondition);
     }
@@ -187,15 +137,6 @@ export async function GET(request: NextRequest) {
       packageQuery.package_type = "drop_pickup_service";
     } else {
       packageQuery.$or = orConditions;
-    }
-
-    // Special case: If distance is provided but no location, apply distance filter to all
-    if (distanceKm !== null && (!latitude || !longitude)) {
-      if (excludedPackageTypes.length > 0) {
-        packageQuery.package_type = { $nin: excludedPackageTypes };
-      }
-      // Still only show drop_pickup_service if no location
-      packageQuery.package_type = "drop_pickup_service";
     }
 
     // Fetch packages
@@ -210,8 +151,20 @@ export async function GET(request: NextRequest) {
       })
       .lean();
 
-    // Format the response
-    const formattedPackages = packages.map(formatPackage);
+    // Format the response with main_zone containment check
+    const formattedPackages = packages.map((pkg) => {
+      let outsideMainZone = false;
+
+      if (point && pkg.service_zone && pkg.main_zone) {
+        const inMainZone = isPointInPolygon(
+          point,
+          pkg.main_zone.coordinates || []
+        );
+        outsideMainZone = !inMainZone;
+      }
+
+      return formatPackage(pkg, outsideMainZone);
+    });
 
     // Prepare response metadata
     const responseData: any = {
@@ -221,15 +174,6 @@ export async function GET(request: NextRequest) {
       location_in_service_zone: isLocationInServiceZone,
       success: true,
     };
-
-    // Add distance info to response if provided
-    if (distanceKm !== null) {
-      responseData.distance = {
-        kilometers: distanceKm,
-        filter_type: distanceFilterType,
-        excluded_package_types: excludedPackageTypes,
-      };
-    }
 
     return NextResponse.json(responseData, { status: 200 });
   } catch (error: any) {
