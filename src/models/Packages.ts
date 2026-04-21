@@ -5,7 +5,7 @@ export interface PackageDocument extends Document {
   name: string;
   duration: number;
   package_type:
-    | "city_tour"
+    | "in_city"
     | "mini_outstation"
     | "outstation"
     | "hills_tour"
@@ -18,6 +18,7 @@ export interface PackageDocument extends Document {
   over_time_driver_charge: number;
   early_morning_charge?: number;
   late_night_charge?: number;
+  service_booking_charge?: number;
   total_price: number;
   destination?: string;
   discount_type: "percentage" | "fixed" | "none";
@@ -37,7 +38,7 @@ const PackageSchema = new Schema<PackageDocument>(
     package_type: {
       type: String,
       enum: [
-        "city_tour",
+        "in_city",
         "mini_outstation",
         "outstation",
         "hills_tour",
@@ -45,7 +46,7 @@ const PackageSchema = new Schema<PackageDocument>(
         "drop_pickup_service",
       ],
       required: true,
-      default: "city_tour",
+      default: "in_city",
     },
     company_charge: { type: Number, required: true },
     driver_charge: { type: Number, required: true },
@@ -54,6 +55,7 @@ const PackageSchema = new Schema<PackageDocument>(
     over_time_driver_charge: { type: Number, required: true },
     early_morning_charge: { type: Number },
     late_night_charge: { type: Number },
+    service_booking_charge: { type: Number },
     total_price: { type: Number, required: true },
     destination: { type: String, trim: true },
     discount_type: {
