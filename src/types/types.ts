@@ -184,6 +184,7 @@ export type BookingTypes = {
   otp_verified: boolean;
   paymentMethod: "cash" | "upi" | "card" | "wallet";
   paymentStatus: "pending" | "paid" | "failed";
+  paid_amount?: number;
   status:
     | "pending"
     | "assigned"
