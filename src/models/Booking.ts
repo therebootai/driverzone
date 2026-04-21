@@ -72,6 +72,11 @@ export interface BookingDocument extends Document {
   completedAt: Date;
   cancelledAt: Date;
 
+  refundInitiated?: boolean;
+  refundInitiatedAt?: Date;
+  refundStatus?: string;
+  refundCompletedAt?: Date;
+
   coupon?: any;
 }
 
@@ -191,6 +196,10 @@ const bookingSchema = new Schema<BookingDocument>(
     completedAt: { type: Date, index: true },
     cancelledAt: { type: Date },
 
+    refundInitiated: { type: Boolean, default: false },
+    refundInitiatedAt: { type: Date },
+    refundStatus: { type: String },
+    refundCompletedAt: { type: Date },
 
     coupon: {
       type: mongoose.Schema.Types.ObjectId,

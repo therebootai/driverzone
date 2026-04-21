@@ -9,6 +9,8 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import mongoose from "mongoose";
 import { socketService, EVENTS as SOCKET_EVENTS } from "@/lib/socket";
+import { calculateBookingCharges } from "@/utils/fareCalculator";
+import { sendCustomerNotification, getNotificationForStatus } from "@/utils/sendCustomerNotification";
 
 dayjs.extend(customParseFormat);
 
@@ -239,41 +241,30 @@ export async function PUT(
       }
     }
 
-    // Handle overtime driver charge calculation
-    if (filteredUpdateData.arrivedAt || filteredUpdateData.otp_verified_at) {
+    // Handle overtime driver charge calculation on arrival
+    if (filteredUpdateData.status === "arrived" || filteredUpdateData.arrivedAt || filteredUpdateData.otp_verified_at) {
       const checkTime =
-        filteredUpdateData.arrivedAt || filteredUpdateData.otp_verified_at;
+        filteredUpdateData.arrivedAt || filteredUpdateData.otp_verified_at || new Date();
       if (
         existingBooking.schedule_date &&
         existingBooking.schedule_time &&
         existingBooking.package_type
       ) {
-        const scheduleDate = dayjs(existingBooking.schedule_date).format(
-          "YYYY-MM-DD",
-        );
+        const scheduleDate = dayjs(existingBooking.schedule_date).format("YYYY-MM-DD");
         const scheduleDateTime = dayjs(
           `${scheduleDate} ${existingBooking.schedule_time}`,
           "YYYY-MM-DD hh:mm A",
         );
 
         if (dayjs(checkTime).isAfter(scheduleDateTime)) {
-          const delayInMinutes = dayjs(checkTime).diff(
-            scheduleDateTime,
-            "minute",
-          );
+          const delayInMinutes = dayjs(checkTime).diff(scheduleDateTime, "minute");
           if (delayInMinutes > 0) {
-            const pkg = await mongoose
-              .model("Package")
-              .findById(existingBooking.package_type);
+            const pkg = await mongoose.model("Package").findById(existingBooking.package_type);
             if (pkg && pkg.over_time_driver_charge) {
-              const overtimeCharge =
-                delayInMinutes * pkg.over_time_driver_charge;
-              filteredUpdateData["fare_details.over_time_driver_charge"] =
-                overtimeCharge;
-              
-              // Points: subtract from driver charge but DO NOT update fare
+              const overtimeCharge = delayInMinutes * pkg.over_time_driver_charge;
+              filteredUpdateData["fare_details.over_time_driver_charge"] = overtimeCharge;
               if (existingBooking.fare_details) {
-                filteredUpdateData["fare_details.driver_charge"] = 
+                filteredUpdateData["fare_details.driver_charge"] =
                   (existingBooking.fare_details.driver_charge || 0) - overtimeCharge;
               }
             }
@@ -308,63 +299,37 @@ export async function PUT(
             try {
               const pkg = await mongoose.model("Package").findById(existingBooking.package_type);
               if (pkg) {
-                const arrivedAt = existingBooking.arrivedAt;
+                // Get the latest overtime driver charge (may have been set at arrival)
+                const existingOvertimeDriverCharge =
+                  filteredUpdateData["fare_details.over_time_driver_charge"] ||
+                  existingBooking.fare_details?.over_time_driver_charge ||
+                  0;
 
-                const scheduleDate = dayjs(existingBooking.schedule_date).format("YYYY-MM-DD");
-                const scheduleDateTime = dayjs(`${scheduleDate} ${existingBooking.schedule_time}`, "YYYY-MM-DD hh:mm A");
-                const scheduleHour = scheduleDateTime.hour();
+                const result = calculateBookingCharges({
+                  completedAt,
+                  arrivedAt: existingBooking.arrivedAt,
+                  scheduleDate: existingBooking.schedule_date,
+                  scheduleTime: existingBooking.schedule_time,
+                  baseFare: existingBooking.fare || 0,
+                  baseDriverCharge: existingBooking.fare_details?.driver_charge || 0,
+                  packageConfig: {
+                    over_time_customer_charge: pkg.over_time_customer_charge,
+                    over_time_driver_charge: pkg.over_time_driver_charge,
+                    early_morning_charge: pkg.early_morning_charge,
+                    late_night_charge: pkg.late_night_charge,
+                    fooding_charge: pkg.fooding_charge,
+                    duration: pkg.duration,
+                  },
+                  existingOvertimeDriverCharge,
+                });
 
-                // 1. Overtime Customer Charge
-                const packageDurationMs = (pkg.duration || 0) * 60 * 60 * 1000;
-                const baseEndTime = dayjs(scheduleDateTime).add(pkg.duration || 0, 'hour');
-                
-                let overTimeCustomerCharge = 0;
-                if (dayjs(completedAt).isAfter(baseEndTime)) {
-                  const otMinutes = dayjs(completedAt).diff(baseEndTime, "minute");
-                  overTimeCustomerCharge = otMinutes * (pkg.over_time_customer_charge || 0);
-                }
-
-                // 2. Overtime Driver Charge (if not already calculated)
-                let overTimeDriverCharge = filteredUpdateData["fare_details.over_time_driver_charge"] || 
-                                          existingBooking.fare_details?.over_time_driver_charge || 0;
-                
-                if (overTimeDriverCharge === 0 && arrivedAt && dayjs(arrivedAt).isAfter(scheduleDateTime)) {
-                   const otMinutes = dayjs(arrivedAt).diff(scheduleDateTime, "minute");
-                   overTimeDriverCharge = otMinutes * (pkg.over_time_driver_charge || 0);
-                }
-
-                // 3. Early Morning Charge (4 AM to 7 AM)
-                let earlyMorningCharge = 0;
-                if (scheduleHour >= 4 && scheduleHour < 7) {
-                  earlyMorningCharge = pkg.early_morning_charge || 0;
-                }
-
-                // 4. Late Night Charge (11 PM to 4 AM)
-                let lateNightCharge = 0;
-                if (scheduleHour >= 23 || scheduleHour < 4) {
-                  lateNightCharge = pkg.late_night_charge || 0;
-                }
-
-                // 5. Fooding Charge (if duration > 8h)
-                let foodingCharge = 0;
-                if (pkg.duration > 8) {
-                  foodingCharge = pkg.fooding_charge || 0;
-                }
-
-                // Update fare_details
-                filteredUpdateData["fare_details.over_time_customer_charge"] = overTimeCustomerCharge;
-                filteredUpdateData["fare_details.over_time_driver_charge"] = overTimeDriverCharge;
-                filteredUpdateData["fare_details.early_morning_charge"] = earlyMorningCharge;
-                filteredUpdateData["fare_details.late_night_charge"] = lateNightCharge;
-                filteredUpdateData["fare_details.fooding_charge"] = foodingCharge;
-                
-                // Penalize driver
-                const baseDriverCharge = existingBooking.fare_details?.driver_charge || 0;
-                filteredUpdateData["fare_details.driver_charge"] = baseDriverCharge - overTimeDriverCharge;
-
-                // Update fare (customer side)
-                const baseFare = existingBooking.fare || 0;
-                filteredUpdateData.fare = baseFare + overTimeCustomerCharge + earlyMorningCharge + lateNightCharge + foodingCharge;
+                filteredUpdateData["fare_details.over_time_customer_charge"] = result.overTimeCustomerCharge;
+                filteredUpdateData["fare_details.over_time_driver_charge"] = result.overTimeDriverCharge;
+                filteredUpdateData["fare_details.early_morning_charge"] = result.earlyMorningCharge;
+                filteredUpdateData["fare_details.late_night_charge"] = result.lateNightCharge;
+                filteredUpdateData["fare_details.fooding_charge"] = result.foodingCharge;
+                filteredUpdateData["fare_details.driver_charge"] = result.driverCharge;
+                filteredUpdateData.fare = result.fare;
               }
             } catch (err) {
               console.error("Calculation error in route.put:", err);
@@ -516,6 +481,24 @@ export async function PUT(
 
       socketService.emit(SOCKET_EVENTS.BOOKING_UPDATED, payload, "admin");
       socketService.emit(SOCKET_EVENTS.BOOKING_UPDATED, payload, `ride:${(updatedBooking._id as any).toString()}`);
+    }
+
+    // Send customer notification for status changes (non-blocking)
+    if (updateData.status) {
+      const notif = getNotificationForStatus(updateData.status);
+      if (notif && existingBooking.customerDetails) {
+        const customerId = existingBooking.customerDetails._id || existingBooking.customerDetails;
+        sendCustomerNotification({
+          customerId: String(customerId),
+          title: notif.title,
+          body: notif.body,
+          data: {
+            bookingId: String(existingBooking._id),
+            status: updateData.status,
+            type: "booking_status_update",
+          },
+        }).catch((err) => console.error("Failed to send customer notification:", err));
+      }
     }
 
     return NextResponse.json({

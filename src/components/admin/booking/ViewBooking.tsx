@@ -266,6 +266,36 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
           </div>
         </div>
 
+        {(booking as any).refundInitiated && (
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+            <h3 className="font-semibold text-gray-800 mb-3 border-b pb-2">
+              Refund Status
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <Field
+                label="Refund Status"
+                value={
+                  (booking as any).refundStatus === "completed" ? (
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                      Refunded
+                    </span>
+                  ) : (
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                      Pending
+                    </span>
+                  )
+                }
+              />
+              {(booking as any).refundCompletedAt && (
+                <Field
+                  label="Refunded On"
+                  value={dayjs((booking as any).refundCompletedAt).format("DD MMM YYYY, hh:mm A")}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
         {/* OTP & Security */}
         <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
           <h3 className="font-semibold text-gray-800 mb-3 border-b pb-2">
