@@ -31,7 +31,7 @@ export default async function PackageManagementPage({
     max_price: max_price ? undefined : Number(max_price),
     package_type:
       package_type &&
-      (package_type === "city_tour" ||
+      (package_type === "in_city" ||
         package_type === "outstation" ||
         package_type === "mini_outstation" ||
         package_type === "hills_tour" ||
