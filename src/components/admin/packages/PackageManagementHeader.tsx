@@ -62,8 +62,8 @@ export default function PackageManagementHeader() {
             <option value="" className="text-site-black">
               By Package Type
             </option>
-            <option value="city_tour" className="text-site-black">
-              City Tour
+            <option value="in_city" className="text-site-black">
+              In City
             </option>
             <option value="mini_outstation" className="text-site-black">
               Mini Outstation
