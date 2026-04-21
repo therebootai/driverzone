@@ -76,6 +76,62 @@ const PackageSchema = new Schema<PackageDocument>(
   { timestamps: true },
 );
 
+PackageSchema.pre("save", function (next) {
+  if (
+    this.isNew ||
+    this.isModified("company_charge") ||
+    this.isModified("driver_charge") ||
+    this.isModified("fooding_charge") ||
+    this.isModified("discount_type") ||
+    this.isModified("discount")
+  ) {
+    const basePrice =
+      (this.company_charge || 0) +
+      (this.driver_charge || 0) +
+      (this.fooding_charge || 0);
+
+    let finalPrice = basePrice;
+
+    if (this.discount_type === "percentage" && this.discount) {
+      finalPrice = basePrice - (basePrice * this.discount) / 100;
+    } else if (this.discount_type === "fixed" && this.discount) {
+      finalPrice = basePrice - this.discount;
+    }
+
+    this.total_price = finalPrice;
+  }
+
+  next();
+});
+
+PackageSchema.pre("findOneAndUpdate", async function (next) {
+  const update = this.getUpdate() as any;
+  if (
+    update.company_charge ||
+    update.driver_charge ||
+    update.fooding_charge ||
+    update.discount_type ||
+    update.discount
+  ) {
+    const basePrice =
+      (update.company_charge || 0) +
+      (update.driver_charge || 0) +
+      (update.fooding_charge || 0);
+
+    let finalPrice = basePrice;
+
+    if (update.discount_type === "percentage" && update.discount) {
+      finalPrice = basePrice - (basePrice * update.discount) / 100;
+    } else if (update.discount_type === "fixed" && update.discount) {
+      finalPrice = basePrice - update.discount;
+    }
+
+    update.total_price = finalPrice;
+  }
+
+  next();
+});
+
 const Package: Model<PackageDocument> =
   mongoose.models.Package ||
   mongoose.model<PackageDocument>("Package", PackageSchema);
