@@ -925,6 +925,7 @@ const ManageBooking = ({
               {updateModal.action === "update_status" && "Update Status"}
               {updateModal.action === "cancel_booking" && "Cancel Booking"}
               {updateModal.action === "complete_booking" && "Complete Booking"}
+              {updateModal.action === "mark_arrived" && "Mark Driver as Arrived"}
               {updateModal.action === "edit_booking" && "Edit Booking"}
             </h2>
           </div>
