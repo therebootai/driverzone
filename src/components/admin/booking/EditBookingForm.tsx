@@ -229,7 +229,7 @@ const EditBookingForm: ({
           <BasicSelectWithLabel
             label="Payment Method"
             value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value)}
+            onChange={(e) => setPaymentMethod(e.target.value as any)}
             opts={[
               { label: "Cash", value: "cash" },
               { label: "Online", value: "online" },
@@ -242,7 +242,7 @@ const EditBookingForm: ({
           <BasicSelectWithLabel
             label="Payment Status"
             value={paymentStatus}
-            onChange={(e) => setPaymentStatus(e.target.value)}
+            onChange={(e) => setPaymentStatus(e.target.value as any)}
             opts={[
               { label: "Pending", value: "pending" },
               { label: "Paid", value: "paid" },
