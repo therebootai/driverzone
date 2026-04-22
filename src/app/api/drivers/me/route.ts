@@ -102,9 +102,6 @@ export async function PUT(request: NextRequest) {
 
     const avatar = formData.get("avatar") as File | null;
     const psNoc = formData.get("ps_noc") as File | null;
-    const identity_id_proof_url = formData.get(
-      "identity_id_proof_url",
-    ) as File | null;
     const licence_file_img_1 = formData.get("licence_file_img_1") as File | null;
     const licence_file_img_2 = formData.get("licence_file_img_2") as File | null;
 
@@ -119,13 +116,6 @@ export async function PUT(request: NextRequest) {
       updateData.ps_noc = await handleImageUpload(
         psNoc,
         user.ps_noc?.public_id,
-      );
-    }
-
-    if (identity_id_proof_url) {
-      updateData.identity_id_proof_url = await handleImageUpload(
-        identity_id_proof_url,
-        user.identity_id_proof_url?.public_id,
       );
     }
 
@@ -149,7 +139,6 @@ export async function PUT(request: NextRequest) {
       if (
         key === "avatar" ||
         key === "ps_noc" ||
-        key === "identity_id_proof_url" ||
         key === "licence_file_img_1" ||
         key === "licence_file_img_2"
       )
