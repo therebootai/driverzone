@@ -101,7 +101,14 @@ export default function ZoneManagement({ zones }: { zones: ZoneDocument[] }) {
         <div className="flex flex-col gap-2.5 mt-4">
           <Field label="Name" value={selectedZone?.name} />
           <Field label="Description" value={selectedZone?.description} />
-          <Field label="Area" value={selectedZone?.area} />
+          <Field
+            label="Area"
+            value={
+              selectedZone?.area
+                ? `${Math.ceil(selectedZone.area / 1000000)} sq.km`
+                : "-"
+            }
+          />
           <Field
             label="Created At"
             value={
