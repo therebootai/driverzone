@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { BookingTypes } from "@/types/types";
 import { GET_ALL_PACKAGES } from "@/actions/packageAction";
 import { updateBooking } from "@/actions/bookingAction";
@@ -66,6 +66,28 @@ const EditBookingForm: ({
     booking.fare_details?.service_booking_charge || 0
   );
   const [totalFare, setTotalFare] = useState(booking.fare || 0);
+
+  const calculateTotalFare = useCallback(() => {
+    const total =
+      Number(companyCharge) +
+      Number(driverCharge) +
+      Number(foodingCharge) +
+      Number(earlyMorningCharge) +
+      Number(lateNightCharge) +
+      Number(serviceBookingCharge);
+    setTotalFare(total);
+  }, [
+    companyCharge,
+    driverCharge,
+    foodingCharge,
+    earlyMorningCharge,
+    lateNightCharge,
+    serviceBookingCharge,
+  ]);
+
+  useEffect(() => {
+    calculateTotalFare();
+  }, [calculateTotalFare]);
 
   useEffect(() => {
     const fetchPackages = async () => {
@@ -215,7 +237,7 @@ const EditBookingForm: ({
             label="Total Fare (Customer Price)"
             type="number"
             value={totalFare}
-            onChange={(e) => setTotalFare(Number(e.target.value))}
+            readOnly
           />
           <BasicInput
             label="Paid Amount"
