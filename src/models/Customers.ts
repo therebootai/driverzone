@@ -23,6 +23,7 @@ export interface customerDocument extends Document {
   total_spent?: string;
   password?: string;
   status: boolean;
+  fcmToken?: string;
   used_coupons?: Array<any>;
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
@@ -79,6 +80,7 @@ const customerSchema = new Schema<customerDocument>(
       required: true,
       default: true,
     },
+    fcmToken: { type: String },
     used_coupons: [
       {
         type: Schema.Types.ObjectId,

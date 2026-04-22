@@ -94,7 +94,7 @@ const ManageCustomer = ({
                 {item.status ? "Active" : "Inactive"}
               </button>
             </td>
-            <td className="flex flex-row gap-2 py-2">
+            <td className="flex flex-row flex-wrap gap-2 py-2">
               <button
                 className="cursor-pointer"
                 onClick={() => {

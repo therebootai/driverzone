@@ -67,8 +67,8 @@ const ManageCoupon = ({
       <h1 className=" text-xl font-semibold text-site-black">
         Coupon Management
       </h1>
-      <div className="flex flex-col">
-        <div className=" w-full flex items-center bg-site-stone p-3 py-4 text-site-black text-sm font-semibold ">
+      <div className="flex flex-col overflow-x-auto pb-4">
+        <div className=" min-w-[1000px] flex items-center bg-site-stone p-3 py-4 text-site-black text-sm font-semibold ">
           <div className=" w-[15%]">Coupon Code</div>
           <div className=" w-[15%]">Discount</div>
           <div className="w-[10%]">Discount Type</div>
@@ -81,7 +81,7 @@ const ManageCoupon = ({
         {allCoupon.map((item: CouponFormState) => (
           <div
             key={item.coupon_id}
-            className=" w-full flex items-center  p-3 py-2 text-site-black text-xs"
+            className=" min-w-[1000px] flex items-center  p-3 py-2 text-site-black text-xs"
           >
             <div className=" w-[15%]">{item.coupon_code || ""}</div>
             <div className=" w-[15%]">{item.coupon_value || ""}</div>
@@ -110,7 +110,7 @@ const ManageCoupon = ({
                 {item.status ? "Active" : "Inactive"}
               </button>
             </div>
-            <div className=" w-[15%] flex flex-row gap-2 ">
+            <div className=" w-[15%] flex flex-row flex-wrap gap-2 ">
               <button
                 className="cursor-pointer "
                 onClick={() => {
