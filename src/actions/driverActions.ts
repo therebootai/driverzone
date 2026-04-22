@@ -28,8 +28,6 @@ export async function createDriver(formData: FormData) {
       landmark: formData.get("landmark"),
       pin_code: formData.get("pin_code"),
 
-      identity_id_type: formData.get("identity_id_type"),
-      identity_id_number: formData.get("identity_id_number"),
       identity_documents: [],
 
       licence_no: formData.get("licence_no"),
@@ -122,11 +120,6 @@ export async function createDriver(formData: FormData) {
         public_id: uploaded.public_id,
         secure_url: uploaded.secure_url,
       };
-    }
-
-    const idProof = await handleSingleFile("identity_id_proof_url");
-    if (idProof) {
-      driverData.identity_id_proof_url = idProof;
     }
 
     // Handle identity document proof files (multiple, front/back)
@@ -394,9 +387,6 @@ export async function updateDriver(driverId: string, formData: FormData) {
     setIfPresent("city_area", "city_area");
     setIfPresent("landmark", "landmark");
     setIfPresent("pin_code", "pin_code");
-
-    setIfPresent("identity_id_type", "identity_id_type");
-    setIfPresent("identity_id_number", "identity_id_number");
 
     // Parse identity documents from dynamic form fields for update
     const identityDocsUpdate: any[] = [];
