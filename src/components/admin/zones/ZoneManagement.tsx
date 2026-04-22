@@ -1,6 +1,6 @@
 "use client";
 
-import { UPDATE_ZONE } from "@/actions/zoneActions";
+import { DELETE_ZONE, UPDATE_ZONE } from "@/actions/zoneActions";
 import { ZoneDocument } from "@/models/Zones";
 import SidePopup from "@/ui/SidePopup";
 import TableComponent from "@/ui/TableComponent";
@@ -10,6 +10,18 @@ import toast from "react-hot-toast";
 
 export default function ZoneManagement({ zones }: { zones: ZoneDocument[] }) {
   const [selectedZone, setSelectedZone] = useState<ZoneDocument | null>(null);
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this zone?")) return;
+    try {
+      await DELETE_ZONE(id);
+      toast.success("Zone deleted successfully");
+    } catch (error: any) {
+      console.log(error);
+      toast.error(error.message);
+    }
+  };
+
   const handleStatus = async (id: string, status: boolean) => {
     try {
       await UPDATE_ZONE(id, { status });
@@ -68,14 +80,14 @@ export default function ZoneManagement({ zones }: { zones: ZoneDocument[] }) {
               >
                 View
               </button>{" "}
-              {/* |<button className="cursor-pointer">Edit</button> |
+              |
               <button
                 className="cursor-pointer"
                 type="button"
-                // onClick={() => handleDelete(item._id)}
+                onClick={() => handleDelete(item._id as string)}
               >
                 Delete
-              </button> */}
+              </button>
             </td>
           </tr>
         ))}
