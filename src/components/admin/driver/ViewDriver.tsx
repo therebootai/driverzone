@@ -209,28 +209,59 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
           <h2 className="text-lg font-semibold text-gray-900 mb-2">
             Identity Information
           </h2>
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="grid grid-cols-1 gap-4">
-              <Field label="Identity Type" value={driver.identity_id_type} />
-              <Field
-                label="Identity Number"
-                value={driver.identity_id_number}
-              />
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-medium text-gray-700">
-                  Identity Proof
-                </span>
-                <FilePreview file={driver.identity_id_proof_url} />
-                <Link
-                  href={driver.identity_id_proof_url?.secure_url ?? ""}
-                  target="_blank"
-                  className="mt-2 text-sm font-semibold text-primary hover:underline inline-block"
-                >
-                  View Identity Full Document
-                </Link>
+          {(driver.identity_documents && driver.identity_documents.length > 0
+            ? driver.identity_documents
+            : driver.identity_id_type
+              ? [{ identity_id_type: driver.identity_id_type, identity_id_number: driver.identity_id_number, identity_id_proof_img_1: (driver as any).identity_id_proof_url, identity_id_proof_img_2: undefined }]
+              : []
+          ).map((doc, idx) => (
+            <div key={idx} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Document {idx + 1}
+                  </span>
+                </div>
+                <Field label="Identity Type" value={doc.identity_id_type} />
+                <Field
+                  label="Identity Number"
+                  value={doc.identity_id_number}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs font-medium text-gray-700">
+                      Front Image
+                    </span>
+                    <FilePreview file={doc.identity_id_proof_img_1} />
+                    {doc.identity_id_proof_img_1?.secure_url && (
+                      <Link
+                        href={doc.identity_id_proof_img_1.secure_url}
+                        target="_blank"
+                        className="text-sm font-semibold text-primary hover:underline inline-block"
+                      >
+                        View Front
+                      </Link>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs font-medium text-gray-700">
+                      Back Image
+                    </span>
+                    <FilePreview file={doc.identity_id_proof_img_2} />
+                    {doc.identity_id_proof_img_2?.secure_url && (
+                      <Link
+                        href={doc.identity_id_proof_img_2.secure_url}
+                        target="_blank"
+                        className="text-sm font-semibold text-primary hover:underline inline-block"
+                      >
+                        View Back
+                      </Link>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          ))}
         </div>
 
         {/* ========== LICENSE INFO ========== */}
@@ -251,16 +282,33 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
               />
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-medium text-gray-700">
-                  Licence Document
+                  Licence (Front)
                 </span>
-                <FilePreview file={driver.licence_file_url} />
-                <Link
-                  href={driver.licence_file_url?.secure_url ?? ""}
-                  target="_blank"
-                  className="mt-2 text-sm font-semibold text-primary hover:underline inline-block"
-                >
-                  View Licence Full Document
-                </Link>
+                <FilePreview file={(driver as any).licence_file_img_1} />
+                {(driver as any).licence_file_img_1?.secure_url && (
+                  <Link
+                    href={(driver as any).licence_file_img_1.secure_url}
+                    target="_blank"
+                    className="mt-2 text-sm font-semibold text-primary hover:underline inline-block"
+                  >
+                    View Licence Front
+                  </Link>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium text-gray-700">
+                  Licence (Back)
+                </span>
+                <FilePreview file={(driver as any).licence_file_img_2} />
+                {(driver as any).licence_file_img_2?.secure_url && (
+                  <Link
+                    href={(driver as any).licence_file_img_2.secure_url}
+                    target="_blank"
+                    className="mt-2 text-sm font-semibold text-primary hover:underline inline-block"
+                  >
+                    View Licence Back
+                  </Link>
+                )}
               </div>
             </div>
           </div>

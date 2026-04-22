@@ -109,12 +109,18 @@ export class PriorityAlertService {
       const excludedDriverIds = alert.assignedDrivers
         .map((d: any) => d.driverId);
 
+      // Populate package_type to check for hills_tour
+      const populatedBooking = await Booking.findById(booking._id || booking).populate("package_type").lean();
+      const packageType = populatedBooking?.package_type as any;
+      const isHillsTour = packageType?.package_type === "hills_tour";
+
       const drivers = await this.findAvailableDrivers(
         booking.pickupLat,
         booking.pickupLng,
         alert.radius,
         alert.maxDrivers,
         excludedDriverIds,
+        isHillsTour,
       );
 
       if (drivers.length === 0) {
@@ -139,6 +145,7 @@ export class PriorityAlertService {
     radius: number,
     limit: number,
     excludedDriverIds: mongoose.Types.ObjectId[] = [],
+    isHillsTour: boolean = false,
   ) {
     try {
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
@@ -154,8 +161,13 @@ export class PriorityAlertService {
         _id: { $nin: excludedDriverIds },
         "currentLocation.lat": { $exists: true },
         "currentLocation.lng": { $exists: true },
-        "currentLocation.lastUpdated": { $gte: twoHoursAgo }, 
+        "currentLocation.lastUpdated": { $gte: twoHoursAgo },
       };
+
+      // For hills_tour packages, only include drivers with speciality "hills" or "both"
+      if (isHillsTour) {
+        filter.speciality = { $in: ["hills", "both"] };
+      }
 
       // Diagnostic logging
       const onlineDriversCount = await Driver.countDocuments({ isOnline: true });

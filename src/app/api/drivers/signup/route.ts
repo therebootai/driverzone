@@ -19,6 +19,15 @@ export async function POST(request: Request) {
     const pin_code = formData.get("pin_code") as string;
     const identity_id_type = formData.get("identity_id_type") as string;
     const identity_id_number = formData.get("identity_id_number") as string;
+    const identity_documents_raw: { identity_id_type: string; identity_id_number: string }[] = [];
+    let signupIdIdx = 0;
+    while (formData.has(`identity_id_type_${signupIdIdx}`) || formData.has(`identity_id_number_${signupIdIdx}`)) {
+      identity_documents_raw.push({
+        identity_id_type: (formData.get(`identity_id_type_${signupIdIdx}`) as string) || "",
+        identity_id_number: (formData.get(`identity_id_number_${signupIdIdx}`) as string) || "",
+      });
+      signupIdIdx++;
+    }
     const licence_no = formData.get("licence_no") as string;
     const licence_expiry_date = formData.get("licence_expiry_date") as string;
     const vehicle_transmission_type = (formData.get(
@@ -27,6 +36,7 @@ export async function POST(request: Request) {
     const vehicle_category_type = formData.getAll(
       "vehicle_category_type",
     ) as string[];
+    const speciality = (formData.get("speciality") as string) || "plain";
 
     const deviceId = request.headers.get("x-device-id");
     const fcmToken = formData.get("fcmToken") as string;
@@ -54,7 +64,9 @@ export async function POST(request: Request) {
     }
 
     let identity_id_proof_url;
-    let licence_file_url;
+    let identity_documents_files: { identity_id_proof_img_1?: any; identity_id_proof_img_2?: any }[] = [];
+    let licence_file_img_1;
+    let licence_file_img_2;
     let ps_noc_url;
     let avatar_url;
 
@@ -67,8 +79,27 @@ export async function POST(request: Request) {
       identity_id_proof_url = await handleImageUpload(identityIdProof);
     }
 
+    // Handle identity document proof files (multiple, front/back)
+    for (let i = 0; i < identity_documents_raw.length; i++) {
+      const docEntry: { identity_id_proof_img_1?: any; identity_id_proof_img_2?: any } = {};
+      const docFile1 = formData.get(`identity_id_proof_img_1_${i}`) as File | null;
+      const docFile2 = formData.get(`identity_id_proof_img_2_${i}`) as File | null;
+      if (docFile1) {
+        docEntry.identity_id_proof_img_1 = await handleImageUpload(docFile1);
+      }
+      if (docFile2) {
+        docEntry.identity_id_proof_img_2 = await handleImageUpload(docFile2);
+      }
+      identity_documents_files.push(docEntry);
+    }
+
     if (licenceFile) {
-      licence_file_url = await handleImageUpload(licenceFile);
+      licence_file_img_1 = await handleImageUpload(licenceFile);
+    }
+
+    const licenceFile2 = formData.get("licence_file_img_2") as File | null;
+    if (licenceFile2) {
+      licence_file_img_2 = await handleImageUpload(licenceFile2);
     }
 
     if (psNoc) {
@@ -94,12 +125,20 @@ export async function POST(request: Request) {
       identity_id_number,
       avatar: avatar_url,
       identity_id_proof_url,
+      identity_documents: identity_documents_raw.map((doc, i) => ({
+        identity_id_type: doc.identity_id_type,
+        identity_id_number: doc.identity_id_number,
+        identity_id_proof_img_1: identity_documents_files[i]?.identity_id_proof_img_1,
+        identity_id_proof_img_2: identity_documents_files[i]?.identity_id_proof_img_2,
+      })),
       licence_no,
       licence_expiry_date,
-      licence_file_url,
+      licence_file_img_1,
+      licence_file_img_2,
       ps_noc: ps_noc_url,
       vehicle_transmission_type,
       vehicle_category_type,
+      speciality,
       fcmToken,
       approvedDeviceId: deviceId,
     });

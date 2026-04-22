@@ -134,3 +134,22 @@ export async function UPDATE_ZONE(id: string, data: any) {
     return { success: false, error: error.message, data: null };
   }
 }
+
+export async function DELETE_ZONE(id: string) {
+  try {
+    await connectToDatabase();
+    await Zone.deleteOne({
+      $or: [
+        { zone_id: id },
+        {
+          _id: mongoose.Types.ObjectId.isValid(id) ? id : undefined,
+        },
+      ],
+    });
+    revalidatePath("/admin/zone-management");
+    return { success: true };
+  } catch (error: any) {
+    console.log(error);
+    return { success: false, message: error.message };
+  }
+}
