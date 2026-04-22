@@ -946,13 +946,20 @@ export async function updateBooking(
         const pkg = await Package.findById(existingBooking.package_type);
         if (pkg) {
           const completedAt = updateObject.completedAt || new Date();
+
+          // Recover original driver_charge by adding back the arrival-time deduction
+          // to avoid double-deduction (driver_charge may have been reduced at arrival)
+          const originalDriverCharge =
+            (existingBooking.fare_details?.driver_charge || 0) +
+            (existingBooking.fare_details?.over_time_driver_charge || 0);
+
           const result = calculateBookingCharges({
             completedAt,
             arrivedAt: existingBooking.arrivedAt,
             scheduleDate: existingBooking.schedule_date,
             scheduleTime: existingBooking.schedule_time,
             baseFare: existingBooking.fare || 0,
-            baseDriverCharge: existingBooking.fare_details?.driver_charge || 0,
+            baseDriverCharge: originalDriverCharge,
             packageConfig: {
               over_time_customer_charge: pkg.over_time_customer_charge,
               over_time_driver_charge: pkg.over_time_driver_charge,
@@ -961,6 +968,8 @@ export async function updateBooking(
               fooding_charge: pkg.fooding_charge,
               duration: pkg.duration,
             },
+            existingOvertimeDriverCharge:
+              existingBooking.fare_details?.over_time_driver_charge || 0,
           });
 
           const currentFareDetails = existingBooking.fare_details || {};

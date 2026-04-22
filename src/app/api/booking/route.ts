@@ -168,10 +168,36 @@ export async function GET(req: NextRequest) {
     const tripType = searchParams.get("tripType");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
+    const searchTerm = searchParams.get("searchTerm");
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
     let query: any = {};
+
+    // Add search term filter if provided
+    if (searchTerm && searchTerm.trim()) {
+      const escaped = searchTerm.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const searchRegex = { $regex: escaped, $options: "i" };
+
+      // Find matching customer IDs by name for populated field search
+      const matchingCustomers = await Customer.find({
+        name: searchRegex,
+      })
+        .select("_id")
+        .lean();
+      const customerIds = matchingCustomers.map((c) => c._id);
+
+      query.$or = [
+        { booking_id: searchRegex },
+        { pickupAddress: searchRegex },
+        { dropAddress: searchRegex },
+        { status: searchRegex },
+        { paymentMethod: searchRegex },
+        ...(customerIds.length > 0
+          ? [{ customerDetails: { $in: customerIds } }]
+          : []),
+      ];
+    }
 
     if (user) {
       query.customerDetails = user._id;

@@ -240,7 +240,7 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
                   value={`₹${booking.fare_details.company_charge || 0}`}
                 />
                 <Field
-                  label="Driver Charge"
+                  label="Driver Charge (Earning)"
                   value={`₹${booking.fare_details.driver_charge || 0}`}
                 />
                 <Field
@@ -248,9 +248,31 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
                   value={`₹${booking.fare_details.fooding_charge || 0}`}
                 />
                 <Field
-                  label="Early/Late Charge"
-                  value={`₹${(booking.fare_details.early_morning_charge || 0) + (booking.fare_details.late_night_charge || 0)}`}
+                  label="Early Morning Charge"
+                  value={`₹${booking.fare_details.early_morning_charge || 0}`}
                 />
+                <Field
+                  label="Late Night Charge"
+                  value={`₹${booking.fare_details.late_night_charge || 0}`}
+                />
+                {booking.fare_details.service_booking_charge ? (
+                  <Field
+                    label="Service Booking Charge"
+                    value={`₹${booking.fare_details.service_booking_charge}`}
+                  />
+                ) : null}
+                {booking.fare_details.over_time_customer_charge ? (
+                  <Field
+                    label="Overtime Charge (+Fare)"
+                    value={`₹${booking.fare_details.over_time_customer_charge}`}
+                  />
+                ) : null}
+                {booking.fare_details.over_time_driver_charge ? (
+                  <Field
+                    label="Late Arrival Fine (-Driver)"
+                    value={`-₹${booking.fare_details.over_time_driver_charge}`}
+                  />
+                ) : null}
               </div>
             )}
 
