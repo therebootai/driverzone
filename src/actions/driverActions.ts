@@ -30,6 +30,7 @@ export async function createDriver(formData: FormData) {
 
       identity_id_type: formData.get("identity_id_type"),
       identity_id_number: formData.get("identity_id_number"),
+      identity_documents: [],
 
       licence_no: formData.get("licence_no"),
       licence_expiry_date: formData.get("licence_expiry_date")
@@ -37,6 +38,7 @@ export async function createDriver(formData: FormData) {
         : undefined,
 
       employment_type: formData.get("employment_type"),
+      speciality: formData.get("speciality") || "plain",
       remarks: formData.get("remarks"),
       status: true,
 
@@ -75,6 +77,21 @@ export async function createDriver(formData: FormData) {
         : 20,
       verified: true,
     };
+
+    // Parse identity documents from dynamic form fields
+    const identityDocs: any[] = [];
+    let idx = 0;
+    while (formData.has(`identity_id_type_${idx}`) || formData.has(`identity_id_number_${idx}`)) {
+      identityDocs.push({
+        identity_id_type: formData.get(`identity_id_type_${idx}`) as string || "",
+        identity_id_number: formData.get(`identity_id_number_${idx}`) as string || "",
+      });
+      idx++;
+    }
+    if (identityDocs.length > 0) {
+      driverData.identity_documents = identityDocs;
+    }
+
     //@ts-ignore
     const existingMobileNumer = await Drivers.findOne({ mobile_number });
     if (existingMobileNumer) {
@@ -112,9 +129,40 @@ export async function createDriver(formData: FormData) {
       driverData.identity_id_proof_url = idProof;
     }
 
-    const licenceDoc = await handleSingleFile("licence_file_url");
-    if (licenceDoc) {
-      driverData.licence_file_url = licenceDoc;
+    // Handle identity document proof files (multiple, front/back)
+    if (driverData.identity_documents && driverData.identity_documents.length > 0) {
+      for (let i = 0; i < driverData.identity_documents.length; i++) {
+        const proofFile1 = formData.get(`identity_id_proof_img_1_${i}`) as File | null;
+        if (proofFile1 && proofFile1.size > 0) {
+          const tempPath = await parseImage(proofFile1);
+          const uploaded: any = await uploadFile(tempPath, proofFile1.type);
+          await fs.unlink(tempPath);
+          driverData.identity_documents[i].identity_id_proof_img_1 = {
+            public_id: uploaded.public_id,
+            secure_url: uploaded.secure_url,
+          };
+        }
+        const proofFile2 = formData.get(`identity_id_proof_img_2_${i}`) as File | null;
+        if (proofFile2 && proofFile2.size > 0) {
+          const tempPath = await parseImage(proofFile2);
+          const uploaded: any = await uploadFile(tempPath, proofFile2.type);
+          await fs.unlink(tempPath);
+          driverData.identity_documents[i].identity_id_proof_img_2 = {
+            public_id: uploaded.public_id,
+            secure_url: uploaded.secure_url,
+          };
+        }
+      }
+    }
+
+    const licenceDoc1 = await handleSingleFile("licence_file_img_1");
+    if (licenceDoc1) {
+      driverData.licence_file_img_1 = licenceDoc1;
+    }
+
+    const licenceDoc2 = await handleSingleFile("licence_file_img_2");
+    if (licenceDoc2) {
+      driverData.licence_file_img_2 = licenceDoc2;
     }
 
     const insuranceDoc = await handleSingleFile("insurance_document");
@@ -350,6 +398,20 @@ export async function updateDriver(driverId: string, formData: FormData) {
     setIfPresent("identity_id_type", "identity_id_type");
     setIfPresent("identity_id_number", "identity_id_number");
 
+    // Parse identity documents from dynamic form fields for update
+    const identityDocsUpdate: any[] = [];
+    let updateIdx = 0;
+    while (formData.has(`identity_id_type_${updateIdx}`) || formData.has(`identity_id_number_${updateIdx}`)) {
+      identityDocsUpdate.push({
+        identity_id_type: formData.get(`identity_id_type_${updateIdx}`) as string || "",
+        identity_id_number: formData.get(`identity_id_number_${updateIdx}`) as string || "",
+      });
+      updateIdx++;
+    }
+    if (identityDocsUpdate.length > 0) {
+      driver.identity_documents = identityDocsUpdate;
+    }
+
     setIfPresent("licence_no", "licence_no");
 
     const licenceExpiry = formData.get("licence_expiry_date");
@@ -364,6 +426,15 @@ export async function updateDriver(driverId: string, formData: FormData) {
       | null;
     if (employment_type) {
       driver.employment_type = employment_type;
+    }
+
+    const speciality = formData.get("speciality") as
+      | "plain"
+      | "hills"
+      | "both"
+      | null;
+    if (speciality) {
+      driver.speciality = speciality;
     }
 
     const remarks = formData.get("remarks");
@@ -463,24 +534,50 @@ export async function updateDriver(driverId: string, formData: FormData) {
       };
     }
 
-    // 7. Identity proof
-    const newIdProof = await handleSingleFileReplace(
-      "identity_id_proof_url",
-      driver.identity_id_proof_url as any,
-    );
-    if (newIdProof) {
-      // @ts-ignore
-      driver.identity_id_proof_url = newIdProof;
+    // 7b. Identity documents proof files (multiple, front/back)
+    if (driver.identity_documents && driver.identity_documents.length > 0) {
+      for (let i = 0; i < driver.identity_documents.length; i++) {
+        const doc = driver.identity_documents[i] as any;
+        const proofFile1 = formData.get(`identity_id_proof_img_1_${i}`) as File | null;
+        if (proofFile1 && proofFile1.size > 0) {
+          const newProof1 = await handleSingleFileReplace(
+            `identity_id_proof_img_1_${i}`,
+            doc.identity_id_proof_img_1,
+          );
+          if (newProof1) {
+            doc.identity_id_proof_img_1 = newProof1;
+          }
+        }
+        const proofFile2 = formData.get(`identity_id_proof_img_2_${i}`) as File | null;
+        if (proofFile2 && proofFile2.size > 0) {
+          const newProof2 = await handleSingleFileReplace(
+            `identity_id_proof_img_2_${i}`,
+            doc.identity_id_proof_img_2,
+          );
+          if (newProof2) {
+            doc.identity_id_proof_img_2 = newProof2;
+          }
+        }
+      }
     }
 
-    // 8. Licence file
-    const newLicenceFile = await handleSingleFileReplace(
-      "licence_file_url",
-      driver.licence_file_url as any,
+    // 8. Licence files (front/back)
+    const newLicenceFile1 = await handleSingleFileReplace(
+      "licence_file_img_1",
+      driver.licence_file_img_1 as any,
     );
-    if (newLicenceFile) {
+    if (newLicenceFile1) {
       // @ts-ignore
-      driver.licence_file_url = newLicenceFile;
+      driver.licence_file_img_1 = newLicenceFile1;
+    }
+
+    const newLicenceFile2 = await handleSingleFileReplace(
+      "licence_file_img_2",
+      driver.licence_file_img_2 as any,
+    );
+    if (newLicenceFile2) {
+      // @ts-ignore
+      driver.licence_file_img_2 = newLicenceFile2;
     }
 
     const newPsNoc = await handleSingleFileReplace(

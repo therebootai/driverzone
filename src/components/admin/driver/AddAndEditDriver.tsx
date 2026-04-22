@@ -17,6 +17,38 @@ const AddAndEditDriver = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  const [identityDocs, setIdentityDocs] = useState<
+    { identity_id_type: string; identity_id_number: string; file1?: File; file2?: File }[]
+  >(
+    selectedDriver?.identity_documents?.length
+      ? selectedDriver.identity_documents.map((doc) => ({
+          identity_id_type: doc.identity_id_type || "",
+          identity_id_number: doc.identity_id_number || "",
+        }))
+      : [{ identity_id_type: "", identity_id_number: "" }],
+  );
+
+  const addIdentityDoc = () => {
+    setIdentityDocs((prev) => [
+      ...prev,
+      { identity_id_type: "", identity_id_number: "" },
+    ]);
+  };
+
+  const removeIdentityDoc = (index: number) => {
+    setIdentityDocs((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateIdentityDoc = (
+    index: number,
+    field: "identity_id_type" | "identity_id_number",
+    value: string,
+  ) => {
+    setIdentityDocs((prev) =>
+      prev.map((doc, i) => (i === index ? { ...doc, [field]: value } : doc)),
+    );
+  };
+
   // Set employment type from existing driver when editing
   useEffect(() => {
     if (selectedDriver?.employment_type) {
@@ -167,59 +199,136 @@ const AddAndEditDriver = ({
             />
           </div>
 
-          {/* Identity ID Type */}
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">
-              Choose Identity ID Type
-            </label>
-            <select
-              name="identity_id_type"
-              defaultValue={selectedDriver?.identity_id_type || ""}
-              className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-            >
-              <option value="">Select</option>
-              <option value="aadhar">Aadhaar</option>
-              <option value="pan">PAN</option>
-              <option value="voter">Voter ID</option>
-              <option value="passport">Passport</option>
-            </select>
-          </div>
-
-          {/* Identity ID Number */}
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">
-              Identity ID Number
-            </label>
-            <input
-              name="identity_id_number"
-              type="text"
-              defaultValue={selectedDriver?.identity_id_number || ""}
-              className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Enter ID number"
-            />
-          </div>
-
-          {/* Upload Identity ID Proof (file) + preview */}
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">
-              Upload Identity ID Proof
-            </label>
-            <input
-              name="identity_id_proof_url"
-              type="file"
-              accept="image/*,application/pdf"
-              className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
-            />
-            {selectedDriver?.identity_id_proof_url?.secure_url && (
-              <div className="mt-2">
-                <p className="text-xs text-gray-500 mb-1">Current ID Proof:</p>
-                <img
-                  src={selectedDriver.identity_id_proof_url.secure_url}
-                  alt="ID Proof"
-                  className="h-20 w-auto rounded border"
-                />
+          {/* Identity Documents (multiple) */}
+          <div className="flex flex-col gap-3 md:col-span-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-700">
+                Identity Documents
+              </label>
+              <button
+                type="button"
+                onClick={addIdentityDoc}
+                className="text-xs font-medium text-indigo-600 hover:text-indigo-800"
+              >
+                + Add More
+              </button>
+            </div>
+            {identityDocs.map((doc, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-1 md:grid-cols-5 gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50/50"
+              >
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-500">
+                    ID Type
+                  </label>
+                  <select
+                    value={doc.identity_id_type}
+                    onChange={(e) =>
+                      updateIdentityDoc(index, "identity_id_type", e.target.value)
+                    }
+                    name={`identity_id_type_${index}`}
+                    className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                  >
+                    <option value="">Select</option>
+                    <option value="aadhar">Aadhaar</option>
+                    <option value="pan">PAN</option>
+                    <option value="voter">Voter ID</option>
+                    <option value="passport">Passport</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-500">
+                    ID Number
+                  </label>
+                  <input
+                    type="text"
+                    value={doc.identity_id_number}
+                    onChange={(e) =>
+                      updateIdentityDoc(index, "identity_id_number", e.target.value)
+                    }
+                    name={`identity_id_number_${index}`}
+                    className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Enter ID number"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-500">
+                    Front Image
+                  </label>
+                  <input
+                    name={`identity_id_proof_img_1_${index}`}
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setIdentityDocs((prev) =>
+                          prev.map((d, i) =>
+                            i === index ? { ...d, file1: file } : d,
+                          ),
+                        );
+                      }
+                    }}
+                    className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
+                  />
+                  {selectedDriver?.identity_documents?.[index]
+                    ?.identity_id_proof_img_1?.secure_url && (
+                    <div className="mt-1">
+                      <p className="text-xs text-gray-500">Current Front:</p>
+                      <img
+                        src={selectedDriver.identity_documents[index].identity_id_proof_img_1!.secure_url}
+                        alt={`Front ${index + 1}`}
+                        className="h-16 w-auto rounded border"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-500">
+                    Back Image
+                  </label>
+                  <input
+                    name={`identity_id_proof_img_2_${index}`}
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setIdentityDocs((prev) =>
+                          prev.map((d, i) =>
+                            i === index ? { ...d, file2: file } : d,
+                          ),
+                        );
+                      }
+                    }}
+                    className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
+                  />
+                  {selectedDriver?.identity_documents?.[index]
+                    ?.identity_id_proof_img_2?.secure_url && (
+                    <div className="mt-1">
+                      <p className="text-xs text-gray-500">Current Back:</p>
+                      <img
+                        src={selectedDriver.identity_documents[index].identity_id_proof_img_2!.secure_url}
+                        alt={`Back ${index + 1}`}
+                        className="h-16 w-auto rounded border"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-end">
+                  {identityDocs.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeIdentityDoc(index)}
+                      className="text-xs font-medium text-red-500 hover:text-red-700 pb-2"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
               </div>
-            )}
+            ))}
           </div>
 
           {/* Licence No */}
@@ -255,23 +364,46 @@ const AddAndEditDriver = ({
             />
           </div>
 
-          {/* Upload Licence (file) + preview */}
+          {/* Upload Licence Front */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-gray-700">
-              Upload Licence
+              Upload Licence (Front)
             </label>
             <input
-              name="licence_file_url"
+              name="licence_file_img_1"
               type="file"
               accept="image/*,application/pdf"
               className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
             />
-            {selectedDriver?.licence_file_url?.secure_url && (
+            {selectedDriver?.licence_file_img_1?.secure_url && (
               <div className="mt-2">
-                <p className="text-xs text-gray-500 mb-1">Current Licence:</p>
+                <p className="text-xs text-gray-500 mb-1">Current Front:</p>
                 <img
-                  src={selectedDriver.licence_file_url.secure_url}
-                  alt="Licence"
+                  src={selectedDriver.licence_file_img_1.secure_url}
+                  alt="Licence Front"
+                  className="h-20 w-auto rounded border"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Upload Licence Back */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700">
+              Upload Licence (Back)
+            </label>
+            <input
+              name="licence_file_img_2"
+              type="file"
+              accept="image/*,application/pdf"
+              className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
+            />
+            {selectedDriver?.licence_file_img_2?.secure_url && (
+              <div className="mt-2">
+                <p className="text-xs text-gray-500 mb-1">Current Back:</p>
+                <img
+                  src={selectedDriver.licence_file_img_2.secure_url}
+                  alt="Licence Back"
                   className="h-20 w-auto rounded border"
                 />
               </div>
@@ -331,6 +463,22 @@ const AddAndEditDriver = ({
               <option value="Automatic">Automatic</option>
               <option value="Manual">Manual</option>
               <option value="Automatic+Manual">Both</option>
+            </select>
+          </div>
+
+          {/* Speciality */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700">
+              Speciality
+            </label>
+            <select
+              name="speciality"
+              defaultValue={selectedDriver?.speciality || "plain"}
+              className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+            >
+              <option value="plain">Plain</option>
+              <option value="hills">Hills</option>
+              <option value="both">Both</option>
             </select>
           </div>
 

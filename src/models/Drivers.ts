@@ -1,6 +1,19 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 import { BookingDocument } from "./Booking";
 
+export interface IdentityDocument {
+  identity_id_type?: string;
+  identity_id_number?: string;
+  identity_id_proof_img_1?: {
+    public_id: string;
+    secure_url: string;
+  };
+  identity_id_proof_img_2?: {
+    public_id: string;
+    secure_url: string;
+  };
+}
+
 export interface VehicleDetails {
   car_name?: string;
   model_name_and_number?: string;
@@ -54,16 +67,15 @@ export interface DriverDocument extends Document {
   landmark?: string;
   pin_code?: string;
 
-  identity_id_type?: string;
-  identity_id_number?: string;
-  identity_id_proof_url?: {
-    public_id: string;
-    secure_url: string;
-  };
+  identity_documents?: IdentityDocument[];
 
   licence_no?: string;
   licence_expiry_date?: Date;
-  licence_file_url?: {
+  licence_file_img_1?: {
+    public_id: string;
+    secure_url: string;
+  };
+  licence_file_img_2?: {
     public_id: string;
     secure_url: string;
   };
@@ -74,6 +86,7 @@ export interface DriverDocument extends Document {
   vehicle_category_type?: string[];
 
   employment_type?: "Driver" | "Driver+Car" | "Other";
+  speciality?: "plain" | "hills" | "both";
   remarks?: string;
 
   vehicle_details?: VehicleDetails;
@@ -175,16 +188,28 @@ const driverSchema = new Schema<DriverDocument>(
     landmark: { type: String },
     pin_code: { type: String },
 
-    identity_id_type: { type: String },
-    identity_id_number: { type: String },
-    identity_id_proof_url: {
-      public_id: { type: String },
-      secure_url: { type: String },
-    },
+    identity_documents: [
+      {
+        identity_id_type: { type: String },
+        identity_id_number: { type: String },
+        identity_id_proof_img_1: {
+          public_id: { type: String },
+          secure_url: { type: String },
+        },
+        identity_id_proof_img_2: {
+          public_id: { type: String },
+          secure_url: { type: String },
+        },
+      },
+    ],
 
     licence_no: { type: String },
     licence_expiry_date: { type: Date },
-    licence_file_url: {
+    licence_file_img_1: {
+      public_id: { type: String },
+      secure_url: { type: String },
+    },
+    licence_file_img_2: {
       public_id: { type: String },
       secure_url: { type: String },
     },
@@ -199,6 +224,12 @@ const driverSchema = new Schema<DriverDocument>(
       type: String,
       enum: ["Driver", "Driver+Car"],
       default: "Driver",
+    },
+
+    speciality: {
+      type: String,
+      enum: ["plain", "hills", "both"],
+      default: "plain",
     },
 
     vehicle_transmission_type: {

@@ -109,6 +109,18 @@ export type DriverDocument = {
     public_id: string;
     secure_url: string;
   };
+  identity_documents?: {
+    identity_id_type?: string;
+    identity_id_number?: string;
+    identity_id_proof_img_1?: {
+      public_id: string;
+      secure_url: string;
+    };
+    identity_id_proof_img_2?: {
+      public_id: string;
+      secure_url: string;
+    };
+  }[];
   avatar?: {
     public_id: string;
     secure_url: string;
@@ -121,7 +133,11 @@ export type DriverDocument = {
 
   licence_no?: string;
   licence_expiry_date?: Date;
-  licence_file_url?: {
+  licence_file_img_1?: {
+    public_id: string;
+    secure_url: string;
+  };
+  licence_file_img_2?: {
     public_id: string;
     secure_url: string;
   };
@@ -129,6 +145,7 @@ export type DriverDocument = {
   vehicle_category_type?: string[];
 
   employment_type?: "Driver" | "Driver+Car" | "Other";
+  speciality?: "plain" | "hills" | "both";
   remarks?: string;
   maxDistance?: number;
 

@@ -105,7 +105,8 @@ export async function PUT(request: NextRequest) {
     const identity_id_proof_url = formData.get(
       "identity_id_proof_url",
     ) as File | null;
-    const licence_file_url = formData.get("licence_file_url") as File | null;
+    const licence_file_img_1 = formData.get("licence_file_img_1") as File | null;
+    const licence_file_img_2 = formData.get("licence_file_img_2") as File | null;
 
     if (avatar) {
       updateData.avatar = await handleImageUpload(
@@ -128,13 +129,20 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (licence_file_url) {
-      updateData.licence_file_url = await handleImageUpload(
-        licence_file_url,
-        user.licence_file_url?.public_id,
+    if (licence_file_img_1) {
+      updateData.licence_file_img_1 = await handleImageUpload(
+        licence_file_img_1,
+        (user as any).licence_file_img_1?.public_id,
       );
     }
-    
+
+    if (licence_file_img_2) {
+      updateData.licence_file_img_2 = await handleImageUpload(
+        licence_file_img_2,
+        (user as any).licence_file_img_2?.public_id,
+      );
+    }
+
 
     for (const key of formData.keys()) {
       // Skip already processed image fields
@@ -142,7 +150,8 @@ export async function PUT(request: NextRequest) {
         key === "avatar" ||
         key === "ps_noc" ||
         key === "identity_id_proof_url" ||
-        key === "licence_file_url"
+        key === "licence_file_img_1" ||
+        key === "licence_file_img_2"
       )
         continue;
 
@@ -195,6 +204,41 @@ export async function PUT(request: NextRequest) {
         { _id: { $ne: user._id }, fcmToken: updateData.fcmToken },
         { $unset: { fcmToken: "" } }
       );
+    }
+
+    // Handle identity_documents (multiple) from dynamic fields
+    const identityDocsArray: any[] = [];
+    let meIdIdx = 0;
+    while (formData.has(`identity_id_type_${meIdIdx}`) || formData.has(`identity_id_number_${meIdIdx}`)) {
+      const docEntry: any = {
+        identity_id_type: formData.get(`identity_id_type_${meIdIdx}`) as string || "",
+        identity_id_number: formData.get(`identity_id_number_${meIdIdx}`) as string || "",
+      };
+      const proofFile1 = formData.get(`identity_id_proof_img_1_${meIdIdx}`) as File | null;
+      if (proofFile1) {
+        const existing1 = (user as any).identity_documents?.[meIdIdx]?.identity_id_proof_img_1;
+        docEntry.identity_id_proof_img_1 = await handleImageUpload(proofFile1, existing1?.public_id);
+      } else if ((user as any).identity_documents?.[meIdIdx]?.identity_id_proof_img_1) {
+        docEntry.identity_id_proof_img_1 = (user as any).identity_documents[meIdIdx].identity_id_proof_img_1;
+      }
+      const proofFile2 = formData.get(`identity_id_proof_img_2_${meIdIdx}`) as File | null;
+      if (proofFile2) {
+        const existing2 = (user as any).identity_documents?.[meIdIdx]?.identity_id_proof_img_2;
+        docEntry.identity_id_proof_img_2 = await handleImageUpload(proofFile2, existing2?.public_id);
+      } else if ((user as any).identity_documents?.[meIdIdx]?.identity_id_proof_img_2) {
+        docEntry.identity_id_proof_img_2 = (user as any).identity_documents[meIdIdx].identity_id_proof_img_2;
+      }
+      identityDocsArray.push(docEntry);
+
+      // Clean up dynamic field names from updateData
+      delete updateData[`identity_id_type_${meIdIdx}`];
+      delete updateData[`identity_id_number_${meIdIdx}`];
+      delete updateData[`identity_id_proof_img_1_${meIdIdx}`];
+      delete updateData[`identity_id_proof_img_2_${meIdIdx}`];
+      meIdIdx++;
+    }
+    if (identityDocsArray.length > 0) {
+      updateData.identity_documents = identityDocsArray;
     }
 
     const updatedUser = await Drivers.findOneAndUpdate(
