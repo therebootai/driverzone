@@ -196,13 +196,10 @@ const bookingSchema = new Schema<BookingDocument>(
     completedAt: { type: Date, index: true },
     cancelledAt: { type: Date },
 
-<<<<<<< HEAD
-=======
     refundInitiated: { type: Boolean, default: false },
     refundInitiatedAt: { type: Date },
     refundStatus: { type: String },
     refundCompletedAt: { type: Date },
->>>>>>> origin/main
 
     coupon: {
       type: mongoose.Schema.Types.ObjectId,
