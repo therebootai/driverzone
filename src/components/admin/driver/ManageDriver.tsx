@@ -7,6 +7,7 @@ import SidePopup from "@/ui/SidePopup";
 import AddAndEditDriver from "./AddAndEditDriver";
 import { approveDevice, deleteDriver, updateDriverStatus } from "@/actions/driverActions";
 import ViewDriver from "./ViewDriver";
+import Popup from "@/ui/Popup";
 
 const ManageDriver = ({
   allDrivers,
@@ -20,6 +21,7 @@ const ManageDriver = ({
   );
   const [showView, setShowView] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const { getParam, updateFilters } = useQueryParamsAdvanced();
   const viewId = getParam("view");
@@ -201,11 +203,15 @@ const ManageDriver = ({
         <SidePopup
           showPopUp={showView}
           handleClose={() => {
+            if (selectedImage) return;
             setShowView(false);
             updateFilters("view", "");
           }}
         >
-          <ViewDriver driver={selectedDriver} />
+          <ViewDriver 
+            driver={selectedDriver} 
+            onImageClick={(url) => setSelectedImage(url)}
+          />
         </SidePopup>
       )}
       {showEdit && selectedDriver && (
@@ -225,6 +231,31 @@ const ManageDriver = ({
           />
         </SidePopup>
       )}
+
+      {/* ========== IMAGE VIEWER MODAL ========== */}
+      <Popup 
+        isOpen={!!selectedImage} 
+        onClose={() => setSelectedImage(null)}
+        className="md:w-[90%] lg:w-[85%] xl:w-[80%] xxl:w-[70%] !z-[2000]"
+      >
+        <div className="flex flex-col items-center justify-center p-2 bg-white rounded-lg">
+          {selectedImage && (
+            <div className="relative w-full flex items-center justify-center bg-gray-100 rounded-md">
+              <img
+                src={selectedImage}
+                alt="Full Preview"
+                className="max-w-full h-auto max-h-[85vh] object-contain rounded-md"
+              />
+            </div>
+          )}
+          <button 
+            onClick={() => window.open(selectedImage!, "_blank")}
+            className="mt-4 px-6 py-2 bg-primary text-black rounded-md text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm"
+          >
+            Open in new tab
+          </button>
+        </div>
+      </Popup>
     </div>
   );
 };

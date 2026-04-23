@@ -7,9 +7,15 @@ import Field from "@/ui/Field";
 import { useEffect, useState } from "react";
 import { getBookings } from "@/actions/bookingAction";
 
-const FilePreview = ({ file }: any) => {
+const FilePreview = ({
+  file,
+  onImageClick,
+}: {
+  file: any;
+  onImageClick?: (url: string) => void;
+}) => {
   if (!file?.secure_url)
-    return <p className="text-xs text-gray-500">No file uploaded.</p>;
+    return <p className="text-xs text-gray-300">No file uploaded.</p>;
 
   const isPDF = file.secure_url.endsWith(".pdf");
 
@@ -24,19 +30,37 @@ const FilePreview = ({ file }: any) => {
           View PDF Document
         </a>
       ) : (
-        <Image
-          src={file.secure_url}
-          alt="Preview"
-          width={120}
-          height={120}
-          className="rounded-md border object-cover"
-        />
+        <div
+          className="cursor-pointer group relative overflow-hidden rounded-md border"
+          onClick={() => onImageClick?.(file.secure_url)}
+        >
+          <Image
+            src={file.secure_url}
+            alt="Preview"
+            width={800}
+            height={600}
+            className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105"
+            priority
+            unoptimized
+          />
+          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span className="text-white text-xs font-medium bg-black/50 px-2 py-1 rounded">
+              Click to enlarge
+            </span>
+          </div>
+        </div>
       )}
     </div>
   );
 };
 
-const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
+const ViewDriver = ({ 
+  driver,
+  onImageClick 
+}: { 
+  driver: DriverDocument;
+  onImageClick?: (url: string) => void;
+}) => {
   const vd = driver.vehicle_details;
 
   const [bookings, setBookings] = useState<BookingTypes[]>([]);
@@ -205,8 +229,8 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         {/* ========== IDENTITY INFO ========== */}
-        <div className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">
+        <div className="flex flex-col gap-4">
+          <h2 className="text-lg font-semibold text-gray-900">
             Identity Information
           </h2>
           {(driver.identity_documents && driver.identity_documents.length > 0
@@ -216,47 +240,35 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
               : []
           ).map((doc, idx) => (
             <div key={idx} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-              <div className="grid grid-cols-1 gap-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Document {idx + 1}
-                  </span>
+              <div className="flex flex-col gap-4">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Document {idx + 1}
+                </span>
+                <div className="grid grid-cols-2 gap-6">
+                  <Field label="Identity Type" value={doc.identity_id_type} />
+                  <Field
+                    label="Identity Number"
+                    value={doc.identity_id_number}
+                  />
                 </div>
-                <Field label="Identity Type" value={doc.identity_id_type} />
-                <Field
-                  label="Identity Number"
-                  value={doc.identity_id_number}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-xs font-medium text-gray-700">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
                       Front Image
                     </span>
-                    <FilePreview file={doc.identity_id_proof_img_1} />
-                    {doc.identity_id_proof_img_1?.secure_url && (
-                      <Link
-                        href={doc.identity_id_proof_img_1.secure_url}
-                        target="_blank"
-                        className="text-sm font-semibold text-primary hover:underline inline-block"
-                      >
-                        View Front
-                      </Link>
-                    )}
+                    <FilePreview 
+                      file={doc.identity_id_proof_img_1} 
+                      onImageClick={onImageClick}
+                    />
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <span className="text-xs font-medium text-gray-700">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
                       Back Image
                     </span>
-                    <FilePreview file={doc.identity_id_proof_img_2} />
-                    {doc.identity_id_proof_img_2?.secure_url && (
-                      <Link
-                        href={doc.identity_id_proof_img_2.secure_url}
-                        target="_blank"
-                        className="text-sm font-semibold text-primary hover:underline inline-block"
-                      >
-                        View Back
-                      </Link>
-                    )}
+                    <FilePreview 
+                      file={doc.identity_id_proof_img_2} 
+                      onImageClick={onImageClick}
+                    />
                   </div>
                 </div>
               </div>
@@ -265,50 +277,42 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
         </div>
 
         {/* ========== LICENSE INFO ========== */}
-        <div className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">
+        <div className="flex flex-col gap-4">
+          <h2 className="text-lg font-semibold text-gray-900">
             Licence Information
           </h2>
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="grid grid-cols-1 gap-4">
-              <Field label="Licence Number" value={driver.licence_no} />
-              <Field
-                label="Licence Expiry"
-                value={
-                  driver.licence_expiry_date
-                    ? new Date(driver.licence_expiry_date).toLocaleDateString()
-                    : "-"
-                }
-              />
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-medium text-gray-700">
-                  Licence (Front)
-                </span>
-                <FilePreview file={(driver as any).licence_file_img_1} />
-                {(driver as any).licence_file_img_1?.secure_url && (
-                  <Link
-                    href={(driver as any).licence_file_img_1.secure_url}
-                    target="_blank"
-                    className="mt-2 text-sm font-semibold text-primary hover:underline inline-block"
-                  >
-                    View Licence Front
-                  </Link>
-                )}
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-6">
+                <Field label="Licence Number" value={driver.licence_no} />
+                <Field
+                  label="Licence Expiry"
+                  value={
+                    driver.licence_expiry_date
+                      ? new Date(driver.licence_expiry_date).toLocaleDateString()
+                      : "-"
+                  }
+                />
               </div>
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-medium text-gray-700">
-                  Licence (Back)
-                </span>
-                <FilePreview file={(driver as any).licence_file_img_2} />
-                {(driver as any).licence_file_img_2?.secure_url && (
-                  <Link
-                    href={(driver as any).licence_file_img_2.secure_url}
-                    target="_blank"
-                    className="mt-2 text-sm font-semibold text-primary hover:underline inline-block"
-                  >
-                    View Licence Back
-                  </Link>
-                )}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+                    Licence (Front)
+                  </span>
+                  <FilePreview 
+                    file={(driver as any).licence_file_img_1} 
+                    onImageClick={onImageClick}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+                    Licence (Back)
+                  </span>
+                  <FilePreview 
+                    file={(driver as any).licence_file_img_2} 
+                    onImageClick={onImageClick}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -342,7 +346,8 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
                   vd.car_images_and_rc.map((img, index) => (
                     <div
                       key={index}
-                      className="group relative border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                      className="group relative border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => onImageClick?.(img.secure_url)}
                     >
                       <Image
                         src={img.secure_url}
@@ -351,13 +356,9 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
                         height={120}
                         className="object-cover"
                       />
-                      <Link
-                        href={img.secure_url}
-                        target="_blank"
-                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity"
-                      >
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">
                         View Full
-                      </Link>
+                      </div>
                     </div>
                   ))
                 ) : (
@@ -390,7 +391,10 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
                 <span className="text-xs font-medium text-gray-700">
                   Document Preview
                 </span>
-                <FilePreview file={vd.insurance_document} />
+                <FilePreview 
+                  file={vd.insurance_document} 
+                  onImageClick={onImageClick}
+                />
               </div>
             </div>
 
@@ -411,7 +415,10 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
                 <span className="text-xs font-medium text-gray-700">
                   Document Preview
                 </span>
-                <FilePreview file={vd.road_tax_document} />
+                <FilePreview 
+                  file={vd.road_tax_document} 
+                  onImageClick={onImageClick}
+                />
               </div>
             </div>
 
@@ -432,7 +439,10 @@ const ViewDriver = ({ driver }: { driver: DriverDocument }) => {
                 <span className="text-xs font-medium text-gray-700">
                   Document Preview
                 </span>
-                <FilePreview file={vd.pollution_document} />
+                <FilePreview 
+                  file={vd.pollution_document} 
+                  onImageClick={onImageClick}
+                />
               </div>
             </div>
           </div>
