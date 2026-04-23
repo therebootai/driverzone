@@ -16,22 +16,41 @@ const BookingManagement = async ({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
-  const { 
-    page = "1", 
-    search, 
-    status,
-    tripType,
-    startDate,
-    endDate 
-  } = await searchParams;
-  
+  const params = await searchParams;
   await authorizeAccess("booking_management");
-  
+
+  return (
+    <AdminTemplate className="p-6 flex flex-col gap-6">
+      <RealtimeRideNotification />
+      <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <BookingPageHeader />
+      </div>
+      <Suspense
+        key={JSON.stringify(params)}
+        fallback={
+          <div className="flex justify-center items-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
+            <Loader />
+          </div>
+        }
+      >
+        <BookingList searchParams={params} />
+      </Suspense>
+    </AdminTemplate>
+  );
+};
+
+async function BookingList({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | undefined };
+}) {
+  const { page = "1", search, status, tripType, startDate, endDate } = searchParams;
+
   const normalizedStatus: GetBookingsParams["status"] =
     !status || status === ""
       ? undefined
       : (status as GetBookingsParams["status"]);
-      
+
   const normalizedTripType: GetBookingsParams["tripType"] =
     !tripType || tripType === ""
       ? undefined
@@ -49,29 +68,15 @@ const BookingManagement = async ({
   });
 
   return (
-    <AdminTemplate className="p-6 flex flex-col gap-6">
-      <RealtimeRideNotification />
-      <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-        <BookingPageHeader />
-      </div>
-      <Suspense
-        fallback={
-          <div className="flex justify-center items-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
-            <Loader />
-          </div>
-        }
-      >
-        <ManageBooking
-          allBookings={data}
-          pagination={paginations}
-          fetchData={async () => {
-            "use server";
-            revalidatePath("/admin/booking-management");
-          }}
-        />
-      </Suspense>
-    </AdminTemplate>
+    <ManageBooking
+      allBookings={data}
+      pagination={paginations}
+      fetchData={async () => {
+        "use server";
+        revalidatePath("/admin/booking-management");
+      }}
+    />
   );
-};
+}
 
 export default BookingManagement;

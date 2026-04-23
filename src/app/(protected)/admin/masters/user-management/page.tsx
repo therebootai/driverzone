@@ -4,14 +4,41 @@ import UserTable from "@/components/admin/masters/user-manage/UserTable";
 import AdminTemplate from "@/templates/AdminTemplate";
 import PaginationBox from "@/ui/PaginationBox";
 import { authorizeAccess } from "@/utils/authorizeAccess";
+import React, { Suspense } from "react";
+import Loader from "@/ui/Loader";
 
 export default async function UserManagementPage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
-  const { page, search, role, status } = await searchParams;
+  const params = await searchParams;
   await authorizeAccess("user_management");
+
+  return (
+    <AdminTemplate className="py-6 flex flex-col gap-6">
+      <UserManagementHeader />
+      <Suspense
+        key={JSON.stringify(params)}
+        fallback={
+          <div className="flex justify-center items-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
+            <Loader />
+          </div>
+        }
+      >
+        <UserList searchParams={params} />
+      </Suspense>
+    </AdminTemplate>
+  );
+}
+
+async function UserList({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | undefined };
+}) {
+  const { page, search, role, status } = searchParams;
+
   const { data, paginations } = await GETALLUSERS({
     page: parseInt(page ?? "1"),
     search,
@@ -21,8 +48,7 @@ export default async function UserManagementPage({
   });
 
   return (
-    <AdminTemplate className="py-6 flex flex-col gap-6">
-      <UserManagementHeader />
+    <>
       <UserTable users={data} />
       <PaginationBox
         baseUrl="/admin/masters/user-management"
@@ -31,6 +57,6 @@ export default async function UserManagementPage({
           totalPages: paginations.totalPages,
         }}
       />
-    </AdminTemplate>
+    </>
   );
 }

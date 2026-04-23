@@ -4,6 +4,7 @@ import ManageDriver from "@/components/admin/driver/ManageDriver";
 import AdminTemplate from "@/templates/AdminTemplate";
 import { authorizeAccess } from "@/utils/authorizeAccess";
 import React, { Suspense } from "react";
+import Loader from "@/ui/Loader";
 
 const DriverManagement = async ({
   searchParams,
@@ -17,9 +18,44 @@ const DriverManagement = async ({
     pendingApproval?: string;
   }>;
 }) => {
+  const params = await searchParams;
   await authorizeAccess("driver_management");
+
+  return (
+    <AdminTemplate>
+      <div className="p-6 flex flex-col gap-6 ">
+        <div>
+          <DriverHeader />
+        </div>
+        <Suspense
+          key={JSON.stringify(params)}
+          fallback={
+            <div className="flex justify-center items-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
+              <Loader />
+            </div>
+          }
+        >
+          <DriverList searchParams={params} />
+        </Suspense>
+      </div>
+    </AdminTemplate>
+  );
+};
+
+async function DriverList({
+  searchParams,
+}: {
+  searchParams: {
+    page: string;
+    search?: string;
+    status?: string;
+    isOnline?: string;
+    verified?: string;
+    pendingApproval?: string;
+  };
+}) {
   const { page, search, status, isOnline, verified, pendingApproval } =
-    await searchParams;
+    searchParams;
 
   const { data, paginations } = await getAllDriver({
     page: Number(page),
@@ -39,19 +75,10 @@ const DriverManagement = async ({
   });
 
   return (
-    <AdminTemplate>
-      <Suspense fallback={<div>Loading...</div>}>
-        <div className="p-6 flex flex-col gap-6 ">
-          <div>
-            <DriverHeader />
-          </div>
-          <div>
-            <ManageDriver allDrivers={data} pagination={paginations} />
-          </div>
-        </div>
-      </Suspense>
-    </AdminTemplate>
+    <div>
+      <ManageDriver allDrivers={data} pagination={paginations} />
+    </div>
   );
-};
+}
 
 export default DriverManagement;
