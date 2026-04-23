@@ -19,6 +19,15 @@ const BookingManagement = async ({
   const params = await searchParams;
   await authorizeAccess("booking_management");
 
+  const { 
+    page = "1", 
+    search, 
+    status,
+    tripType,
+    startDate,
+    endDate 
+  } = params;
+
   return (
     <AdminTemplate className="p-6 flex flex-col gap-6">
       <RealtimeRideNotification />
@@ -26,7 +35,7 @@ const BookingManagement = async ({
         <BookingPageHeader />
       </div>
       <Suspense
-        key={JSON.stringify(params)}
+        key={`${page}-${search}-${status}-${tripType}-${startDate}-${endDate}`}
         fallback={
           <div className="flex justify-center items-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
             <Loader />

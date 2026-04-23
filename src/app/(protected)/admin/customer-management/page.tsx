@@ -14,13 +14,14 @@ const CustomerManagement = async ({
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
   const params = await searchParams;
+  const { search, status, page = "1" } = params;
   await authorizeAccess("customer_management");
 
   return (
     <AdminTemplate className="p-6 flex flex-col gap-6">
       <CustomerPageHeader />
       <Suspense
-        key={JSON.stringify(params)}
+        key={`${page}-${search}-${status}`}
         fallback={
           <div className="flex justify-center items-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
             <Loader />

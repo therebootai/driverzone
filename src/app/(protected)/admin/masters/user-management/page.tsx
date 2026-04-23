@@ -14,12 +14,13 @@ export default async function UserManagementPage({
 }) {
   const params = await searchParams;
   await authorizeAccess("user_management");
+  const { page, search, role, status } = params;
 
   return (
     <AdminTemplate className="py-6 flex flex-col gap-6">
       <UserManagementHeader />
       <Suspense
-        key={JSON.stringify(params)}
+        key={`${page}-${search}-${role}-${status}`}
         fallback={
           <div className="flex justify-center items-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
             <Loader />
@@ -31,6 +32,7 @@ export default async function UserManagementPage({
     </AdminTemplate>
   );
 }
+
 
 async function UserList({
   searchParams,

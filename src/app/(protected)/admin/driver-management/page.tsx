@@ -20,6 +20,7 @@ const DriverManagement = async ({
 }) => {
   const params = await searchParams;
   await authorizeAccess("driver_management");
+  const { page, search, status, isOnline, verified, pendingApproval } = params;
 
   return (
     <AdminTemplate>
@@ -28,7 +29,7 @@ const DriverManagement = async ({
           <DriverHeader />
         </div>
         <Suspense
-          key={JSON.stringify(params)}
+          key={`${page}-${search}-${status}-${isOnline}-${verified}-${pendingApproval}`}
           fallback={
             <div className="flex justify-center items-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
               <Loader />

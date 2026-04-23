@@ -15,6 +15,7 @@ const CouponPage = async ({
 }) => {
   const params = await searchParams;
   await authorizeAccess("coupon");
+  const { search, status, coupon_type, startDate, endDate, page = "1" } = params;
 
   return (
     <AdminTemplate className="p-4 flex flex-col gap-4">
@@ -25,7 +26,7 @@ const CouponPage = async ({
         }}
       />
       <Suspense
-        key={JSON.stringify(params)}
+        key={`${page}-${search}-${status}-${coupon_type}-${startDate}-${endDate}`}
         fallback={
           <div className="flex justify-center items-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
             <Loader />
