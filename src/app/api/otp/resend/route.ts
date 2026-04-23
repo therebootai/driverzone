@@ -15,13 +15,13 @@ export async function POST(request: NextRequest) {
 
     if (data.type === "login") {
       const phone = data.phone;
-      const [driver, customer, user] = await Promise.all([
+      const [driver, user] = await Promise.all([
         //@ts-ignore
         Driver.findOne({ mobile_number: phone }),
         User.findOne({ mobile_number: phone }),
       ]);
 
-      const existingUser = driver || customer || user;
+      const existingUser = driver || user;
 
       if (!existingUser) {
         return NextResponse.json(
