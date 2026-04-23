@@ -141,12 +141,14 @@ export default function PackageManagementHeader() {
         handleClose={() => setShowAddForm(false)}
         clsprops="bg-site-stone"
       >
-        <div className="flex flex-col gap-4 p-4">
-          <h2 className="font-semibold text-site-navyblue xl:text-4xl md:text-2xl text-lg">
-            Create Package
-          </h2>
-          <PackageForm onClose={() => setShowAddForm(false)} />
-        </div>
+        {showAddForm && (
+          <div className="flex flex-col gap-4 p-4">
+            <h2 className="font-semibold text-site-navyblue xl:text-4xl md:text-2xl text-lg">
+              Create Package
+            </h2>
+            <PackageForm onClose={() => setShowAddForm(false)} />
+          </div>
+        )}
       </SidePopup>
     </>
   );

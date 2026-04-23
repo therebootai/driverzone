@@ -84,6 +84,28 @@ export default function PackageForm({
     update_package?.discount || 0
   );
 
+  const resetForm = useCallback(() => {
+    setName("");
+    setDestination("");
+    setPackageType("in_city");
+    setDuration("");
+    setCompanyCharge(399);
+    setDriverCharge(350);
+    setFoodingCharge(150);
+    setOverTimeCustomerCharge(1.65);
+    setOverTimeDriverCharge(1);
+    setEarlyMorningCharge(0);
+    setLateNightCharge(0);
+    setServiceBookingCharge(0);
+    setTotalPrice(399 + 350 + 150);
+    setMainZone(undefined);
+    setServiceZone(undefined);
+    setMainSearchInput("");
+    setServiceSearchInput("");
+    setDiscountType("none");
+    setDiscount(0);
+  }, []);
+
   useEffect(() => {
     if (update_package) {
       setName(update_package?.name ?? "");
@@ -105,8 +127,10 @@ export default function PackageForm({
       setServiceSearchInput(update_package?.service_zone?.name || "");
       setDiscountType(update_package?.discount_type);
       setDiscount(update_package?.discount ?? 0);
+    } else {
+      resetForm();
     }
-  }, [update_package]);
+  }, [update_package, resetForm]);
 
   // UTILITY FUNCTION
   // Debounced search for Main Zone
@@ -228,7 +252,8 @@ export default function PackageForm({
       } else {
         await ADD_PACKAGE(payload);
       }
-      toast.success("Package added successfully");
+      toast.success(isEdit ? "Package updated successfully" : "Package added successfully");
+      resetForm();
       onClose && onClose();
     } catch (error: any) {
       console.log(error);
