@@ -57,6 +57,7 @@ export default function PackageTable({
             "Package Type",
             "Company Charge",
             "Driver Charge",
+            "Total Price",
             "Created",
             "Status",
             "Actions",
@@ -74,6 +75,7 @@ export default function PackageTable({
               </td>
               <td className="py-2 px-2.5">{item.company_charge || ""}</td>
               <td className="py-2 px-2.5">{item.driver_charge || ""}</td>
+              <td className="py-2 px-2.5">{item.total_price || ""}</td>
               <td className="py-2 px-2.5">
                 {new Date(item.createdAt || "").toLocaleString("en-IN", {
                   day: "numeric",
