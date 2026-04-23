@@ -14,10 +14,7 @@ export default async function PackageManagementPage({
     page,
     search,
     status,
-    min_price,
-    max_price,
     package_type,
-    discount_type,
   } = await searchParams;
 
   await authorizeAccess("package_management");
@@ -27,8 +24,6 @@ export default async function PackageManagementPage({
     search,
     status:
       status === "active" ? true : status === "inactive" ? false : undefined,
-    min_price: min_price ? undefined : Number(min_price),
-    max_price: max_price ? undefined : Number(max_price),
     package_type:
       package_type &&
       (package_type === "in_city" ||
@@ -38,13 +33,6 @@ export default async function PackageManagementPage({
         package_type === "long_tour" ||
         package_type === "drop_pickup_service")
         ? package_type
-        : undefined,
-    discount_type:
-      discount_type &&
-      (discount_type === "none" ||
-        discount_type === "percentage" ||
-        discount_type === "fixed")
-        ? discount_type
         : undefined,
   });
 

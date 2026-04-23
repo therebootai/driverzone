@@ -13,8 +13,6 @@ export default function PackageManagementHeader() {
 
   const { updateFilters, getParam } = useQueryParamsAdvanced();
   const [localSearch, setLocalSearch] = useState(getParam("search") || "");
-  const [localMinPrice, setLocalMinPrice] = useState(getParam("min_price") || "");
-  const [localMaxPrice, setLocalMaxPrice] = useState(getParam("max_price") || "");
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -22,20 +20,6 @@ export default function PackageManagementHeader() {
     }, 500);
     return () => clearTimeout(handler);
   }, [localSearch, updateFilters]);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      updateFilters("min_price", localMinPrice);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [localMinPrice, updateFilters]);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      updateFilters("max_price", localMaxPrice);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [localMaxPrice, updateFilters]);
 
   return (
     <>
@@ -81,23 +65,6 @@ export default function PackageManagementHeader() {
               Drop & Pickup Service
             </option>
           </select>
-          <select
-            className="w-fit px-4 rounded-md h-[2.5rem] bg-custom-gray text-site-black font-semibold text-sm flex justify-center items-center"
-            onChange={(e) => updateFilters("discount_type", e.target.value)}
-          >
-            <option value="" className="text-site-black">
-              By Discount Type
-            </option>
-            <option value="none" className="text-site-black">
-              None
-            </option>
-            <option value="fixed" className="text-site-black">
-              Fixed
-            </option>
-            <option value="percentage" className="text-site-black">
-              Percentage
-            </option>
-          </select>
           <div className="w-full rounded-md flex gap-2 items-center px-2 bg-custom-gray">
             <IoSearch className="text-site-black size-5" />
             <input
@@ -105,26 +72,6 @@ export default function PackageManagementHeader() {
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
               placeholder="Search by name"
-              className="h-[2.5rem] text-sm outline-none placeholder:text-site-black flex-1 capitalize placeholder:capitalize"
-            />
-          </div>
-          <div className="w-full rounded-md flex gap-2 items-center px-2 bg-custom-gray">
-            <PiMoneyWavy className="text-site-black size-5" />
-            <input
-              type="number"
-              value={localMinPrice}
-              onChange={(e) => setLocalMinPrice(e.target.value)}
-              placeholder="Filter by minimum price"
-              className="h-[2.5rem] text-sm outline-none placeholder:text-site-black flex-1 capitalize placeholder:capitalize"
-            />
-          </div>
-          <div className="w-full rounded-md flex gap-2 items-center px-2 bg-custom-gray">
-            <PiMoneyWavy className="text-site-black size-5" />
-            <input
-              type="number"
-              value={localMaxPrice}
-              onChange={(e) => setLocalMaxPrice(e.target.value)}
-              placeholder="Filter by maximum price"
               className="h-[2.5rem] text-sm outline-none placeholder:text-site-black flex-1 capitalize placeholder:capitalize"
             />
           </div>
