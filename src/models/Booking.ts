@@ -13,6 +13,10 @@ export interface BookingDocument extends Document {
   dropLat: number;
   dropLng: number;
 
+  stopAddress?: string;
+  stopLat?: number;
+  stopLng?: number;
+
   tripType: "one-way" | "round-trip";
   distance: number;
   duration: number;
@@ -93,6 +97,10 @@ const bookingSchema = new Schema<BookingDocument>(
     dropAddress: { type: String },
     dropLat: { type: Number },
     dropLng: { type: Number },
+
+    stopAddress: { type: String },
+    stopLat: { type: Number },
+    stopLng: { type: Number },
 
     tripType: {
       type: String,

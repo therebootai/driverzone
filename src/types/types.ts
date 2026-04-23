@@ -174,6 +174,9 @@ export type BookingTypes = {
   dropAddress: string;
   dropLat: number;
   dropLng: number;
+  stopAddress?: string;
+  stopLat?: number;
+  stopLng?: number;
   tripType: "one-way" | "round-trip";
   distance: number;
   duration: number;

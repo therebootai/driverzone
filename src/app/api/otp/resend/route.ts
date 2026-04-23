@@ -15,25 +15,20 @@ export async function POST(request: NextRequest) {
 
     if (data.type === "login") {
       const phone = data.phone;
-      const [driver, user] = await Promise.all([
+      const [driver, user, customer] = await Promise.all([
         //@ts-ignore
         Driver.findOne({ mobile_number: phone }),
         User.findOne({ mobile_number: phone }),
+        //@ts-ignore
+        Customer.findOne({ mobile_number: phone }),
       ]);
 
-      const existingUser = driver || user;
+      const existingUser = driver || user || customer;
 
-      if (!existingUser) {
-        return NextResponse.json(
-          { message: "number is not registered in database", success: false },
-          { status: 200 },
-        );
-      }
-
-      if (existingUser.status === false) {
+      if (existingUser && existingUser.status === false) {
         return NextResponse.json(
           { message: "Login is not allowed", success: false },
-          { status: 200 },
+          { status: 401 },
         );
       }
     }

@@ -670,6 +670,16 @@ export async function updateDriver(driverId: string, formData: FormData) {
     // 11. Save updated driver
     const savedDriver = await driver.save();
 
+    // Force logout if driver is deactivated
+    if (status === "false") {
+      try {
+        const { socketService } = await import("@/lib/socket");
+        socketService.forceLogout((savedDriver as any)._id.toString(), "driver");
+      } catch (e) {
+        console.error("Failed to emit force logout for driver:", e);
+      }
+    }
+
     revalidatePath("/driver-managment");
 
     return {
@@ -720,6 +730,17 @@ export async function updateDriverStatus({
     }
 
     const updatedDriver = await existing.save();
+
+    // Force logout if driver is deactivated
+    if (status === false) {
+      try {
+        const { socketService } = await import("@/lib/socket");
+        socketService.forceLogout((updatedDriver as any)._id.toString(), "driver");
+      } catch (e) {
+        console.error("Failed to emit force logout for driver:", e);
+      }
+    }
+
     revalidatePath("/admin/driver-management");
 
     return {

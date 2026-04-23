@@ -278,6 +278,10 @@ export default function PackageTable({
                   label="Chargeable Service Area"
                   value={selectedPackage?.service_zone?.name || "None"}
                 />
+                <Field
+                  label="Drop Zone"
+                  value={selectedPackage?.drop_zone?.name || "Not set"}
+                />
               </div>
 
               <div className="border-t border-gray-200 pt-2 mt-2">

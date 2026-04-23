@@ -25,6 +25,7 @@ export interface PackageDocument extends Document {
   discount?: number;
   main_zone?: any;
   service_zone?: any;
+  drop_zone?: any;
   status: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -71,6 +72,7 @@ const PackageSchema = new Schema<PackageDocument>(
     },
     main_zone: { type: Schema.Types.ObjectId, ref: "Zones" },
     service_zone: { type: Schema.Types.ObjectId, ref: "Zones" },
+    drop_zone: { type: Schema.Types.ObjectId, ref: "Zones", required: true },
     status: { type: Boolean, required: true, default: true },
   },
   { timestamps: true },

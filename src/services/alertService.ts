@@ -240,8 +240,10 @@ export class PriorityAlertService {
           alertSlug: alert.alert_id,
           bookingId: (alert.booking_id._id || alert.booking_id).toString(),
           pickupAddress: alert.booking_id.pickupAddress,
+          dropAddress: alert.booking_id.dropAddress,
           fare: alert.booking_id.fare,
-          expiresAt: alert.expiresAt
+          expiresAt: alert.expiresAt,
+          dropZoneName: alert.booking_id.package_type?.drop_zone?.name || "",
         }, `driver:${firstDriver._id}`);
 
         alert.currentDriverIndex = 0;
@@ -270,6 +272,12 @@ export class PriorityAlertService {
         return;
       }
 
+      // Extract dropZoneName from populated package_type
+      let dropZoneName = "";
+      if (booking.package_type && typeof booking.package_type === "object" && booking.package_type.drop_zone) {
+        dropZoneName = booking.package_type.drop_zone.name || "";
+      }
+
       const payload: any = {
         token: driver.fcmToken,
         notification: {
@@ -288,6 +296,7 @@ export class PriorityAlertService {
           fare: (booking.fare || "").toString(),
           customerName: booking.customerDetails?.name || "Customer",
           customerMobile: booking.customerDetails?.mobile_number || "",
+          dropZoneName,
           distance: booking.distance?.toString() || "",
           tripDuration: booking.duration?.toString() || "",
           duration: (alert.expiresAt.getTime() - Date.now() > 0 ? Math.floor((alert.expiresAt.getTime() - Date.now()) / 1000) : 30).toString(),

@@ -35,6 +35,10 @@ export default function PackageForm({
   );
   const [showMainZone, setShowMainZone] = useState<boolean>(false);
   const [showServiceZone, setShowServiceZone] = useState<boolean>(false);
+  const [dropSearchInput, setDropSearchInput] = useState<string>(
+    update_package?.drop_zone?.name || ""
+  );
+  const [showDropZone, setShowDropZone] = useState<boolean>(false);
 
   // INPUT STATE
   const [name, setName] = useState<string>(update_package?.name || "");
@@ -77,6 +81,9 @@ export default function PackageForm({
   const [service_zone, setServiceZone] = useState<any>(
     update_package?.service_zone || undefined
   );
+  const [drop_zone, setDropZone] = useState<any>(
+    update_package?.drop_zone || undefined
+  );
   const [discount_type, setDiscountType] = useState<string>(
     update_package?.discount_type || "none"
   );
@@ -101,8 +108,10 @@ export default function PackageForm({
       setTotalPrice(update_package?.total_price);
       setMainZone(update_package?.main_zone);
       setServiceZone(update_package?.service_zone);
+      setDropZone(update_package?.drop_zone);
       setMainSearchInput(update_package?.main_zone?.name || "");
       setServiceSearchInput(update_package?.service_zone?.name || "");
+      setDropSearchInput(update_package?.drop_zone?.name || "");
       setDiscountType(update_package?.discount_type);
       setDiscount(update_package?.discount ?? 0);
     }
@@ -155,6 +164,27 @@ export default function PackageForm({
     return () => clearTimeout(handler);
   }, [serviceSearchInput, showServiceZone]);
 
+  // Debounced search for Drop Zone
+  useEffect(() => {
+    if (!dropSearchInput.trim()) {
+      if (showDropZone) setSearchedZones([]);
+      return;
+    }
+    const handler = setTimeout(async () => {
+      try {
+        const { data } = await GET_ALL_ZONES({
+          limit: 12,
+          search: dropSearchInput,
+          status: true,
+        });
+        setSearchedZones(data);
+      } catch (error) {
+        console.error(error);
+      }
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [dropSearchInput, showDropZone]);
+
   const handleAddNewZone = async (prevState: any, formData: FormData) => {
     try {
       const form_discount_type = formData.get("discount_type") as string;
@@ -187,6 +217,7 @@ export default function PackageForm({
         total_price: number;
         main_zone?: string;
         service_zone?: string;
+        drop_zone?: string;
         discount_type: "percentage" | "fixed" | "none";
         discount: number;
       } = {
@@ -213,6 +244,7 @@ export default function PackageForm({
         total_price,
         main_zone: main_zone ? main_zone._id : undefined,
         service_zone: service_zone ? service_zone._id : undefined,
+        drop_zone: drop_zone ? drop_zone._id : undefined,
         discount_type:
           discount_type === "percentage" ||
           discount_type === "fixed" ||
@@ -453,6 +485,41 @@ export default function PackageForm({
                     setSearchedZones([]);
                     setServiceSearchInput(zone.name);
                     setShowServiceZone(false);
+                  }}
+                  className="px-2 py-1 cursor-pointer hover:bg-site-gray/50 not-last:border-b border-site-gray/60"
+                >
+                  {zone.name}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+        <div className="flex flex-col gap-1.5 relative group">
+          <BasicInput
+            label="Drop Zone (Required)"
+            placeholder="Search Zone by name or destination"
+            value={dropSearchInput}
+            onChange={(e) => {
+              setDropSearchInput(e.target.value);
+              if (!e.target.value) {
+                setDropZone(update_package?.drop_zone || null);
+              }
+              setShowDropZone(true);
+            }}
+          />
+          {searchedZones.length > 0 && showDropZone && (
+            <div className="absolute top-full my-3.5 left-0 px-3 py-2 rounded-lg border border-site-gray/50 flex flex-col w-full bg-white z-10">
+              {searchedZones.map((zone, index) => (
+                <div
+                  key={index}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setDropZone(zone);
+                    setDropSearchInput(zone.name);
+                    setSearchedZones([]);
+                    setShowDropZone(false);
                   }}
                   className="px-2 py-1 cursor-pointer hover:bg-site-gray/50 not-last:border-b border-site-gray/60"
                 >

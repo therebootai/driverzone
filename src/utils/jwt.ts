@@ -30,10 +30,13 @@ export const verifyToken = async (token: string) => {
     if (!user) {
       throw new Error("User not found");
     }
+    if (!user.status) {
+      throw new Error("Account is deactivated");
+    }
 
     return user;
   } catch (err: any) {
-    if (err.message !== "User not found") {
+    if (err.message !== "User not found" && err.message !== "Account is deactivated") {
       console.error(
         "Invalid or expired token:",
         err instanceof Error ? err.message : err,
@@ -50,6 +53,7 @@ export const verifyCustomerToken = async (token: string) => {
     const userId = (decoded as { userId: string }).userId;
     const user = await Customers.findById(userId).select("-password").lean();
     if (!user) throw new Error("User not found");
+    if (!user.status) throw new Error("Account is deactivated");
     return user;
   } catch (err: any) {
     return null;
@@ -64,6 +68,7 @@ export const verifyDriverToken = async (token: string) => {
     //@ts-ignore
     const user = await Drivers.findById(userId).select("-password").lean();
     if (!user) throw new Error("User not found");
+    if (!user.status) throw new Error("Account is deactivated");
     return user;
   } catch (err: any) {
     return null;
@@ -86,9 +91,15 @@ export const verifyAnyToken = async (token: string) => {
       Drivers.findById(userId).select("-password").lean()
     ]);
 
-    return { 
+    if (customer && !customer.status) {
+      return { user: null, role: null };
+    }
+    if (driver && !driver.status) {
+      return { user: null, role: null };
+    }
+    return {
       user: customer || driver || null,
-      role: customer ? 'customer' : driver ? 'driver' : null 
+      role: customer ? 'customer' : driver ? 'driver' : null
     };
   } catch (err: any) {
     return { user: null, role: null };

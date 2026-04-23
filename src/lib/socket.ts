@@ -15,7 +15,10 @@ export const EVENTS = {
   
   // Location/Tracking
   DRIVER_LOCATION: "driver:location",
-  
+
+  // Auth events
+  FORCE_LOGOUT: "force:logout",
+
   // Generic
   JOIN_ROOM: "join:room",
   LEAVE_ROOM: "leave:room",
@@ -72,6 +75,13 @@ export class SocketService {
     });
 
     return this.io;
+  }
+
+  public forceLogout(userId: string, role: "customer" | "driver"): void {
+    if (!this.io) return;
+    const room = `${role}:${userId}`;
+    console.log(`Force logout emitted to room: ${room}`);
+    this.io.to(room).emit(EVENTS.FORCE_LOGOUT, { reason: "Account deactivated" });
   }
 
   public getIO(): SocketIOServer {

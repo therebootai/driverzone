@@ -26,6 +26,7 @@ export async function ADD_PACKAGE({
   discount,
   main_zone,
   service_zone,
+  drop_zone,
 }: {
   name: string;
   duration: number;
@@ -50,6 +51,7 @@ export async function ADD_PACKAGE({
   discount?: number;
   main_zone?: string;
   service_zone?: string;
+  drop_zone?: string;
 }) {
   try {
     if (discount_type !== "none" && (!discount || discount <= 0)) {
@@ -82,6 +84,7 @@ export async function ADD_PACKAGE({
       discount,
       main_zone,
       service_zone,
+      drop_zone,
     });
 
     const savedPackage = await newPackage.save();
@@ -175,6 +178,7 @@ export async function GET_ALL_PACKAGES({
     const packages = await Packages.find(query)
       .populate("main_zone")
       .populate("service_zone")
+      .populate("drop_zone")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
