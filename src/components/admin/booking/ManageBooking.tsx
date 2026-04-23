@@ -868,7 +868,8 @@ const ManageBooking = ({
           <div className="w-[10%]">Customer</div>
           <div className="w-[10%]">Driver</div>
           <div className="w-[10%]">Trip Type</div>
-          <div className="w-[15%]">Status</div>
+          <div className="w-[10%]">Insurance</div>
+          <div className="w-[10%]">Status</div>
           <div className="w-[15%]">Actions</div>
         </div>
 
@@ -908,7 +909,14 @@ const ManageBooking = ({
                   ?.replace(/-/g, " ")
                   ?.replace(/\b\w/g, (l) => l.toUpperCase()) || "-"}
               </div>
-              <div className="w-[15%]">{getStatusBadge(booking.status)}</div>
+              <div className="w-[10%]">
+                {booking.insurance ? (
+                  <span className="text-green-600 font-medium">Yes</span>
+                ) : (
+                  <span className="text-gray-400">No</span>
+                )}
+              </div>
+              <div className="w-[10%]">{getStatusBadge(booking.status)}</div>
               <div className="w-[15%] flex flex-wrap gap-2">
                 <button
                   onClick={() => {
