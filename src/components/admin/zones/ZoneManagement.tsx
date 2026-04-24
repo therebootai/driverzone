@@ -97,32 +97,44 @@ export default function ZoneManagement({ zones }: { zones: ZoneDocument[] }) {
         handleClose={() => setSelectedZone(null)}
         clsprops="px-6"
       >
-        <h1 className="text-2xl font-semibold text-site-black">Zone Details</h1>
-        <div className="flex flex-col gap-2.5 mt-4">
-          <Field label="Name" value={selectedZone?.name} />
-          <Field label="Description" value={selectedZone?.description} />
-          <Field
-            label="Area"
-            value={
-              selectedZone?.area
-                ? `${Math.ceil(selectedZone.area / 1000000)} sq.km`
-                : "-"
-            }
-          />
-          <Field
-            label="Created At"
-            value={
-              selectedZone?.created_at
-                ? new Date(selectedZone?.created_at).toLocaleString("en-IN", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })
-                : "-"
-            }
-          />
-          <ZoneMap existingZones={selectedZone?.coordinates} editable={false} />
-        </div>
+        {selectedZone && (
+          <>
+            <h1 className="text-2xl font-semibold text-site-black">
+              Zone Details
+            </h1>
+            <div className="flex flex-col gap-2.5 mt-4">
+              <Field label="Name" value={selectedZone?.name} />
+              <Field label="Description" value={selectedZone?.description} />
+              <Field
+                label="Area"
+                value={
+                  selectedZone?.area
+                    ? `${Math.ceil(selectedZone.area / 1000000)} sq.km`
+                    : "-"
+                }
+              />
+              <Field
+                label="Created At"
+                value={
+                  selectedZone?.created_at
+                    ? new Date(selectedZone?.created_at).toLocaleString(
+                        "en-IN",
+                        {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        },
+                      )
+                    : "-"
+                }
+              />
+              <ZoneMap
+                existingZones={selectedZone?.coordinates}
+                editable={false}
+              />
+            </div>
+          </>
+        )}
       </SidePopup>
     </section>
   );

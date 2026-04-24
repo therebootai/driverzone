@@ -10,7 +10,9 @@ import { CiLocationOn } from "react-icons/ci";
 
 const ZoneMap = dynamic(() => import("@/ui/Zonemap"), { ssr: false });
 
-export default function AddNewZone() {
+export default function AddNewZone({ onClose }: { onClose?: () => void }) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [centerCoordinates, setCenterCoordinates] = useState<{
     lat: number;
     lng: number;
@@ -23,7 +25,17 @@ export default function AddNewZone() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);  const handleZoneCreate = (coord: any) => {
+  const [isSearching, setIsSearching] = useState(false);
+
+  const resetForm = useCallback(() => {
+    setName("");
+    setDescription("");
+    setCoordinates([[]]);
+    setSearchQuery("");
+    setSearchResults([]);
+  }, []);
+
+  const handleZoneCreate = (coord: any) => {
     setCoordinates(coord);
   };
 
@@ -81,9 +93,6 @@ export default function AddNewZone() {
 
   const handleSaveZone = async (prevState: any, formData: FormData) => {
     try {
-      const name = formData.get("name") as string;
-      const description = formData.get("description") as string;
-
       if (!name || name.trim() === "") {
         toast.error("Zone name is required");
         return;
@@ -102,6 +111,8 @@ export default function AddNewZone() {
         coordinates,
       });
       toast.success("Zone created successfully");
+      resetForm();
+      onClose && onClose();
     } catch (error: any) {
       console.error("Error saving zone:", error);
       toast.error(`Error saving zone: ${error.message}`);
@@ -112,11 +123,19 @@ export default function AddNewZone() {
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      <BasicInput placeholder="Zone Name" name="name" type="text" />
+      <BasicInput
+        placeholder="Zone Name"
+        name="name"
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
       <BasicInput
         placeholder="Zone Description"
         name="description"
         type="text"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
       />
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 relative gap-4">

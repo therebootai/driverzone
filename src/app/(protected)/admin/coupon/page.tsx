@@ -13,8 +13,39 @@ const CouponPage = async ({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
+  const params = await searchParams;
   await authorizeAccess("coupon");
-  const { search, status, coupon_type, startDate, endDate, page = "1" } = await searchParams;
+  const { search, status, coupon_type, startDate, endDate, page = "1" } = params;
+
+  return (
+    <AdminTemplate className="p-4 flex flex-col gap-4">
+      <CouponPageHeader
+        fetchData={async () => {
+          "use server";
+          revalidatePath("/admin/coupon");
+        }}
+      />
+      <Suspense
+        key={`${page}-${search}-${status}-${coupon_type}-${startDate}-${endDate}`}
+        fallback={
+          <div className="flex justify-center items-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
+            <Loader />
+          </div>
+        }
+      >
+        <CouponList searchParams={params} />
+      </Suspense>
+    </AdminTemplate>
+  );
+};
+
+async function CouponList({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | undefined };
+}) {
+  const { search, status, coupon_type, startDate, endDate, page = "1" } =
+    searchParams;
 
   const result = await getAllCoupon({
     page: parseInt(page),
@@ -31,28 +62,14 @@ const CouponPage = async ({
   const paginations = result?.paginations || { currentPage: 1, totalPages: 1 };
 
   return (
-    <AdminTemplate className="p-4 flex flex-col gap-4">
-      <CouponPageHeader
+    <>
+      <ManageCoupon
+        allCoupon={data}
         fetchData={async () => {
           "use server";
           revalidatePath("/admin/coupon");
         }}
       />
-      <Suspense
-        fallback={
-          <div className="flex justify-center items-center flex-1">
-            <Loader />
-          </div>
-        }
-      >
-        <ManageCoupon
-          allCoupon={data}
-          fetchData={async () => {
-            "use server";
-            revalidatePath("/admin/coupon");
-          }}
-        />
-      </Suspense>
       <PaginationBox
         baseUrl="/admin/coupon"
         pagination={{
@@ -60,8 +77,8 @@ const CouponPage = async ({
           totalPages: paginations.totalPages,
         }}
       />
-    </AdminTemplate>
+    </>
   );
-};
+}
 
 export default CouponPage;
