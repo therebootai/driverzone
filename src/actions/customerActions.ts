@@ -195,6 +195,16 @@ export async function updateCustomer(
 
     const saved = await customer.save();
 
+    // Force logout if customer is deactivated
+    if (filteredUpdates.status === false) {
+      try {
+        const { socketService } = await import("@/lib/socket");
+        socketService.forceLogout((saved as any)._id.toString(), "customer");
+      } catch (e) {
+        console.error("Failed to emit force logout for customer:", e);
+      }
+    }
+
     const { password, ...obj } = saved.toObject();
 
     revalidatePath("/customer-managment");

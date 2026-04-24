@@ -7,6 +7,7 @@ import SidePopup from "@/ui/SidePopup";
 import AddAndEditDriver from "./AddAndEditDriver";
 import { approveDevice, deleteDriver, updateDriverStatus } from "@/actions/driverActions";
 import ViewDriver from "./ViewDriver";
+import Popup from "@/ui/Popup";
 
 const ManageDriver = ({
   allDrivers,
@@ -20,6 +21,8 @@ const ManageDriver = ({
   );
   const [showView, setShowView] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [driverToVerify, setDriverToVerify] = useState<DriverDocument | null>(null);
 
   const { getParam, updateFilters } = useQueryParamsAdvanced();
   const viewId = getParam("view");
@@ -49,16 +52,34 @@ const ManageDriver = ({
   };
 
   const handleToggleStatus = async (
-    driver_id: string,
+    driver: DriverDocument,
     currentStatus: boolean,
     key: "status" | "verified",
   ) => {
+    if (key === "verified" && !currentStatus) {
+      setDriverToVerify(driver);
+      return;
+    }
+
     await updateDriverStatus({
-      driver_id,
+      driver_id: driver.driver_id,
       ...(key === "status"
         ? { status: !currentStatus }
         : { verified: !currentStatus }),
     });
+  };
+
+  const handleConfirmVerification = async () => {
+    if (!driverToVerify) return;
+    try {
+      await updateDriverStatus({
+        driver_id: driverToVerify.driver_id,
+        verified: true,
+      });
+      setDriverToVerify(null);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   // Handler for delete with confirmation
@@ -107,7 +128,7 @@ const ManageDriver = ({
                 onClick={() => {
                   if (!item.driver_id) return;
                   handleToggleStatus(
-                    item.driver_id,
+                    item,
                     item.verified ?? false,
                     "verified",
                   );
@@ -127,7 +148,7 @@ const ManageDriver = ({
                 onClick={() => {
                   if (!item.driver_id) return;
                   handleToggleStatus(
-                    item.driver_id,
+                    item,
                     item.status ?? false,
                     "status",
                   );
@@ -201,11 +222,15 @@ const ManageDriver = ({
         <SidePopup
           showPopUp={showView}
           handleClose={() => {
+            if (selectedImage) return;
             setShowView(false);
             updateFilters("view", "");
           }}
         >
-          <ViewDriver driver={selectedDriver} />
+          <ViewDriver 
+            driver={selectedDriver} 
+            onImageClick={(url) => setSelectedImage(url)}
+          />
         </SidePopup>
       )}
       {showEdit && selectedDriver && (
@@ -225,6 +250,70 @@ const ManageDriver = ({
           />
         </SidePopup>
       )}
+
+      {/* ========== VERIFICATION MODAL ========== */}
+      <Popup
+        isOpen={!!driverToVerify}
+        onClose={() => {
+          if (selectedImage) return;
+          setDriverToVerify(null);
+        }}
+        className="md:w-[95%] lg:w-[90%] xl:w-[85%] xxl:w-[80%] !z-[1500]"
+      >
+        <div className="bg-white rounded-lg flex flex-col h-[90vh]">
+          <div className="p-4 border-b flex justify-between items-center bg-gray-50 shrink-0">
+            <h2 className="text-xl font-bold text-gray-900">Verify Driver Information</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto no-scrollbar">
+            {driverToVerify && (
+              <ViewDriver 
+                driver={driverToVerify} 
+                onImageClick={(url) => setSelectedImage(url)}
+                hideBookings={true}
+              />
+            )}
+          </div>
+          <div className="p-4 border-t flex justify-end gap-4 bg-gray-50 shrink-0">
+            <button
+              onClick={() => setDriverToVerify(null)}
+              className="px-6 py-2 border border-gray-300 rounded-md text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmVerification}
+              className="px-6 py-2 bg-green-600 text-white rounded-md text-sm font-semibold hover:bg-green-700 transition-colors shadow-sm"
+            >
+              Confirm Verification
+            </button>
+          </div>
+        </div>
+      </Popup>
+
+      {/* ========== IMAGE VIEWER MODAL ========== */}
+      <Popup 
+        isOpen={!!selectedImage} 
+        onClose={() => setSelectedImage(null)}
+        className="md:w-[90%] lg:w-[85%] xl:w-[80%] xxl:w-[70%] !z-[2000]"
+      >
+        <div className="flex flex-col items-center justify-center p-2 bg-white rounded-lg">
+          {selectedImage && (
+            <div className="relative w-full flex items-center justify-center bg-gray-100 rounded-md">
+              <img
+                src={selectedImage}
+                alt="Full Preview"
+                className="max-w-full h-auto max-h-[85vh] object-contain rounded-md"
+              />
+            </div>
+          )}
+          <button 
+            onClick={() => window.open(selectedImage!, "_blank")}
+            className="mt-4 px-6 py-2 bg-primary text-black rounded-md text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm"
+          >
+            Open in new tab
+          </button>
+        </div>
+      </Popup>
     </div>
   );
 };

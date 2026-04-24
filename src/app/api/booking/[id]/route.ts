@@ -65,7 +65,14 @@ export async function GET(
       $or: [{ _id: isValidObjectId(id) ? id : undefined }, { booking_id: id }],
     })
       .populate("driverDetails")
-      .populate("package_type")
+      .populate({
+        path: "package_type",
+        populate: [
+          { path: "drop_zone", select: "name" },
+          { path: "main_zone", select: "name" },
+          { path: "service_zone", select: "name" },
+        ],
+      })
       .populate("coupon")
       .populate("customerDetails");
 
@@ -423,8 +430,9 @@ export async function PUT(
         updatedBooking.fare_details?.driver_charge
       ) {
         await Driver.findByIdAndUpdate(updatedBooking.driverDetails._id, {
-          $inc: { 
-            total_earnings: updatedBooking.fare_details.driver_charge 
+          $inc: {
+            total_earnings: updatedBooking.fare_details.driver_charge,
+            total_rides: 1,
           },
           $set: { activeAlerts: null, currentBooking: null },
         });

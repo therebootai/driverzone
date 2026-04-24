@@ -2,15 +2,18 @@
 import { IoClose } from "react-icons/io5";
 import { AnimatePresence, motion } from "motion/react";
 import useClickOutside from "@/hooks/useClickOutside";
+import { cn } from "@/utils/cn";
 
 export default function Popup({
   children,
   isOpen,
   onClose,
+  className,
 }: {
   children: React.ReactNode;
   isOpen: boolean;
   onClose: () => void;
+  className?: string;
 }) {
   const modalRef = useClickOutside<HTMLDivElement>(() => onClose());
 
@@ -33,7 +36,10 @@ export default function Popup({
               duration: 0.5,
               ease: [0.25, 0.8, 0.25, 1],
             }}
-            className="relative w-[95%] md:w-[60%] lg:w-[45%] xl:w-[40%] xxl:w-[30%] rounded-md shadow-custom-light"
+            className={cn(
+              "relative w-[95%] md:w-[60%] lg:w-[45%] xl:w-[40%] xxl:w-[30%] rounded-md shadow-custom-light",
+              className
+            )}
           >
             <div className="absolute w-full h-full bg-cover bg-center rounded-md">
               <div className="absolute w-full h-full bg-site-primary/50 rounded-md" />

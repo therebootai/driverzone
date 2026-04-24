@@ -5,6 +5,7 @@ import { Spline_Sans } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/context/AuthContext";
 import { ensureModelsRegistered } from "@/db/connection";
+import NextTopLoader from "nextjs-toploader";
 
 const pp_neue = localFont({
   src: [
@@ -72,6 +73,18 @@ export default async function RootLayout({
       <body
         className={`${pp_neue.variable} ${spline_sans.variable} antialiased`}
       >
+        <NextTopLoader
+          color="#1ebc00"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={5}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #1ebc00,0 0 5px #1ebc00"
+        />
+
         <AuthProvider>{children}</AuthProvider>
         <Toaster position="top-center" reverseOrder={false} gutter={8} />
       </body>

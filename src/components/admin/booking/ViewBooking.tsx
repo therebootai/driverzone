@@ -134,6 +134,9 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
               value={booking.pickupAddress || "-"}
             />
             <Field label="Drop Address" value={booking.dropAddress || "-"} />
+            {booking.stopAddress && (
+              <Field label="Stop Address" value={booking.stopAddress} />
+            )}
           </div>
         </div>
 

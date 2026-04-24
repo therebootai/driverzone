@@ -81,16 +81,78 @@ export async function createBooking(data: any): Promise<BookingDocument> {
           latitude: data.pickupLat,
           longitude: data.pickupLng,
         };
-        const inMainZone = isPointInPolygon(
+
+        // For route-based checking: use stop point for round-trip, drop point for one-way
+        const routeTarget =
+          data.tripType === "round-trip" && data.stopLat && data.stopLng
+            ? { latitude: data.stopLat, longitude: data.stopLng }
+            : data.dropLat && data.dropLng
+              ? { latitude: data.dropLat, longitude: data.dropLng }
+              : null;
+
+        const pickupInMainZone = isPointInPolygon(
           pickupPoint,
           pkg.main_zone.coordinates || []
         );
-        const inServiceZone = isPointInPolygon(
+        const pickupInServiceZone = isPointInPolygon(
           pickupPoint,
           pkg.service_zone.coordinates || []
         );
-        if (!inMainZone && inServiceZone) {
-          serviceBookingCharge = pkg.service_booking_charge;
+
+        // If we have a route target, check both points against zones
+        if (routeTarget) {
+          const targetInMainZone = isPointInPolygon(
+            routeTarget,
+            pkg.main_zone.coordinates || []
+          );
+          const targetInServiceZone = isPointInPolygon(
+            routeTarget,
+            pkg.service_zone.coordinates || []
+          );
+
+          // Apply charge if any part of the route is outside main_zone but inside service_zone
+          const routeOutsideMain = !pickupInMainZone || !targetInMainZone;
+          const routeInService = pickupInServiceZone && targetInServiceZone;
+
+          if (routeOutsideMain && routeInService) {
+            serviceBookingCharge = pkg.service_booking_charge;
+          }
+        } else {
+          // Fallback: just check pickup point
+          if (!pickupInMainZone && pickupInServiceZone) {
+            serviceBookingCharge = pkg.service_booking_charge;
+          }
+        }
+      }
+    }
+
+    // Validate drop_zone containment
+    let dropZoneName = "";
+    if (data.package_type) {
+      const dropZonePkg = await Package.findById(data.package_type)
+        .populate("drop_zone", "coordinates name");
+
+      if (dropZonePkg && dropZonePkg.drop_zone && dropZonePkg.drop_zone.coordinates) {
+        dropZoneName = dropZonePkg.drop_zone?.name || "";
+
+        const dropCheckTarget =
+          data.tripType === "round-trip" && data.stopLat && data.stopLng
+            ? { latitude: data.stopLat, longitude: data.stopLng }
+            : data.dropLat && data.dropLng
+              ? { latitude: data.dropLat, longitude: data.dropLng }
+              : null;
+
+        if (dropCheckTarget) {
+          const targetInDropZone = isPointInPolygon(
+            dropCheckTarget,
+            dropZonePkg.drop_zone.coordinates,
+          );
+
+          if (!targetInDropZone) {
+            throw new Error(
+              `Drop location is outside the package's service area (${dropZonePkg.drop_zone.name || "Unknown Zone"})`,
+            );
+          }
         }
       }
     }
@@ -107,6 +169,10 @@ export async function createBooking(data: any): Promise<BookingDocument> {
       dropAddress: data.dropAddress,
       dropLat: data.dropLat,
       dropLng: data.dropLng,
+
+      stopAddress: data.stopAddress || undefined,
+      stopLat: data.stopLat || undefined,
+      stopLng: data.stopLng || undefined,
 
       tripType: data.tripType || "one-way",
       distance: data.distance,
@@ -183,6 +249,7 @@ export async function createBooking(data: any): Promise<BookingDocument> {
       bookingId: (newBooking._id as any).toString(),
       booking: newBooking,
       type: SOCKET_EVENTS.BOOKING_CREATED,
+      dropZoneName,
     }, "admin");
 
     return newBooking;
@@ -364,6 +431,9 @@ export async function getBookings({
           dropAddress: 1,
           dropLat: 1,
           dropLng: 1,
+          stopAddress: 1,
+          stopLat: 1,
+          stopLng: 1,
           tripType: 1,
           distance: 1,
           duration: 1,
@@ -853,6 +923,9 @@ export async function updateBooking(
       "dropAddress",
       "dropLat",
       "dropLng",
+      "stopAddress",
+      "stopLat",
+      "stopLng",
       "tripType",
       "distance",
       "duration",
@@ -1069,6 +1142,8 @@ export async function updateBooking(
               (updatedBooking.customerDetails as any)?.name ?? "Customer",
             customerMobile:
               (updatedBooking.customerDetails as any)?.mobile_number ?? "",
+            dropZoneName:
+              (updatedBooking.package_type as any)?.drop_zone?.name ?? "",
           };
 
           // Create notification in DB

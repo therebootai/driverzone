@@ -57,6 +57,7 @@ export default function PackageTable({
             "Package Type",
             "Company Charge",
             "Driver Charge",
+            "Total Price",
             "Created",
             "Status",
             "Actions",
@@ -74,6 +75,7 @@ export default function PackageTable({
               </td>
               <td className="py-2 px-2.5">{item.company_charge || ""}</td>
               <td className="py-2 px-2.5">{item.driver_charge || ""}</td>
+              <td className="py-2 px-2.5">{item.total_price || ""}</td>
               <td className="py-2 px-2.5">
                 {new Date(item.createdAt || "").toLocaleString("en-IN", {
                   day: "numeric",
@@ -132,139 +134,140 @@ export default function PackageTable({
         handleClose={() => setSelectedPackage(null)}
         clsprops="px-6"
       >
-        {sidePopupVisible === "view" ? (
-          <>
-            <h1 className="text-2xl font-semibold text-site-black">
-              Package Details
-            </h1>
-            <div className="flex flex-col gap-2.5 mt-4">
-              <Field label="Package ID" value={selectedPackage?.package_id} />
-              <Field label="Name" value={selectedPackage?.name} />
-
-              <Field
-                label="Package Type"
-                value={
-                  selectedPackage?.package_type
-                    ? selectedPackage?.package_type
-                        .replace(/_/g, " ")
-                        .replace(/\b\w/g, (l) => l.toUpperCase())
-                    : "-"
-                }
-              />
-
-              <Field
-                label="Duration"
-                value={
-                  selectedPackage?.duration
-                    ? `${selectedPackage?.duration} hours`
-                    : "-"
-                }
-              />
-
-              <Field label="Destination" value={selectedPackage?.destination} />
-
-              <div className="border-t border-gray-200 pt-2 mt-2">
-                <h2 className="text-lg font-medium text-gray-800 mb-3">
-                  Pricing Details
-                </h2>
+        {selectedPackage && (
+          sidePopupVisible === "view" ? (
+            <>
+              <h1 className="text-2xl font-semibold text-site-black">
+                Package Details
+              </h1>
+              <div className="flex flex-col gap-2.5 mt-4">
+                <Field label="Package ID" value={selectedPackage?.package_id} />
+                <Field label="Name" value={selectedPackage?.name} />
 
                 <Field
-                  label="Company Charge"
+                  label="Package Type"
                   value={
-                    selectedPackage?.company_charge
-                      ? `₹${selectedPackage?.company_charge.toLocaleString(
-                          "en-IN",
-                        )}`
+                    selectedPackage?.package_type
+                      ? selectedPackage?.package_type
+                          .replace(/_/g, " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase())
                       : "-"
                   }
                 />
 
                 <Field
-                  label="Driver Charge"
+                  label="Duration"
                   value={
-                    selectedPackage?.driver_charge
-                      ? `₹${selectedPackage?.driver_charge.toLocaleString(
-                          "en-IN",
-                        )}`
+                    selectedPackage?.duration
+                      ? `${selectedPackage?.duration} hours`
                       : "-"
                   }
                 />
 
-                <Field
-                  label="Total Price"
-                  value={
-                    selectedPackage?.total_price
-                      ? `₹${selectedPackage?.total_price.toLocaleString(
-                          "en-IN",
-                        )}`
-                      : "-"
-                  }
-                />
+                <Field label="Destination" value={selectedPackage?.destination} />
 
-                {selectedPackage?.fooding_charge !== undefined && (
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <h2 className="text-lg font-medium text-gray-800 mb-3">
+                    Pricing Details
+                  </h2>
+
                   <Field
-                    label="Fooding Charge"
-                    value={`₹${selectedPackage?.fooding_charge.toLocaleString(
-                      "en-IN",
-                    )}`}
+                    label="Company Charge"
+                    value={
+                      selectedPackage?.company_charge
+                        ? `₹${selectedPackage?.company_charge.toLocaleString(
+                            "en-IN",
+                          )}`
+                        : "-"
+                    }
                   />
-                )}
 
-                {selectedPackage?.early_morning_charge !== undefined && (
                   <Field
-                    label="Early Morning Charge"
-                    value={`₹${selectedPackage?.early_morning_charge.toLocaleString(
-                      "en-IN",
-                    )}`}
+                    label="Driver Charge"
+                    value={
+                      selectedPackage?.driver_charge
+                        ? `₹${selectedPackage?.driver_charge.toLocaleString(
+                            "en-IN",
+                          )}`
+                        : "-"
+                    }
                   />
-                )}
 
-                {selectedPackage?.late_night_charge !== undefined && (
                   <Field
-                    label="Late Night Charge"
-                    value={`₹${selectedPackage?.late_night_charge.toLocaleString(
-                      "en-IN",
-                    )}`}
+                    label="Total Price"
+                    value={
+                      selectedPackage?.total_price
+                        ? `₹${selectedPackage?.total_price.toLocaleString(
+                            "en-IN",
+                          )}`
+                        : "-"
+                    }
                   />
-                )}
 
-                {selectedPackage?.service_booking_charge !== undefined && (
+                  {selectedPackage?.fooding_charge !== undefined && (
+                    <Field
+                      label="Fooding Charge"
+                      value={`₹${selectedPackage?.fooding_charge.toLocaleString(
+                        "en-IN",
+                      )}`}
+                    />
+                  )}
+
+                  {selectedPackage?.early_morning_charge !== undefined && (
+                    <Field
+                      label="Early Morning Charge"
+                      value={`₹${selectedPackage?.early_morning_charge.toLocaleString(
+                        "en-IN",
+                      )}`}
+                    />
+                  )}
+
+                  {selectedPackage?.late_night_charge !== undefined && (
+                    <Field
+                      label="Late Night Charge"
+                      value={`₹${selectedPackage?.late_night_charge.toLocaleString(
+                        "en-IN",
+                      )}`}
+                    />
+                  )}
+
+                  {selectedPackage?.service_booking_charge !== undefined && (
+                    <Field
+                      label="Service Booking Charge"
+                      value={`₹${selectedPackage?.service_booking_charge.toLocaleString(
+                        "en-IN",
+                      )}`}
+                    />
+                  )}
+                </div>
+
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <h2 className="text-lg font-medium text-gray-800 mb-3">
+                    Overtime Charges
+                  </h2>
+
                   <Field
-                    label="Service Booking Charge"
-                    value={`₹${selectedPackage?.service_booking_charge.toLocaleString(
-                      "en-IN",
-                    )}`}
+                    label="Customer Overtime Charge"
+                    value={
+                      selectedPackage?.over_time_customer_charge
+                        ? `₹${selectedPackage?.over_time_customer_charge.toLocaleString(
+                            "en-IN",
+                          )}/min`
+                        : "-"
+                    }
                   />
-                )}
-              </div>
 
-              <div className="border-t border-gray-200 pt-2 mt-2">
-                <h2 className="text-lg font-medium text-gray-800 mb-3">
-                  Overtime Charges
-                </h2>
-
-                <Field
-                  label="Customer Overtime Charge"
-                  value={
-                    selectedPackage?.over_time_customer_charge
-                      ? `₹${selectedPackage?.over_time_customer_charge.toLocaleString(
-                          "en-IN",
-                        )}/min`
-                      : "-"
-                  }
-                />
-
-                <Field
-                  label="Driver Overtime Charge"
-                  value={
-                    selectedPackage?.over_time_driver_charge
-                      ? `₹${selectedPackage?.over_time_driver_charge.toLocaleString(
-                          "en-IN",
-                        )}/min`
-                      : "-"
-                  }
-                />
-              </div>
+                  <Field
+                    label="Driver Overtime Charge"
+                    value={
+                      selectedPackage?.over_time_driver_charge
+                        ? `₹${selectedPackage?.over_time_driver_charge.toLocaleString(
+                            "en-IN",
+                          )}/min`
+                        : "-"
+                    }
+                  />
+                </div>
 
               <div className="border-t border-gray-200 pt-2 mt-2">
                 <h2 className="text-lg font-medium text-gray-800 mb-3">
@@ -278,97 +281,66 @@ export default function PackageTable({
                   label="Chargeable Service Area"
                   value={selectedPackage?.service_zone?.name || "None"}
                 />
+                <Field
+                  label="Drop Zone"
+                  value={selectedPackage?.drop_zone?.name || "Not set"}
+                />
               </div>
 
-              <div className="border-t border-gray-200 pt-2 mt-2">
-                <h2 className="text-lg font-medium text-gray-800 mb-3">
-                  Discount Details
-                </h2>
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <h2 className="text-lg font-medium text-gray-800 mb-3">
+                    Discount Details
+                  </h2>
 
-                <Field
-                  label="Discount Type"
-                  value={
-                    selectedPackage?.discount_type
-                      ? selectedPackage?.discount_type
-                          .charAt(0)
-                          .toUpperCase() +
-                        selectedPackage?.discount_type.slice(1)
-                      : "None"
-                  }
-                />
-
-                {selectedPackage?.discount_type !== "none" && (
                   <Field
-                    label="Discount Value"
+                    label="Discount Type"
                     value={
-                      selectedPackage?.discount_type === "percentage"
-                        ? `${selectedPackage?.discount}%`
-                        : `₹${selectedPackage?.discount?.toLocaleString(
-                            "en-IN",
-                          )}`
+                      selectedPackage?.discount_type
+                        ? selectedPackage?.discount_type
+                            .charAt(0)
+                            .toUpperCase() +
+                          selectedPackage?.discount_type.slice(1)
+                        : "None"
                     }
                   />
-                )}
+
+                  {selectedPackage?.discount_type !== "none" && (
+                    <Field
+                      label="Discount Value"
+                      value={
+                        selectedPackage?.discount_type === "percentage"
+                          ? `${selectedPackage?.discount}%`
+                          : `₹${selectedPackage?.discount?.toLocaleString(
+                              "en-IN",
+                            )}`
+                      }
+                    />
+                  )}
+                </div>
+
+                <Field
+                  label="Status"
+                  value={
+                    selectedPackage?.status ? (
+                      <span className="text-green-600 font-medium">Active</span>
+                    ) : (
+                      <span className="text-red-600 font-medium">Inactive</span>
+                    )
+                  }
+                />
               </div>
-
-              <Field
-                label="Status"
-                value={
-                  selectedPackage?.status ? (
-                    <span className="text-green-600 font-medium">Active</span>
-                  ) : (
-                    <span className="text-red-600 font-medium">Inactive</span>
-                  )
-                }
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-semibold text-site-black">
+                Update Package
+              </h1>
+              <PackageForm
+                update_package={selectedPackage ?? undefined}
+                onClose={() => setSelectedPackage(null)}
               />
-
-              {/* <Field
-                label="Created At"
-                value={
-                  selectedPackage?.createdAt
-                    ? new Date(selectedPackage?.createdAt).toLocaleString(
-                        "en-IN",
-                        {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        },
-                      )
-                    : "-"
-                }
-              />
-
-              <Field
-                label="Last Updated"
-                value={
-                  selectedPackage?.updatedAt
-                    ? new Date(selectedPackage?.updatedAt).toLocaleString(
-                        "en-IN",
-                        {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        },
-                      )
-                    : "-"
-                }
-              /> */}
-            </div>
-          </>
-        ) : (
-          <>
-            <h1 className="text-2xl font-semibold text-site-black">
-              Update Package
-            </h1>
-            <PackageForm
-              update_package={selectedPackage ?? undefined}
-              onClose={() => setSelectedPackage(null)}
-            />
-          </>
+            </>
+          )
         )}
       </SidePopup>
     </>

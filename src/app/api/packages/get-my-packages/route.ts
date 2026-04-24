@@ -7,6 +7,8 @@ import { isPointInPolygon } from "@/utils/geospatialUtils";
 import { NextRequest, NextResponse } from "next/server";
 
 function formatPackage(pkg: any, outsideMainZone: boolean = false) {
+  const serviceBookingCharge = pkg.service_booking_charge || 0;
+
   return {
     _id: pkg._id,
     package_id: pkg.package_id,
@@ -20,8 +22,10 @@ function formatPackage(pkg: any, outsideMainZone: boolean = false) {
     over_time_driver_charge: pkg.over_time_driver_charge,
     early_morning_charge: pkg.early_morning_charge,
     late_night_charge: pkg.late_night_charge,
-    service_booking_charge: pkg.service_booking_charge || 0,
-    total_price: pkg.total_price,
+    service_booking_charge: serviceBookingCharge,
+    total_price: outsideMainZone
+      ? pkg.total_price + serviceBookingCharge
+      : pkg.total_price,
     destination: pkg.destination,
     discount_type: pkg.discount_type,
     discount: pkg.discount,
@@ -33,30 +37,17 @@ function formatPackage(pkg: any, outsideMainZone: boolean = false) {
           coordinates: pkg.service_zone.coordinates,
         }
       : null,
+    drop_zone: pkg.drop_zone
+      ? {
+          zone_id: pkg.drop_zone.zone_id,
+          name: pkg.drop_zone.name,
+        }
+      : null,
     outside_main_zone: outsideMainZone,
     status: pkg.status,
     created_at: pkg.createdAt || pkg.created_at,
     updated_at: pkg.updatedAt || pkg.updated_at,
   };
-}
-
-function calculateDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const R = 6371; // Earth's radius in kilometers
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) *
-      Math.cos(lat2 * (Math.PI / 180)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; // Distance in kilometers
 }
 
 export async function GET(request: NextRequest) {
@@ -66,22 +57,24 @@ export async function GET(request: NextRequest) {
     const longitude = searchParams.get("longitude");
     const packageTypeParam = searchParams.get("package_type");
     const tripTypeParam = searchParams.get("tripType");
+    const stopLatParam = searchParams.get("stopLat");
+    const stopLngParam = searchParams.get("stopLng");
+    const dropLatParam = searchParams.get("dropLat");
+    const dropLngParam = searchParams.get("dropLng");
 
     let zoneIds: any[] = [];
     let isLocationInServiceZone = false;
-    let point = null;
+    let point: { latitude: number; longitude: number } | null = null;
+    let stopPoint: { latitude: number; longitude: number } | null = null;
 
     await connectToDatabase();
     await ensureModelsRegistered();
 
-    // Distance-based filtering removed as requested
-
-    // Check if coordinates are provided
+    // Parse pickup coordinates
     if (latitude && longitude) {
       const lat = parseFloat(latitude);
       const lng = parseFloat(longitude);
 
-      // Validate coordinates
       if (isNaN(lat) || isNaN(lng)) {
         return NextResponse.json(
           { message: "Invalid latitude or longitude values", success: false },
@@ -90,13 +83,38 @@ export async function GET(request: NextRequest) {
       }
 
       point = { latitude: lat, longitude: lng };
+    }
 
-      // Get all active zones with their center coordinates
+    // Parse stop coordinates (for round-trip)
+    if (stopLatParam && stopLngParam) {
+      const sLat = parseFloat(stopLatParam);
+      const sLng = parseFloat(stopLngParam);
+
+      if (!isNaN(sLat) && !isNaN(sLng) && sLat >= -90 && sLat <= 90 && sLng >= -180 && sLng <= 180 && (sLat !== 0 || sLng !== 0)) {
+        stopPoint = { latitude: sLat, longitude: sLng };
+      }
+    }
+
+    let dropPoint: { latitude: number; longitude: number } | null = null;
+    if (dropLatParam && dropLngParam) {
+      const dLat = parseFloat(dropLatParam);
+      const dLng = parseFloat(dropLngParam);
+      if (!isNaN(dLat) && !isNaN(dLng) && dLat >= -90 && dLat <= 90 && dLng >= -180 && dLng <= 180 && (dLat !== 0 || dLng !== 0)) {
+        dropPoint = { latitude: dLat, longitude: dLng };
+      }
+    }
+
+    // For round-trip: drop target is the stop point
+    // For one-way: drop target is the drop point
+    const dropTarget = tripTypeParam === "round-trip" ? stopPoint : dropPoint;
+
+    if (point) {
       const zones = await Zone.find({ status: true })
-        .select("_id coordinates center")
+        .select("_id coordinates")
         .lean();
 
-      // Find zones that contain the point
+      // Find zones that contain the pickup point only
+      // Drop/stop location is validated against drop_zone later
       const containingZones = zones.filter(
         (zone) =>
           zone.coordinates && isPointInPolygon(point!, zone.coordinates),
@@ -104,8 +122,6 @@ export async function GET(request: NextRequest) {
 
       zoneIds = containingZones.map((zone) => zone._id);
       isLocationInServiceZone = containingZones.length > 0;
-
-      // Distance calculation to zone centers removed
     }
 
     // Build query
@@ -123,13 +139,10 @@ export async function GET(request: NextRequest) {
     // Always include drop_pickup_service
     orConditions.push({ package_type: "drop_pickup_service" });
 
-    // Add service zone packages if inside service zone
+    // Add packages matching by main_zone or service_zone
     if (isLocationInServiceZone) {
-      const serviceZoneCondition: any = {
-        service_zone: { $in: zoneIds },
-      };
-
-      orConditions.push(serviceZoneCondition);
+      orConditions.push({ main_zone: { $in: zoneIds } });
+      orConditions.push({ service_zone: { $in: zoneIds } });
     }
 
     // If no coordinates provided, just get drop_pickup_service
@@ -139,7 +152,7 @@ export async function GET(request: NextRequest) {
       packageQuery.$or = orConditions;
     }
 
-    // Fetch packages
+    // Fetch packages with drop_zone populated
     const packages = await Packages.find(packageQuery)
       .populate({
         path: "service_zone",
@@ -149,16 +162,28 @@ export async function GET(request: NextRequest) {
         path: "main_zone",
         select: "zone_id name coordinates",
       })
+      .populate({
+        path: "drop_zone",
+        select: "zone_id name coordinates",
+      })
       .lean();
 
+    // Filter by drop_zone if drop/stop coordinates are available
+    const filteredByDropZone = dropTarget
+      ? packages.filter((pkg: any) => {
+          if (!pkg.drop_zone || !pkg.drop_zone.coordinates) return false;
+          return isPointInPolygon(dropTarget!, pkg.drop_zone.coordinates);
+        })
+      : packages;
+
     // Format the response with main_zone containment check
-    const formattedPackages = packages.map((pkg) => {
+    const formattedPackages = filteredByDropZone.map((pkg: any) => {
       let outsideMainZone = false;
 
       if (point && pkg.service_zone && pkg.main_zone) {
         const inMainZone = isPointInPolygon(
           point,
-          pkg.main_zone.coordinates || []
+          pkg.main_zone.coordinates || [],
         );
         outsideMainZone = !inMainZone;
       }
@@ -174,6 +199,14 @@ export async function GET(request: NextRequest) {
       location_in_service_zone: isLocationInServiceZone,
       success: true,
     };
+
+    if (stopPoint) {
+      responseData.stop_location_provided = true;
+    }
+
+    if (dropTarget) {
+      responseData.drop_location_provided = true;
+    }
 
     return NextResponse.json(responseData, { status: 200 });
   } catch (error: any) {

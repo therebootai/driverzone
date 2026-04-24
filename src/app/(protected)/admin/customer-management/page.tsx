@@ -13,32 +13,49 @@ const CustomerManagement = async ({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
+  const params = await searchParams;
+  const { search, status, page = "1" } = params;
   await authorizeAccess("customer_management");
-  const { search, status, page = "1" } = await searchParams;
+
+  return (
+    <AdminTemplate className="p-6 flex flex-col gap-6">
+      <CustomerPageHeader />
+      <Suspense
+        key={`${page}-${search}-${status}`}
+        fallback={
+          <div className="flex justify-center items-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
+            <Loader />
+          </div>
+        }
+      >
+        <CustomerList searchParams={params} />
+      </Suspense>
+    </AdminTemplate>
+  );
+};
+
+async function CustomerList({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | undefined };
+}) {
+  const { search, status, page = "1" } = searchParams;
   const { data, paginations } = await getAllCustomers({
     page: parseInt(page),
     searchTerm: search,
     status:
       status === "active" ? true : status === "inactive" ? false : undefined,
   });
+
   return (
-    <AdminTemplate className="p-6 flex flex-col gap-6">
-      <CustomerPageHeader />
-      <Suspense
-        fallback={
-          <div className="flex justify-center items-center flex-1">
-            <Loader />
-          </div>
-        }
-      >
-        <ManageCustomer
-          allCustomer={data}
-          fetchData={async () => {
-            "use server";
-            revalidatePath("/admin/customer-managment");
-          }}
-        />
-      </Suspense>
+    <>
+      <ManageCustomer
+        allCustomer={data}
+        fetchData={async () => {
+          "use server";
+          revalidatePath("/admin/customer-managment");
+        }}
+      />
       <PaginationBox
         baseUrl="/admin/customer-management"
         pagination={{
@@ -46,8 +63,8 @@ const CustomerManagement = async ({
           totalPages: paginations.totalPages,
         }}
       />
-    </AdminTemplate>
+    </>
   );
-};
+}
 
 export default CustomerManagement;
