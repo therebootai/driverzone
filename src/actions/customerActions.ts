@@ -181,6 +181,7 @@ export async function updateCustomer(
       "total_spent",
       "password",
       "status",
+      "cars",
     ] as const;
     type Allowed = (typeof allowed)[number];
 
