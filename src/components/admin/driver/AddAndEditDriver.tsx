@@ -466,20 +466,36 @@ const AddAndEditDriver = ({
             </select>
           </div>
 
-          {/* Speciality */}
+          {/* Speciality (multi-select checkboxes) */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-gray-700">
               Speciality
-            </label>
-            <select
-              name="speciality"
-              defaultValue={selectedDriver?.speciality || "plain"}
-              className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-            >
-              <option value="plain">Plain</option>
-              <option value="hills">Hills</option>
-              <option value="both">Both</option>
-            </select>
+            </span>
+            <div className="flex flex-wrap gap-4 text-sm text-gray-700">
+              {[
+                { value: "in_city", label: "In City" },
+                { value: "mini_outstation", label: "Mini Outstation" },
+                { value: "outstation", label: "Outstation" },
+                { value: "hills_tour", label: "Hills Tour" },
+                { value: "long_tour", label: "Long Tour" },
+                { value: "drop_pickup_service", label: "Drop/Pickup Service" },
+              ].map((item) => (
+                <label key={item.value} className="inline-flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    name="speciality"
+                    value={item.value}
+                    defaultChecked={
+                      Array.isArray(selectedDriver?.speciality)
+                        ? (selectedDriver.speciality as string[]).includes(item.value)
+                        : true
+                    }
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  {item.label}
+                </label>
+              ))}
+            </div>
           </div>
 
           {/* Vehicle Category Type (checkbox group) */}
@@ -488,7 +504,7 @@ const AddAndEditDriver = ({
               Vehicle Category Type
             </span>
             <div className="flex flex-wrap gap-4 text-sm text-gray-700">
-              {["SUV", "Hatchback", "Sedan", "Others"].map((item) => (
+              {["SUV", "Hatchback", "Sedan", "Mini", "Van", "Others"].map((item) => (
                 <label key={item} className="inline-flex items-center gap-1">
                   <input
                     type="checkbox"

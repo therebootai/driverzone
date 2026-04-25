@@ -133,10 +133,16 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
               label="Pickup Address"
               value={booking.pickupAddress || "-"}
             />
-            <Field label="Drop Address" value={booking.dropAddress || "-"} />
-            {booking.stopAddress && (
-              <Field label="Stop Address" value={booking.stopAddress} />
+            {booking.tripType === "round-trip" && (
+              <Field
+                label="Stop Address (Via)"
+                value={booking.stopAddress || "Not specified"}
+              />
             )}
+            <Field
+              label={booking.tripType === "round-trip" ? "Return Address" : "Drop Address"}
+              value={booking.dropAddress || "-"}
+            />
           </div>
         </div>
 
@@ -227,50 +233,92 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
               label="Payment Status"
               value={getPaymentStatusBadge(booking.paymentStatus)}
             />
-            <Field
-              label="Payment Method"
-              value={booking.paymentMethod?.toUpperCase()}
-            />
-            <Field
-              label="Total Fare"
-              value={`₹${booking.fare?.toLocaleString("en-IN") || "0"}`}
-            />
+            {booking.paymentMethod && (
+              <Field
+                label="Payment Method"
+                value={booking.paymentMethod?.toUpperCase()}
+              />
+            )}
+            {booking.fare > 0 && (
+              <Field
+                label="Total Fare"
+                value={`₹${booking.fare?.toLocaleString("en-IN")}`}
+              />
+            )}
+            {booking.paid_amount && booking.paid_amount > 0 ? (
+              <Field
+                label="Paid Amount"
+                value={`₹${booking.paid_amount?.toLocaleString("en-IN")}`}
+              />
+            ) : null}
 
             {booking.fare_details && (
               <div className="col-span-2 grid grid-cols-2 gap-4 mt-2 border-t pt-3">
-                <Field
-                  label="Company Charge"
-                  value={`₹${booking.fare_details.company_charge || 0}`}
-                />
-                <Field
-                  label="Driver Charge (Earning)"
-                  value={`₹${booking.fare_details.driver_charge || 0}`}
-                />
-                <Field
-                  label="Fooding Charge"
-                  value={`₹${booking.fare_details.fooding_charge || 0}`}
-                />
-                <Field
-                  label="Early Morning Charge"
-                  value={`₹${booking.fare_details.early_morning_charge || 0}`}
-                />
-                <Field
-                  label="Late Night Charge"
-                  value={`₹${booking.fare_details.late_night_charge || 0}`}
-                />
-                {booking.fare_details.service_booking_charge ? (
+                {booking.fare_details.company_charge &&
+                booking.fare_details.company_charge > 0 ? (
+                  <Field
+                    label="Company Charge"
+                    value={`₹${booking.fare_details.company_charge}`}
+                  />
+                ) : null}
+                {booking.fare_details.driver_charge &&
+                booking.fare_details.driver_charge > 0 ? (
+                  <Field
+                    label="Driver Charge (Earning)"
+                    value={`₹${booking.fare_details.driver_charge}`}
+                  />
+                ) : null}
+                {booking.fare_details.fooding_charge &&
+                booking.fare_details.fooding_charge > 0 ? (
+                  <Field
+                    label="Fooding Charge"
+                    value={`₹${booking.fare_details.fooding_charge}`}
+                  />
+                ) : null}
+                {booking.fare_details.early_morning_charge &&
+                booking.fare_details.early_morning_charge > 0 ? (
+                  <Field
+                    label="Early Morning Charge"
+                    value={`₹${booking.fare_details.early_morning_charge}`}
+                  />
+                ) : null}
+                {booking.fare_details.late_night_charge &&
+                booking.fare_details.late_night_charge > 0 ? (
+                  <Field
+                    label="Late Night Charge"
+                    value={`₹${booking.fare_details.late_night_charge}`}
+                  />
+                ) : null}
+                {booking.fare_details.service_booking_charge &&
+                booking.fare_details.service_booking_charge > 0 ? (
                   <Field
                     label="Service Booking Charge"
                     value={`₹${booking.fare_details.service_booking_charge}`}
                   />
                 ) : null}
-                {booking.fare_details.over_time_customer_charge ? (
+                {booking.fare_details.insurance_charge &&
+                booking.fare_details.insurance_charge > 0 ? (
+                  <Field
+                    label="Insurance Charge"
+                    value={`₹${booking.fare_details.insurance_charge}`}
+                  />
+                ) : null}
+                {booking.fare_details.discount &&
+                booking.fare_details.discount > 0 ? (
+                  <Field
+                    label="Package Discount"
+                    value={`-₹${booking.fare_details.discount}`}
+                  />
+                ) : null}
+                {booking.fare_details.over_time_customer_charge &&
+                booking.fare_details.over_time_customer_charge > 0 ? (
                   <Field
                     label="Overtime Charge (+Fare)"
                     value={`₹${booking.fare_details.over_time_customer_charge}`}
                   />
                 ) : null}
-                {booking.fare_details.over_time_driver_charge ? (
+                {booking.fare_details.over_time_driver_charge &&
+                booking.fare_details.over_time_driver_charge > 0 ? (
                   <Field
                     label="Late Arrival Fine (-Driver)"
                     value={`-₹${booking.fare_details.over_time_driver_charge}`}
@@ -282,10 +330,13 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
             {booking.package_type && (
               <div className="col-span-2 grid grid-cols-2 gap-4 mt-2 border-t pt-3">
                 <Field label="Package Name" value={booking.package_type.name} />
-                <Field
-                  label="Package Price"
-                  value={`₹${booking.package_type.price || (booking.package_type as any).total_price || 0}`}
-                />
+                {(booking.package_type.price ||
+                  (booking.package_type as any).total_price) > 0 && (
+                  <Field
+                    label="Package Price"
+                    value={`₹${(booking.package_type.price || (booking.package_type as any).total_price)?.toLocaleString("en-IN")}`}
+                  />
+                )}
               </div>
             )}
           </div>

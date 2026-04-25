@@ -146,7 +146,7 @@ export type DriverDocument = {
   vehicle_category_type?: string[];
 
   employment_type?: "Driver" | "Driver+Car" | "Other";
-  speciality?: "plain" | "hills" | "both";
+  speciality?: Array<"in_city" | "mini_outstation" | "outstation" | "hills_tour" | "long_tour" | "drop_pickup_service">;
   remarks?: string;
   maxDistance?: number;
 

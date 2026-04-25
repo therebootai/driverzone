@@ -36,7 +36,16 @@ export async function POST(request: Request) {
     const vehicle_category_type = formData.getAll(
       "vehicle_category_type",
     ) as string[];
-    const speciality = (formData.get("speciality") as string) || "plain";
+    const speciality = formData.getAll("speciality").length > 0
+      ? formData.getAll("speciality") as string[]
+      : [
+          "in_city",
+          "mini_outstation",
+          "outstation",
+          "hills_tour",
+          "long_tour",
+          "drop_pickup_service",
+        ];
 
     const deviceId = request.headers.get("x-device-id");
     const fcmToken = formData.get("fcmToken") as string;

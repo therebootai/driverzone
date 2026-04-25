@@ -65,6 +65,12 @@ const EditBookingForm: ({
   const [serviceBookingCharge, setServiceBookingCharge] = useState(
     booking.fare_details?.service_booking_charge || 0
   );
+  const [insuranceCharge, setInsuranceCharge] = useState(
+    booking.fare_details?.insurance_charge || 0
+  );
+  const [discount, setDiscount] = useState(
+    booking.fare_details?.discount || 0
+  );
   const [totalFare, setTotalFare] = useState(booking.fare || 0);
 
   const calculateTotalFare = useCallback(() => {
@@ -74,7 +80,9 @@ const EditBookingForm: ({
       Number(foodingCharge) +
       Number(earlyMorningCharge) +
       Number(lateNightCharge) +
-      Number(serviceBookingCharge);
+      Number(serviceBookingCharge) +
+      Number(insuranceCharge) -
+      Number(discount);
     setTotalFare(total);
   }, [
     companyCharge,
@@ -83,6 +91,8 @@ const EditBookingForm: ({
     earlyMorningCharge,
     lateNightCharge,
     serviceBookingCharge,
+    insuranceCharge,
+    discount,
   ]);
 
   useEffect(() => {
@@ -124,6 +134,8 @@ const EditBookingForm: ({
           early_morning_charge: Number(earlyMorningCharge),
           late_night_charge: Number(lateNightCharge),
           service_booking_charge: Number(serviceBookingCharge),
+          insurance_charge: Number(insuranceCharge),
+          discount: Number(discount),
         },
       };
 

@@ -209,6 +209,22 @@ const AddCoupon: React.FC<AddCouponProps> = ({
     setSubmitting(true);
 
     try {
+      if (!formData.coupon_startDate || !formData.coupon_ExpiryDate) {
+        setError("Please select coupon validity period");
+        setSubmitting(false);
+        return;
+      }
+
+      const start = new Date(formData.coupon_startDate);
+      const end = new Date(formData.coupon_ExpiryDate);
+      const diffInHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+
+      if (diffInHours < 24) {
+        setError("Coupon duration must be at least 24 hours");
+        setSubmitting(false);
+        return;
+      }
+
       const payload: CouponFormState = {
         ...formData,
         users_type: userType,

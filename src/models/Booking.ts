@@ -65,6 +65,8 @@ export interface BookingDocument extends Document {
     early_morning_charge?: number;
     late_night_charge?: number;
     service_booking_charge?: number;
+    insurance_charge?: number;
+    discount?: number;
   };
 
   insurance?: boolean;
@@ -194,6 +196,8 @@ const bookingSchema = new Schema<BookingDocument>(
       early_morning_charge: { type: Number },
       late_night_charge: { type: Number },
       service_booking_charge: { type: Number, default: 0 },
+      insurance_charge: { type: Number, default: 0 },
+      discount: { type: Number, default: 0 },
     },
 
     insurance: { type: Boolean, default: false },
