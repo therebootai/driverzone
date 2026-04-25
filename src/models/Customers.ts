@@ -25,6 +25,10 @@ export interface customerDocument extends Document {
   status: boolean;
   fcmToken?: string;
   used_coupons?: Array<any>;
+  cars?: {
+    car_type: string;
+    registration_number: string;
+  }[];
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
 
@@ -88,6 +92,22 @@ const customerSchema = new Schema<customerDocument>(
         default: [],
       },
     ],
+    cars: {
+      type: [
+        {
+          car_type: {
+            type: String,
+            enum: ["SUV", "Hatchback", "Sedan", "Mini", "Van", "Others"],
+            required: true,
+          },
+          registration_number: {
+            type: String,
+            required: true,
+          },
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true },
 );
