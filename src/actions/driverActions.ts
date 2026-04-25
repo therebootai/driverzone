@@ -36,7 +36,16 @@ export async function createDriver(formData: FormData) {
         : undefined,
 
       employment_type: formData.get("employment_type"),
-      speciality: formData.get("speciality") || "plain",
+      speciality: formData.getAll("speciality").length > 0
+        ? formData.getAll("speciality")
+        : [
+            "in_city",
+            "mini_outstation",
+            "outstation",
+            "hills_tour",
+            "long_tour",
+            "drop_pickup_service",
+          ],
       remarks: formData.get("remarks"),
       status: true,
 
@@ -418,13 +427,9 @@ export async function updateDriver(driverId: string, formData: FormData) {
       driver.employment_type = employment_type;
     }
 
-    const speciality = formData.get("speciality") as
-      | "plain"
-      | "hills"
-      | "both"
-      | null;
-    if (speciality) {
-      driver.speciality = speciality;
+    const specialityValues = formData.getAll("speciality") as string[];
+    if (specialityValues.length > 0) {
+      driver.speciality = specialityValues as any;
     }
 
     const remarks = formData.get("remarks");

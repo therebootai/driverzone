@@ -157,10 +157,34 @@ export async function createBooking(data: any): Promise<BookingDocument> {
       }
     }
 
+    const fareDetails = {
+      company_charge: data.company_charge,
+      driver_charge: data.driver_charge,
+      fooding_charge: data.fooding_charge,
+      over_time_customer_charge: 0,
+      over_time_driver_charge: 0,
+      early_morning_charge: data.early_morning_charge,
+      late_night_charge: data.late_night_charge,
+      service_booking_charge: serviceBookingCharge,
+      insurance_charge: data.insurance_charge ?? (data.insurance ? 20 : 0),
+      discount: data.discount || 0,
+    };
+
+    const computedFare =
+      (fareDetails.company_charge || 0) +
+      (fareDetails.driver_charge || 0) +
+      (fareDetails.fooding_charge || 0) +
+      (fareDetails.insurance_charge || 0) +
+      (fareDetails.service_booking_charge || 0) +
+      (fareDetails.early_morning_charge || 0) +
+      (fareDetails.late_night_charge || 0) +
+      (fareDetails.over_time_customer_charge || 0) -
+      (fareDetails.discount || 0);
+
     const newBooking: BookingDocument = await Booking.create({
       booking_id: data.booking_id,
 
-      fare: (data.fare || 0) + serviceBookingCharge,
+      fare: computedFare,
 
       pickupAddress: data.pickupAddress,
       pickupLat: data.pickupLat,
@@ -203,16 +227,7 @@ export async function createBooking(data: any): Promise<BookingDocument> {
       schedule_date: data.schedule_date,
       schedule_time: data.schedule_time,
 
-      fare_details: {
-        company_charge: data.company_charge,
-        driver_charge: data.driver_charge,
-        fooding_charge: data.fooding_charge,
-        over_time_customer_charge: 0,
-        over_time_driver_charge: 0,
-        early_morning_charge: data.early_morning_charge,
-        late_night_charge: data.late_night_charge,
-        service_booking_charge: serviceBookingCharge,
-      },
+      fare_details: fareDetails,
 
       insurance: data.insurance,
 
@@ -751,7 +766,7 @@ export async function updateBooking(
     if (isChangingStatus && !options.forceStatusChange) {
       const allowedStatusTransitions: Record<string, string[]> = {
         pending: ["assigned", "cancelled"],
-        assigned: ["accepted", "cancelled"],
+        assigned: ["accepted", "arrived", "cancelled"],
         accepted: ["arrived", "cancelled"],
         arrived: ["started", "cancelled"],
         started: ["completed", "cancelled"],
@@ -1029,6 +1044,7 @@ export async function updateBooking(
           const result = calculateBookingCharges({
             completedAt,
             arrivedAt: existingBooking.arrivedAt,
+            startedAt: existingBooking.startedAt,
             scheduleDate: existingBooking.schedule_date,
             scheduleTime: existingBooking.schedule_time,
             baseFare: existingBooking.fare || 0,

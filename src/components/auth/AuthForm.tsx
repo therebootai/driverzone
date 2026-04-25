@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { FaFacebook } from "react-icons/fa";
 import { IoLogoInstagram } from "react-icons/io";
 import { IoLogoLinkedin } from "react-icons/io5";
+import Loader from "../../ui/Loader";
 
 export default function AuthForm() {
   const { login } = useAuth();
@@ -54,9 +55,14 @@ export default function AuthForm() {
         />
         <AuthFormButton
           type="submit"
-          className="bg-linear-90 from-site-saffron to-site-skin text-site-black mt-5"
+          disabled={isPending}
+          className="bg-linear-90 from-site-saffron to-site-skin text-site-black mt-5 inline-flex items-center justify-center"
         >
-          Login
+          {isPending ? (
+            <Loader className="animate-spin border-t-site-black w-6 h-6" />
+          ) : (
+            "Login"
+          )}
         </AuthFormButton>
       </form>
 

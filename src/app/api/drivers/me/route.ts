@@ -134,13 +134,17 @@ export async function PUT(request: NextRequest) {
     }
 
 
+    // Track keys already processed as arrays (multiple entries with same key)
+    const processedKeys = new Set<string>();
+
     for (const key of formData.keys()) {
-      // Skip already processed image fields
+      // Skip already processed image fields and already-processed keys
       if (
         key === "avatar" ||
         key === "ps_noc" ||
         key === "licence_file_img_1" ||
-        key === "licence_file_img_2"
+        key === "licence_file_img_2" ||
+        processedKeys.has(key)
       )
         continue;
 
@@ -161,6 +165,11 @@ export async function PUT(request: NextRequest) {
           return v;
         });
         updateData[actualKey] = cleanedValues;
+        processedKeys.add(key);
+      } else if (key === "vehicle_category_type" || key === "speciality") {
+        // Handle array fields sent as multiple entries with the same key
+        updateData[key] = formData.getAll(key);
+        processedKeys.add(key);
       } else if (key === "currentLocation" && typeof formData.get(key) === "string") {
         const value = formData.get(key) as string;
         try {

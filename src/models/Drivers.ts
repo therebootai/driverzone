@@ -86,7 +86,7 @@ export interface DriverDocument extends Document {
   vehicle_category_type?: string[];
 
   employment_type?: "Driver" | "Driver+Car" | "Other";
-  speciality?: "plain" | "hills" | "both";
+  speciality?: Array<"in_city" | "mini_outstation" | "outstation" | "hills_tour" | "long_tour" | "drop_pickup_service">;
   remarks?: string;
 
   vehicle_details?: VehicleDetails;
@@ -227,9 +227,23 @@ const driverSchema = new Schema<DriverDocument>(
     },
 
     speciality: {
-      type: String,
-      enum: ["plain", "hills", "both"],
-      default: "plain",
+      type: [String],
+      enum: [
+        "in_city",
+        "mini_outstation",
+        "outstation",
+        "hills_tour",
+        "long_tour",
+        "drop_pickup_service",
+      ],
+      default: [
+        "in_city",
+        "mini_outstation",
+        "outstation",
+        "hills_tour",
+        "long_tour",
+        "drop_pickup_service",
+      ],
     },
 
     vehicle_transmission_type: {
@@ -240,7 +254,7 @@ const driverSchema = new Schema<DriverDocument>(
 
     vehicle_category_type: {
       type: [String],
-      enum: ["SUV", "Hatchback", "Sedan", "Others"],
+      enum: ["SUV", "Hatchback", "Sedan", "Mini", "Van", "Others"],
       default: [],
     },
     remarks: { type: String },

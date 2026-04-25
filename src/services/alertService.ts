@@ -112,7 +112,13 @@ export class PriorityAlertService {
       // Populate package_type to check for hills_tour
       const populatedBooking = await Booking.findById(booking._id || booking).populate("package_type").lean();
       const packageType = populatedBooking?.package_type as any;
-      const isHillsTour = packageType?.package_type === "hills_tour";
+      const bookingPackageType = packageType?.package_type;
+
+      // Parse vehicleType from booking (e.g. "SUV - Mannual") into category and transmission
+      const vehicleTypeStr: string = booking.vehicleType || "";
+      const [bookingCategory, bookingTransmission] = vehicleTypeStr
+        .split(" - ")
+        .map((s: string) => s.trim().toLowerCase());
 
       const drivers = await this.findAvailableDrivers(
         booking.pickupLat,
@@ -120,7 +126,9 @@ export class PriorityAlertService {
         alert.radius,
         alert.maxDrivers,
         excludedDriverIds,
-        isHillsTour,
+        bookingPackageType,
+        bookingCategory,
+        bookingTransmission,
       );
 
       if (drivers.length === 0) {
@@ -145,7 +153,9 @@ export class PriorityAlertService {
     radius: number,
     limit: number,
     excludedDriverIds: mongoose.Types.ObjectId[] = [],
-    isHillsTour: boolean = false,
+    bookingPackageType?: string,
+    bookingCategory?: string,
+    bookingTransmission?: string,
   ) {
     try {
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
@@ -164,9 +174,26 @@ export class PriorityAlertService {
         "currentLocation.lastUpdated": { $gte: twoHoursAgo },
       };
 
-      // For hills_tour packages, only include drivers with speciality "hills" or "both"
-      if (isHillsTour) {
-        filter.speciality = { $in: ["hills", "both"] };
+      if (bookingPackageType) {
+        filter.speciality = bookingPackageType;
+      }
+
+      // Filter by vehicle category type
+      // Only apply if the booking category exists in the driver enum
+      const driverCategories = ["SUV", "Hatchback", "Sedan", "Mini", "Van", "Others"];
+      const categoryLookup = bookingCategory
+        ? bookingCategory.charAt(0).toUpperCase() + bookingCategory.slice(1)
+        : null;
+      if (categoryLookup && driverCategories.includes(categoryLookup)) {
+        filter.vehicle_category_type = { $in: [categoryLookup, "Others"] };
+      }
+
+      // Filter by vehicle transmission type
+      if (bookingTransmission) {
+        const normalizedTransmission =
+          bookingTransmission.charAt(0).toUpperCase() + bookingTransmission.slice(1);
+        // "Automatic+Manual" drivers can handle either
+        filter.vehicle_transmission_type = { $in: [normalizedTransmission, "Automatic+Manual"] };
       }
 
       // Diagnostic logging
@@ -448,8 +475,8 @@ export class PriorityAlertService {
 
       await alert.save();
 
-      // Clear any pending timeouts
-      this.clearAlertTimeout((alert._id as any).toString());
+      // Clear all pending timeouts for this alert
+      this.clearAllAlertTimeouts((alert._id as any).toString());
 
       // Notify relevant parties via socket
       socketService.emit(EVENTS.BOOKING_ACCEPTED, {
@@ -518,6 +545,20 @@ export class PriorityAlertService {
             
             // Send push notification to the next driver
             await this.sendDriverAlert(driver, alert);
+
+            // Also emit via socket for instant delivery
+            const nextBooking = alert.booking_id;
+            socketService.emit(EVENTS.RIDE_REQUEST, {
+              type: EVENTS.RIDE_REQUEST,
+              alertId: (alert._id as any).toString(),
+              alertSlug: alert.alert_id,
+              bookingId: (nextBooking._id || nextBooking).toString(),
+              pickupAddress: nextBooking.pickupAddress,
+              dropAddress: nextBooking.dropAddress,
+              fare: nextBooking.fare,
+              expiresAt: alert.expiresAt,
+              dropZoneName: nextBooking.package_type?.drop_zone?.name || "",
+            }, `driver:${driver._id}`);
 
             // Set timeout for next driver
             this.setResponseTimeout(
@@ -695,6 +736,18 @@ export class PriorityAlertService {
   }
 
   /**
+   * Clear all timeouts for a given alert
+   */
+  private clearAllAlertTimeouts(alertId: string): void {
+    for (const [key, timeout] of this.activeAlerts.entries()) {
+      if (key.startsWith(`${alertId}_`)) {
+        clearTimeout(timeout);
+        this.activeAlerts.delete(key);
+      }
+    }
+  }
+
+  /**
    * Cancel alert by booking ID
    */
   async cancelAlertByBookingId(bookingId: string): Promise<boolean> {
@@ -738,13 +791,38 @@ export class PriorityAlertService {
       );
 
       for (const assignedDriver of otherDrivers) {
+        const driverIdStr = assignedDriver.driverId.toString();
+        const bookingIdStr = alert.booking_id._id
+          ? (alert.booking_id._id as any).toString()
+          : alert.booking_id.toString();
+
+        // Emit socket event for instant dismissal
+        socketService.emit(EVENTS.ALERT_CANCELLED, {
+          type: EVENTS.ALERT_CANCELLED,
+          alertId: (alert._id as any).toString(),
+          alertSlug: alert.alert_id,
+          bookingId: bookingIdStr,
+          message: "Ride has been accepted by another driver",
+        }, `driver:${driverIdStr}`);
+
+        // Also emit booking:accepted so the client's existing listener handles it
+        socketService.emit(EVENTS.BOOKING_ACCEPTED, {
+          type: EVENTS.BOOKING_ACCEPTED,
+          bookingId: bookingIdStr,
+          driverId: acceptedDriverId,
+          message: "Ride taken by another driver",
+        }, `driver:${driverIdStr}`);
+
         const driver = await Driver.findById(assignedDriver.driverId);
         if (driver && driver.fcmToken) {
           await sendPushNotification({
             token: driver.fcmToken,
             data: {
-              type: "ride_cancelled",
-              alertId: alert.alert_id,
+              type: "alert_cancelled",
+              alertId: (alert._id as any).toString(),
+              alertSlug: alert.alert_id,
+              _id: bookingIdStr,
+              bookingId: bookingIdStr,
               message: "Ride has been accepted by another driver",
             },
           });

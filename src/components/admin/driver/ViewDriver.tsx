@@ -169,6 +169,37 @@ const ViewDriver = ({
           <Field label="Landmark" value={driver.landmark} />
           <Field label="Pin Code" value={driver.pin_code} />
           <Field label="Employment Type" value={driver.employment_type} />
+          <Field
+            label="Speciality"
+            value={
+              Array.isArray(driver.speciality)
+                ? driver.speciality
+                    ?.map((s) =>
+                      s
+                        .split("_")
+                        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(" ")
+                    )
+                    .join(", ")
+                : driver.speciality
+            }
+          />
+          <Field
+            label="Vehicle Transmission Type"
+            value={
+              Array.isArray(driver.vehicle_transmission_type)
+                ? driver.vehicle_transmission_type.join(", ")
+                : driver.vehicle_transmission_type
+            }
+          />
+          <Field
+            label="Vehicle Category Type"
+            value={
+              Array.isArray(driver.vehicle_category_type)
+                ? driver.vehicle_category_type.join(", ")
+                : driver.vehicle_category_type
+            }
+          />
           <Field label="Remarks" value={driver.remarks} />
           <Field
             label="Verified"

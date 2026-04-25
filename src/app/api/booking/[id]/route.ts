@@ -233,17 +233,11 @@ export async function PUT(
         // Handle specific status transitions that require OTP
         if (
           updateData.status === "arrived" &&
-          existingBooking.status === "accepted"
+          (existingBooking.status === "accepted" ||
+            existingBooking.status === "assigned")
         ) {
           filteredUpdateData.status = "arrived";
           filteredUpdateData.arrivedAt = new Date();
-        } else if (
-          updateData.status === "started" &&
-          (existingBooking.status === "arrived" ||
-            existingBooking.status === "accepted")
-        ) {
-          filteredUpdateData.status = "started";
-          filteredUpdateData.startedAt = new Date();
         }
       }
     }
@@ -321,6 +315,7 @@ export async function PUT(
                 const result = calculateBookingCharges({
                   completedAt,
                   arrivedAt: existingBooking.arrivedAt,
+                  startedAt: existingBooking.startedAt,
                   scheduleDate: existingBooking.schedule_date,
                   scheduleTime: existingBooking.schedule_time,
                   baseFare: existingBooking.fare || 0,
@@ -357,13 +352,22 @@ export async function PUT(
             filteredUpdateData.status = "accepted";
             filteredUpdateData.acceptedAt = new Date();
           }
-        } else if (["arrived", "started"].includes(updateData.status)) {
-          // These are handled by OTP check above.
-          // If we reach here and it wasn't handled (e.g. no OTP was provided), throw error.
+        } else if (updateData.status === "arrived") {
+          // "arrived" requires OTP verification (handled by OTP block above)
           if (!updateData.otp) {
             errors.push(
-              `OTP is required to change status to "${updateData.status}"`,
+              'OTP is required to change status to "arrived"',
             );
+          }
+        } else if (updateData.status === "started") {
+          // "started" does NOT require OTP, only needs "arrived" status
+          if (existingBooking.status !== "arrived") {
+            errors.push(
+              'Booking can only be started after driver has arrived',
+            );
+          } else {
+            filteredUpdateData.status = "started";
+            filteredUpdateData.startedAt = new Date();
           }
         } else if (updateData.status !== existingBooking.status) {
           errors.push(`Invalid status update to "${updateData.status}"`);

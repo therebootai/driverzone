@@ -20,7 +20,7 @@ export interface PackageChargeConfig {
  * Breakdown of all calculated charges returned by calculateBookingCharges.
  */
 export interface BookingChargeBreakdown {
-  /** A1: minutes past (schedule_time + duration) * over_time_customer_charge -> added to fare */
+  /** A1: minutes past (startedAt + duration) * over_time_customer_charge -> added to fare */
   overTimeCustomerCharge: number;
   /** A2: minutes past schedule_time at arrival * over_time_driver_charge -> deducted from driver_charge */
   overTimeDriverCharge: number;
@@ -88,7 +88,7 @@ function parseScheduleDateTime(
  * Calculate all booking charges for a trip completion.
  *
  * Rules:
- *   A1: over_time_customer_charge = minutes past (schedule_time + pkg.duration) * pkg.over_time_customer_charge
+ *   A1: over_time_customer_charge = minutes past (startedAt + pkg.duration) * pkg.over_time_customer_charge
  *       -> added to fare
  *   A2: over_time_driver_charge = minutes past schedule_time at arrival * pkg.over_time_driver_charge
  *       -> deducted from driver_charge, NOT added to fare
@@ -110,6 +110,8 @@ function parseScheduleDateTime(
  *   at arrival time. When provided, this value is preserved instead of being recalculated,
  *   which fixes the lost-update bug where completion overwrites arrival-time deductions.
  *   Pass 0 to explicitly indicate no prior calculation existed.
+ * @param params.startedAt - When the ride actually started. Used as the base for overtime
+ *   customer charge calculation (startedAt + duration = expected end time).
  */
 export function calculateBookingCharges(params: {
   baseFare: number;
@@ -118,6 +120,7 @@ export function calculateBookingCharges(params: {
   scheduleDate: Date;
   scheduleTime: string;
   arrivedAt?: Date;
+  startedAt?: Date;
   completedAt: Date;
   existingOvertimeDriverCharge?: number;
 }): BookingChargeBreakdown {
@@ -128,6 +131,7 @@ export function calculateBookingCharges(params: {
     scheduleDate,
     scheduleTime,
     arrivedAt,
+    startedAt,
     completedAt,
     existingOvertimeDriverCharge,
   } = params;
@@ -150,8 +154,11 @@ export function calculateBookingCharges(params: {
   const scheduleHour = scheduleDateTime.hour();
 
   // A1: Overtime customer charge
-  // Minutes past (schedule_time + package duration) at completion time
-  const baseEndTime = scheduleDateTime.add(pkg.duration || 0, "hour");
+  // Minutes past (startedAt + package duration) at completion time
+  // Falls back to schedule_time + duration if startedAt is not available
+  const baseEndTime = startedAt
+    ? dayjs(startedAt).add(pkg.duration || 0, "hour")
+    : scheduleDateTime.add(pkg.duration || 0, "hour");
   let overTimeCustomerCharge = 0;
   if (dayjs(completedAt).isAfter(baseEndTime)) {
     const otMinutes = dayjs(completedAt).diff(baseEndTime, "minute");

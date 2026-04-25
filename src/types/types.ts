@@ -47,6 +47,7 @@ export type customerTypes = {
   total_spent?: string;
   password?: string;
   status?: boolean;
+  cars?: { car_type: string; registration_number: string }[];
 };
 
 export type VehicleDetails = {
@@ -145,7 +146,7 @@ export type DriverDocument = {
   vehicle_category_type?: string[];
 
   employment_type?: "Driver" | "Driver+Car" | "Other";
-  speciality?: "plain" | "hills" | "both";
+  speciality?: Array<"in_city" | "mini_outstation" | "outstation" | "hills_tour" | "long_tour" | "drop_pickup_service">;
   remarks?: string;
   maxDistance?: number;
 
@@ -234,6 +235,8 @@ export type BookingTypes = {
     early_morning_charge: number;
     late_night_charge: number;
     service_booking_charge?: number;
+    insurance_charge?: number;
+    discount?: number;
   };
   insurance: boolean;
   createdAt: Date;
