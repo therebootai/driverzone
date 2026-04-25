@@ -139,6 +139,30 @@ const ViewCustomer = ({ customer }: { customer: customerTypes }) => {
         </div>
       </div>
 
+      {/* ========== CUSTOMER CARS ========== */}
+      {customer.cars && customer.cars.length > 0 && (
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-8">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+            Vehicles
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {customer.cars.map((car, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
+              >
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {car.car_type}
+                </span>
+                <span className="text-sm font-medium text-gray-700">
+                  {car.registration_number}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ========== CUSTOMER BOOKINGS ========== */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
