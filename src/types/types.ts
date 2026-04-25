@@ -47,6 +47,7 @@ export type customerTypes = {
   total_spent?: string;
   password?: string;
   status?: boolean;
+  cars?: { car_type: string; registration_number: string }[];
 };
 
 export type VehicleDetails = {
@@ -234,6 +235,8 @@ export type BookingTypes = {
     early_morning_charge: number;
     late_night_charge: number;
     service_booking_charge?: number;
+    insurance_charge?: number;
+    discount?: number;
   };
   insurance: boolean;
   createdAt: Date;
