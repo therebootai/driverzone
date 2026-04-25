@@ -85,6 +85,39 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    if (updateData.cars && typeof updateData.cars === "string") {
+      try {
+        const parsed = JSON.parse(updateData.cars);
+        if (!Array.isArray(parsed)) {
+          return NextResponse.json(
+            { message: "cars must be an array", success: false },
+            { status: 400 },
+          );
+        }
+        const validTypes = ["SUV", "Hatchback", "Sedan", "Mini", "Van", "Others"];
+        for (const car of parsed) {
+          if (!car.car_type || !validTypes.includes(car.car_type)) {
+            return NextResponse.json(
+              { message: `Invalid car_type: ${car.car_type}`, success: false },
+              { status: 400 },
+            );
+          }
+          if (!car.registration_number || typeof car.registration_number !== "string" || !car.registration_number.trim()) {
+            return NextResponse.json(
+              { message: "registration_number is required for all cars", success: false },
+              { status: 400 },
+            );
+          }
+        }
+        updateData.cars = parsed;
+      } catch {
+        return NextResponse.json(
+          { message: "Invalid cars format", success: false },
+          { status: 400 },
+        );
+      }
+    }
+
     if (updateData.mobile_number && updateData.mobile_number !== user.mobile_number) {
       const otp = formData.get("otp") as string;
       if (!otp) {
