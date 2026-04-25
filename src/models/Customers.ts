@@ -103,6 +103,7 @@ const customerSchema = new Schema<customerDocument>(
           registration_number: {
             type: String,
             required: true,
+            maxlength: 20,
           },
         },
       ],

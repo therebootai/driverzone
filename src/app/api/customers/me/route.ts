@@ -58,6 +58,16 @@ export async function PUT(request: NextRequest) {
 
     const updateData: any = {};
 
+    const allowedFields = new Set([
+      "name",
+      "email",
+      "mobile_number",
+      "sos_mobile_number",
+      "address",
+      "fcmToken",
+      "cars",
+    ]);
+
     const profilePicture = formData.get("profile_picture") as File | null;
     const coverPicture = formData.get("cover_picture") as File | null;
 
@@ -80,7 +90,7 @@ export async function PUT(request: NextRequest) {
       if (key === "profile_picture" || key === "cover_picture") continue;
 
       // Handle other fields
-      if (key !== "otp") {
+      if (key !== "otp" && allowedFields.has(key)) {
         updateData[key] = value;
       }
     }
@@ -95,7 +105,14 @@ export async function PUT(request: NextRequest) {
           );
         }
         const validTypes = ["SUV", "Hatchback", "Sedan", "Mini", "Van", "Others"];
+        if (parsed.length > 20) {
+          return NextResponse.json(
+            { message: "Maximum 20 cars allowed", success: false },
+            { status: 400 },
+          );
+        }
         for (const car of parsed) {
+          car.registration_number = car.registration_number.trim().toUpperCase();
           if (!car.car_type || !validTypes.includes(car.car_type)) {
             return NextResponse.json(
               { message: `Invalid car_type: ${car.car_type}`, success: false },
@@ -105,6 +122,12 @@ export async function PUT(request: NextRequest) {
           if (!car.registration_number || typeof car.registration_number !== "string" || !car.registration_number.trim()) {
             return NextResponse.json(
               { message: "registration_number is required for all cars", success: false },
+              { status: 400 },
+            );
+          }
+          if (car.registration_number.length > 20) {
+            return NextResponse.json(
+              { message: "registration_number must be 20 characters or less", success: false },
               { status: 400 },
             );
           }
@@ -140,8 +163,8 @@ export async function PUT(request: NextRequest) {
     const updatedUser = await Customers.findOneAndUpdate(
       { _id: user._id },
       { $set: updateData },
-      { new: true },
-    );
+      { new: true, runValidators: true },
+    ).select("-password");
     return NextResponse.json(
       { user: updatedUser, success: true },
       { status: 200 },
