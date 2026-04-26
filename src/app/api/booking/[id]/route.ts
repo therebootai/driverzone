@@ -6,13 +6,10 @@ import { verifyCustomerToken, verifyDriverToken } from "@/utils/jwt";
 import { isValidObjectId } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat";
 import mongoose from "mongoose";
 import { socketService, EVENTS as SOCKET_EVENTS } from "@/lib/socket";
-import { calculateBookingCharges } from "@/utils/fareCalculator";
+import { calculateBookingCharges, parseScheduleDateTime } from "@/utils/fareCalculator";
 import { sendCustomerNotification, getNotificationForStatus } from "@/utils/sendCustomerNotification";
-
-dayjs.extend(customParseFormat);
 
 const RESTRICTED_FIELDS = ["booking_id", "driverDetails", "customerDetails"];
 
@@ -251,13 +248,12 @@ export async function PUT(
         existingBooking.schedule_time &&
         existingBooking.package_type
       ) {
-        const scheduleDate = dayjs(existingBooking.schedule_date).format("YYYY-MM-DD");
-        const scheduleDateTime = dayjs(
-          `${scheduleDate} ${existingBooking.schedule_time}`,
-          "YYYY-MM-DD hh:mm A",
+        const scheduleDateTime = parseScheduleDateTime(
+          existingBooking.schedule_date,
+          existingBooking.schedule_time,
         );
 
-        if (dayjs(checkTime).isAfter(scheduleDateTime)) {
+        if (scheduleDateTime && dayjs(checkTime).isAfter(scheduleDateTime)) {
           const delayInMinutes = dayjs(checkTime).diff(scheduleDateTime, "minute");
           if (delayInMinutes > 0) {
             const pkg = await mongoose.model("Package").findById(existingBooking.package_type);
@@ -300,17 +296,21 @@ export async function PUT(
             try {
               const pkg = await mongoose.model("Package").findById(existingBooking.package_type);
               if (pkg) {
-                // Get the latest overtime driver charge (may have been set at arrival)
-                const existingOvertimeDriverCharge =
-                  filteredUpdateData["fare_details.over_time_driver_charge"] ||
-                  existingBooking.fare_details?.over_time_driver_charge ||
-                  0;
-
                 // Recover original driver_charge by adding back the arrival-time deduction
-                // to avoid double-deduction (driver_charge was already reduced at arrival)
                 const originalDriverCharge =
                   (existingBooking.fare_details?.driver_charge || 0) +
                   (existingBooking.fare_details?.over_time_driver_charge || 0);
+
+                // Strip surcharges already included in the creation fare to avoid double-counting.
+                // The creation fare includes: fooding_charge, early_morning_charge, late_night_charge.
+                // calculateBookingCharges will recalculate these from source data, so we must
+                // subtract the creation-time values from baseFare first.
+                const baseFareWithoutSurcharges =
+                  (existingBooking.fare || 0) -
+                  (existingBooking.fare_details?.fooding_charge || 0) -
+                  (existingBooking.fare_details?.early_morning_charge || 0) -
+                  (existingBooking.fare_details?.late_night_charge || 0) -
+                  (existingBooking.fare_details?.over_time_customer_charge || 0);
 
                 const result = calculateBookingCharges({
                   completedAt,
@@ -318,7 +318,7 @@ export async function PUT(
                   startedAt: existingBooking.startedAt,
                   scheduleDate: existingBooking.schedule_date,
                   scheduleTime: existingBooking.schedule_time,
-                  baseFare: existingBooking.fare || 0,
+                  baseFare: baseFareWithoutSurcharges,
                   baseDriverCharge: originalDriverCharge,
                   packageConfig: {
                     over_time_customer_charge: pkg.over_time_customer_charge,
@@ -328,7 +328,6 @@ export async function PUT(
                     fooding_charge: pkg.fooding_charge,
                     duration: pkg.duration,
                   },
-                  existingOvertimeDriverCharge,
                 });
 
                 filteredUpdateData["fare_details.over_time_customer_charge"] = result.overTimeCustomerCharge;

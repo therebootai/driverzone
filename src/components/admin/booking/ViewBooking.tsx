@@ -5,6 +5,16 @@ import SidePopup from "@/ui/SidePopup";
 import Field from "@/ui/Field";
 import dayjs from "dayjs";
 import Link from "next/link";
+import { IconType } from "react-icons";
+import {
+  HiOutlineClipboardDocumentList,
+  HiOutlineUserPlus,
+  HiOutlineHandThumbUp,
+  HiOutlineMapPin,
+  HiOutlineRocketLaunch,
+  HiOutlineFlag,
+  HiOutlineXCircle,
+} from "react-icons/hi2";
 
 interface ViewBookingProps {
   booking: BookingTypes | null;
@@ -18,6 +28,42 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
   onClose,
 }) => {
   if (!booking) return null;
+
+  const statusSteps: { key: string; label: string; timestamp?: Date; icon: IconType }[] = [
+    { key: "pending", label: "Pending", timestamp: booking.createdAt, icon: HiOutlineClipboardDocumentList },
+    { key: "assigned", label: "Driver Assigned", timestamp: booking.assignedAt, icon: HiOutlineUserPlus },
+    { key: "accepted", label: "Accepted by Driver", timestamp: booking.acceptedAt, icon: HiOutlineHandThumbUp },
+    { key: "arrived", label: "Driver Arrived", timestamp: booking.arrivedAt, icon: HiOutlineMapPin },
+    { key: "started", label: "Trip Started", timestamp: booking.startedAt, icon: HiOutlineRocketLaunch },
+    { key: "completed", label: "Completed", timestamp: booking.completedAt, icon: HiOutlineFlag },
+  ];
+
+  const cancelledStep = { key: "cancelled", label: "Cancelled", timestamp: booking.cancelledAt, icon: HiOutlineXCircle };
+
+  const isCancelled = booking.status === "cancelled";
+
+  // Build final steps list: if cancelled, show steps up to cancellation then the cancelled step
+  const activeSteps = isCancelled
+    ? [
+        ...statusSteps.slice(
+          0,
+          statusSteps.findIndex((s) => s.key === booking.status) + 1,
+        ).length > 0
+          ? statusSteps.slice(
+              0,
+              statusSteps.findIndex((s) => s.key === booking.status),
+            )
+          : [],
+        cancelledStep,
+      ]
+    : statusSteps;
+
+  const currentIdx = activeSteps.findIndex((s) => s.key === booking.status);
+
+  const formatTimestamp = (date?: Date) => {
+    if (!date) return null;
+    return dayjs(date).format("DD MMM YYYY, hh:mm A");
+  };
 
   // Helpers for badges (copied/adapted from ManageBooking)
   const getStatusBadge = (status: string) => {
@@ -120,6 +166,74 @@ const ViewBooking: React.FC<ViewBookingProps> = ({
             {booking.cancelReason && (
               <Field label="Cancel Reason" value={booking.cancelReason} />
             )}
+          </div>
+        </div>
+
+        {/* Booking Timeline */}
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+          <h3 className="font-semibold text-gray-800 mb-4 border-b pb-2">
+            Booking Timeline
+          </h3>
+          <div className="flex flex-col">
+            {activeSteps.map((step, idx) => {
+              const isReached = idx <= currentIdx;
+              const isCurrent = idx === currentIdx;
+              const isLast = idx === activeSteps.length - 1;
+
+              const dotColor = isCurrent
+                ? "bg-blue-500 ring-4 ring-blue-100"
+                : isReached
+                  ? step.key === "cancelled"
+                    ? "bg-red-500"
+                    : "bg-green-500"
+                  : "bg-gray-300";
+
+              const lineColor = isReached
+                ? step.key === "cancelled"
+                  ? "bg-red-300"
+                  : "bg-green-300"
+                : "bg-gray-200";
+
+              const textColor = isReached
+                ? "text-gray-900"
+                : "text-gray-400";
+
+              return (
+                <div key={step.key} className="flex items-start gap-3">
+                  {/* Dot + Line column */}
+                  <div className="flex flex-col items-center">
+                    <div className={`w-3 h-3 rounded-full shrink-0 ${dotColor}`} />
+                    {!isLast && (
+                      <div className={`w-0.5 min-h-[2rem] flex-1 ${lineColor}`} />
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className={`pb-4 ${isLast ? "pb-0" : ""}`}>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-medium flex items-center gap-1.5 ${textColor}`}>
+                        <step.icon className="w-4 h-4" />
+                        {step.label}
+                      </span>
+                      {isCurrent && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
+                          Current
+                        </span>
+                      )}
+                    </div>
+                    {isReached && step.timestamp ? (
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {formatTimestamp(step.timestamp as unknown as Date)}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-gray-400 mt-0.5 italic">
+                        {isReached ? "Timestamp not recorded" : "Pending"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 

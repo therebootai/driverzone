@@ -45,7 +45,7 @@ export interface BookingChargeBreakdown {
  *
  * @returns A dayjs object representing the full schedule datetime, or null if unparseable.
  */
-function parseScheduleDateTime(
+export function parseScheduleDateTime(
   scheduleDate: Date,
   scheduleTime: string,
 ): dayjs.Dayjs | null {
@@ -106,10 +106,6 @@ function parseScheduleDateTime(
  * @param params.scheduleTime - The booking schedule_time string (e.g. "02:30 PM" or "14:30:00")
  * @param params.arrivedAt - When the driver actually arrived (Date)
  * @param params.completedAt - When the trip was completed (Date)
- * @param params.existingOvertimeDriverCharge - The over_time_driver_charge already calculated
- *   at arrival time. When provided, this value is preserved instead of being recalculated,
- *   which fixes the lost-update bug where completion overwrites arrival-time deductions.
- *   Pass 0 to explicitly indicate no prior calculation existed.
  * @param params.startedAt - When the ride actually started. Used as the base for overtime
  *   customer charge calculation (startedAt + duration = expected end time).
  */
@@ -122,7 +118,6 @@ export function calculateBookingCharges(params: {
   arrivedAt?: Date;
   startedAt?: Date;
   completedAt: Date;
-  existingOvertimeDriverCharge?: number;
 }): BookingChargeBreakdown {
   const {
     baseFare,
@@ -133,7 +128,6 @@ export function calculateBookingCharges(params: {
     arrivedAt,
     startedAt,
     completedAt,
-    existingOvertimeDriverCharge,
   } = params;
 
   const scheduleDateTime = parseScheduleDateTime(scheduleDate, scheduleTime);
@@ -167,16 +161,14 @@ export function calculateBookingCharges(params: {
 
   // A2: Overtime driver charge
   // Minutes past schedule_time at arrival. Deducted from driver_charge only.
-  // If existingOvertimeDriverCharge was provided (from arrival-time calculation),
-  // preserve it to avoid the lost-update bug.
-  let overTimeDriverCharge: number;
-  if (existingOvertimeDriverCharge !== undefined) {
-    overTimeDriverCharge = existingOvertimeDriverCharge;
-  } else {
-    overTimeDriverCharge = 0;
-    if (arrivedAt && dayjs(arrivedAt).isAfter(scheduleDateTime)) {
-      const otMinutes = dayjs(arrivedAt).diff(scheduleDateTime, "minute");
-      overTimeDriverCharge = otMinutes * (pkg.over_time_driver_charge || 0);
+  // Always recalculated from arrivedAt and scheduleDateTime.
+  // Capped at baseDriverCharge so driver earning never goes negative.
+  let overTimeDriverCharge = 0;
+  if (arrivedAt && dayjs(arrivedAt).isAfter(scheduleDateTime)) {
+    const otMinutes = dayjs(arrivedAt).diff(scheduleDateTime, "minute");
+    overTimeDriverCharge = otMinutes * (pkg.over_time_driver_charge || 0);
+    if (overTimeDriverCharge > baseDriverCharge) {
+      overTimeDriverCharge = baseDriverCharge;
     }
   }
 
