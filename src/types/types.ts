@@ -239,6 +239,12 @@ export type BookingTypes = {
     discount?: number;
   };
   insurance: boolean;
+  assignedAt?: Date;
+  acceptedAt?: Date;
+  arrivedAt?: Date;
+  startedAt?: Date;
+  completedAt?: Date;
+  cancelledAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 };

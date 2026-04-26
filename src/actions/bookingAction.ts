@@ -499,6 +499,12 @@ export async function getBookings({
           totalCharges: 1,
           insurance: 1,
           statusInfo: 1,
+          assignedAt: 1,
+          acceptedAt: 1,
+          arrivedAt: 1,
+          startedAt: 1,
+          completedAt: 1,
+          cancelledAt: 1,
           createdAt: 1,
           updatedAt: 1,
           formattedCreatedAt: 1,
@@ -1036,10 +1042,17 @@ export async function updateBooking(
           const completedAt = updateObject.completedAt || new Date();
 
           // Recover original driver_charge by adding back the arrival-time deduction
-          // to avoid double-deduction (driver_charge may have been reduced at arrival)
           const originalDriverCharge =
             (existingBooking.fare_details?.driver_charge || 0) +
             (existingBooking.fare_details?.over_time_driver_charge || 0);
+
+          // Strip surcharges already included in the creation fare to avoid double-counting
+          const baseFareWithoutSurcharges =
+            (existingBooking.fare || 0) -
+            (existingBooking.fare_details?.fooding_charge || 0) -
+            (existingBooking.fare_details?.early_morning_charge || 0) -
+            (existingBooking.fare_details?.late_night_charge || 0) -
+            (existingBooking.fare_details?.over_time_customer_charge || 0);
 
           const result = calculateBookingCharges({
             completedAt,
@@ -1047,7 +1060,7 @@ export async function updateBooking(
             startedAt: existingBooking.startedAt,
             scheduleDate: existingBooking.schedule_date,
             scheduleTime: existingBooking.schedule_time,
-            baseFare: existingBooking.fare || 0,
+            baseFare: baseFareWithoutSurcharges,
             baseDriverCharge: originalDriverCharge,
             packageConfig: {
               over_time_customer_charge: pkg.over_time_customer_charge,
@@ -1057,8 +1070,6 @@ export async function updateBooking(
               fooding_charge: pkg.fooding_charge,
               duration: pkg.duration,
             },
-            existingOvertimeDriverCharge:
-              existingBooking.fare_details?.over_time_driver_charge || 0,
           });
 
           const currentFareDetails = existingBooking.fare_details || {};
