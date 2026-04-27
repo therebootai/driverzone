@@ -351,7 +351,29 @@ const ViewDriver = ({
           </div>
         </div>
       </div>
-
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        {/* ========== PS NOC INFO ========== */}
+        <div className="flex flex-col gap-4">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Police Station NOC
+          </h2>
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+                  PS NOC Document
+                </span>
+                <FilePreview 
+                  file={driver.ps_noc} 
+                  onImageClick={onImageClick}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       {/* ========== VEHICLE DETAILS ========== */}
       {driver.employment_type === "Driver+Car" && vd && (
         <div className="mb-8">
