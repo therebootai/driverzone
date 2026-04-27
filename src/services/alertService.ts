@@ -10,6 +10,7 @@ import { autoOfflineStaleDrivers } from "@/utils/driverUtils";
 export class PriorityAlertService {
   private static instance: PriorityAlertService;
   private activeAlerts: Map<string, NodeJS.Timeout> = new Map();
+  private retryTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
   private constructor() {}
 
@@ -236,6 +237,13 @@ export class PriorityAlertService {
    */
   private async sendAlertsToDrivers(alert: any, drivers: any[]): Promise<void> {
     try {
+      // Re-verify alert is still active before sending (guards against race conditions)
+      const freshAlert = await Alert.findById(alert._id);
+      if (!freshAlert || freshAlert.status !== "active") {
+        console.log(`Alert ${alert._id} no longer active, skipping dispatch`);
+        return;
+      }
+
       // Only send alert to the first driver initially
       if (drivers.length > 0) {
         const firstDriver = drivers[0];
@@ -604,9 +612,11 @@ export class PriorityAlertService {
       alert.currentDriverIndex = 0;
 
       // Restart the alert process
-      setTimeout(() => {
+      const retryTimeout = setTimeout(() => {
+        this.retryTimeouts.delete((alert._id as any).toString());
         this.processAlert((alert._id as any).toString());
       }, 2000); // Wait 2 seconds before retrying
+      this.retryTimeouts.set((alert._id as any).toString(), retryTimeout);
     } catch (error) {
       console.error("Error handling batch completion:", error);
     }
@@ -624,9 +634,11 @@ export class PriorityAlertService {
       } else {
         // Expand radius and retry
         alert.radius += 3;
-        setTimeout(() => {
+        const retryTimeout = setTimeout(() => {
+          this.retryTimeouts.delete((alert._id as any).toString());
           this.processAlert((alert._id as any).toString());
         }, 5000); // Wait 5 seconds before retrying
+        this.retryTimeouts.set((alert._id as any).toString(), retryTimeout);
       }
 
       await alert.save();
@@ -744,6 +756,12 @@ export class PriorityAlertService {
         clearTimeout(timeout);
         this.activeAlerts.delete(key);
       }
+    }
+    // Also clear any pending retry timeouts for this alert
+    const retryTimeout = this.retryTimeouts.get(alertId);
+    if (retryTimeout) {
+      clearTimeout(retryTimeout);
+      this.retryTimeouts.delete(alertId);
     }
   }
 

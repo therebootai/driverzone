@@ -6,7 +6,6 @@ import { verifyAnyToken, verifyCustomerToken, verifyDriverToken } from "@/utils/
 import Booking from "@/models/Booking";
 import { VERIFY_PAYMENT } from "@/actions/razorpayAction";
 import Customer from "@/models/Customers";
-import { alertService } from "@/services/alertService";
 import { socketService, EVENTS as SOCKET_EVENTS } from "@/lib/socket";
 
 export async function POST(req: Request) {
@@ -117,8 +116,6 @@ export async function POST(req: Request) {
         },
       );
     }
-
-    await alertService.initializeAlert(newBooking._id as string);
 
     socketService.emit(SOCKET_EVENTS.BOOKING_CREATED, {
       type: SOCKET_EVENTS.BOOKING_CREATED,
