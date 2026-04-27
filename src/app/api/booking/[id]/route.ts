@@ -428,17 +428,15 @@ export async function PUT(
       updatedBooking?.status === "completed" &&
       existingBooking.status !== "completed"
     ) {
-      if (
-        updatedBooking.driverDetails?._id &&
-        updatedBooking.fare_details?.driver_charge
-      ) {
-        await Driver.findByIdAndUpdate(updatedBooking.driverDetails._id, {
-          $inc: {
-            total_earnings: updatedBooking.fare_details.driver_charge,
-            total_rides: 1,
-          },
+      if (updatedBooking.driverDetails?._id) {
+        const driverUpdate: any = {
           $set: { activeAlerts: null, currentBooking: null },
-        });
+          $inc: { total_rides: 1 },
+        };
+        if (updatedBooking.fare_details?.driver_charge) {
+          driverUpdate.$inc.total_earnings = updatedBooking.fare_details.driver_charge;
+        }
+        await Driver.findByIdAndUpdate(updatedBooking.driverDetails._id, driverUpdate);
       }
 
       // Update customer total_spent
