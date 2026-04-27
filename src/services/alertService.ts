@@ -269,16 +269,27 @@ export class PriorityAlertService {
         await this.sendDriverAlert(firstDriver, alert);
 
         // Also emit via socket for instant delivery if driver is connected
+        const socketBooking = alert.booking_id;
+        const socketPopulatedBooking = await Booking.findById(socketBooking._id || socketBooking).populate("package_type").lean();
+        const socketPackageType = socketPopulatedBooking?.package_type as any;
+
         socketService.emit(EVENTS.RIDE_REQUEST, {
           type: EVENTS.RIDE_REQUEST,
           alertId: (alert._id as any).toString(),
           alertSlug: alert.alert_id,
-          bookingId: (alert.booking_id._id || alert.booking_id).toString(),
-          pickupAddress: alert.booking_id.pickupAddress,
-          dropAddress: alert.booking_id.dropAddress,
-          fare: alert.booking_id.fare,
+          bookingId: (socketBooking._id || socketBooking).toString(),
+          pickupAddress: socketBooking.pickupAddress,
+          dropAddress: socketBooking.dropAddress,
+          fare: socketBooking.fare,
+          vehicleType: socketBooking.vehicleType || "",
+          tripType: socketBooking.tripType || "",
+          serviceCategory: socketPackageType?.package_type || "",
+          paymentMethod: socketBooking.paymentMethod || "",
+          stopAddress: socketBooking.stopAddress || "",
+          customerName: socketBooking.customerDetails?.name || "Customer",
+          customerMobile: socketBooking.customerDetails?.mobile_number || "",
+          dropZoneName: socketPackageType?.drop_zone?.name || "",
           expiresAt: alert.expiresAt,
-          dropZoneName: alert.booking_id.package_type?.drop_zone?.name || "",
         }, `driver:${firstDriver._id}`);
 
         alert.currentDriverIndex = 0;
@@ -307,10 +318,13 @@ export class PriorityAlertService {
         return;
       }
 
-      // Extract dropZoneName from populated package_type
+      // Populate package_type to extract serviceCategory and dropZoneName
+      const populatedBooking = await Booking.findById(booking._id).populate("package_type").lean();
+      const packageType = populatedBooking?.package_type as any;
+
       let dropZoneName = "";
-      if (booking.package_type && typeof booking.package_type === "object" && booking.package_type.drop_zone) {
-        dropZoneName = booking.package_type.drop_zone.name || "";
+      if (packageType?.drop_zone) {
+        dropZoneName = packageType.drop_zone.name || "";
       }
 
       const payload: any = {
@@ -331,6 +345,11 @@ export class PriorityAlertService {
           fare: (booking.fare || "").toString(),
           customerName: booking.customerDetails?.name || "Customer",
           customerMobile: booking.customerDetails?.mobile_number || "",
+          vehicleType: booking.vehicleType || "",
+          tripType: booking.tripType || "",
+          serviceCategory: packageType?.package_type || "",
+          paymentMethod: booking.paymentMethod || "",
+          stopAddress: booking.stopAddress || "",
           dropZoneName,
           distance: booking.distance?.toString() || "",
           tripDuration: booking.duration?.toString() || "",
@@ -556,6 +575,9 @@ export class PriorityAlertService {
 
             // Also emit via socket for instant delivery
             const nextBooking = alert.booking_id;
+            const retryPopulatedBooking = await Booking.findById(nextBooking._id || nextBooking).populate("package_type").lean();
+            const retryPackageType = retryPopulatedBooking?.package_type as any;
+
             socketService.emit(EVENTS.RIDE_REQUEST, {
               type: EVENTS.RIDE_REQUEST,
               alertId: (alert._id as any).toString(),
@@ -564,8 +586,15 @@ export class PriorityAlertService {
               pickupAddress: nextBooking.pickupAddress,
               dropAddress: nextBooking.dropAddress,
               fare: nextBooking.fare,
+              vehicleType: nextBooking.vehicleType || "",
+              tripType: nextBooking.tripType || "",
+              serviceCategory: retryPackageType?.package_type || "",
+              paymentMethod: nextBooking.paymentMethod || "",
+              stopAddress: nextBooking.stopAddress || "",
+              customerName: nextBooking.customerDetails?.name || "Customer",
+              customerMobile: nextBooking.customerDetails?.mobile_number || "",
+              dropZoneName: retryPackageType?.drop_zone?.name || "",
               expiresAt: alert.expiresAt,
-              dropZoneName: nextBooking.package_type?.drop_zone?.name || "",
             }, `driver:${driver._id}`);
 
             // Set timeout for next driver
