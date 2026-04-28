@@ -169,7 +169,7 @@ export async function GET(req: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
-    let query: any = {};
+    const query: any = {};
 
     // Add search term filter if provided
     if (searchTerm && searchTerm.trim()) {

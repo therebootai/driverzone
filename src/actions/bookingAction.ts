@@ -1129,7 +1129,6 @@ export async function updateBooking(
             : updateData.driverDetails instanceof Types.ObjectId
               ? updateData.driverDetails.toString()
               : String(updateData.driverDetails);
-        //@ts-ignore
         const driver = (await Driver.findById(driverIdStr)) as any;
         if (driver) {
           // If it's a direct assignment, we don't set activeAlerts

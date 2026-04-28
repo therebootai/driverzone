@@ -99,7 +99,6 @@ export async function createDriver(formData: FormData) {
       driverData.identity_documents = identityDocs;
     }
 
-    //@ts-ignore
     const existingMobileNumer = await Drivers.findOne({ mobile_number });
     if (existingMobileNumer) {
       return { success: false, error: "This mobile number already exists" };
@@ -301,7 +300,6 @@ export async function getAllDriver({
     const query = andConditions.length ? { $and: andConditions } : {};
 
     const [allDriver, totalCoupon] = await Promise.all([
-      //@ts-ignore
       Drivers.find(query, { password: 0 })
         .sort({ createdAt: -1 })
         .skip((_page - 1) * _limit)
@@ -343,7 +341,6 @@ export async function updateDriver(driverId: string, formData: FormData) {
     await connectToDatabase();
 
     // 1. Find existing driver
-    //@ts-ignore
     const driver = await Drivers.findOne({ driver_id: driverId });
     if (!driver) {
       return { success: false, error: "Driver not found" };
@@ -385,7 +382,7 @@ export async function updateDriver(driverId: string, formData: FormData) {
     const setIfPresent = (field: keyof typeof driver, key: string) => {
       const value = formData.get(key);
       if (value !== null) {
-        // @ts-ignore
+        // @ts-expect-error dynamic field assignment on Mongoose doc
         driver[field] = value === "" ? "" : value;
       }
     };
@@ -455,7 +452,6 @@ export async function updateDriver(driverId: string, formData: FormData) {
 
     // Ensure vehicle_details exists if needed
     if (!driver.vehicle_details) {
-      // @ts-ignore
       driver.vehicle_details = {};
     }
 
@@ -562,7 +558,6 @@ export async function updateDriver(driverId: string, formData: FormData) {
       driver.licence_file_img_1 as any,
     );
     if (newLicenceFile1) {
-      // @ts-ignore
       driver.licence_file_img_1 = newLicenceFile1;
     }
 
@@ -571,7 +566,6 @@ export async function updateDriver(driverId: string, formData: FormData) {
       driver.licence_file_img_2 as any,
     );
     if (newLicenceFile2) {
-      // @ts-ignore
       driver.licence_file_img_2 = newLicenceFile2;
     }
 
@@ -580,7 +574,6 @@ export async function updateDriver(driverId: string, formData: FormData) {
       driver.ps_noc as any,
     );
     if (newPsNoc) {
-      // @ts-ignore
       driver.ps_noc = newPsNoc;
     }
 
@@ -589,7 +582,6 @@ export async function updateDriver(driverId: string, formData: FormData) {
       driver.avatar as any,
     );
     if (newAvatar) {
-      // @ts-ignore
       driver.avatar = newAvatar;
     }
 
@@ -713,7 +705,6 @@ export async function updateDriverStatus({
 
     await connectToDatabase();
 
-    //@ts-ignore
     const existing = await Drivers.findOne({
       $or: [
         { driver_id },

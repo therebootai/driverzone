@@ -264,7 +264,7 @@ const ViewCustomer = ({ customer }: { customer: customerTypes }) => {
 
             {!hasNextPage && bookings.length > 5 && (
               <div className="text-center py-8 text-gray-400 text-xs italic">
-                You've reached the end of the list
+                You&apos;ve reached the end of the list
               </div>
             )}
           </>

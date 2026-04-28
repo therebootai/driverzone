@@ -37,10 +37,10 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    let startDate = new Date(baseDate);
-    let endDate = new Date(baseDate);
-    let prevStartDate = new Date(baseDate);
-    let prevEndDate = new Date(baseDate);
+    const startDate = new Date(baseDate);
+    const endDate = new Date(baseDate);
+    const prevStartDate = new Date(baseDate);
+    const prevEndDate = new Date(baseDate);
     let groupBy = "hour";
 
     if (filter === "today") {
