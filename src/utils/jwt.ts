@@ -65,7 +65,6 @@ export const verifyDriverToken = async (token: string) => {
     if (!process.env.SECRET_KEY) throw new Error("SECRET_KEY is missing");
     const decoded = jwt.verify(token, process.env.SECRET_KEY);
     const userId = (decoded as { userId: string }).userId;
-    //@ts-ignore
     const user = await Drivers.findById(userId).select("-password").lean();
     if (!user) throw new Error("User not found");
     if (!user.status) throw new Error("Account is deactivated");

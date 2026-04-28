@@ -18,7 +18,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: result.message }, { status: 400 });
     }
 
-    //@ts-ignore
     const driver = await Driver.findOne({ mobile_number: phone });
 
     if (!driver) {

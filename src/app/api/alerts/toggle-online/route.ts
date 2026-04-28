@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // @ts-ignore
     const driver = await Driver.findOne({ driver_id: driverId });
     if (!driver) {
       return NextResponse.json(

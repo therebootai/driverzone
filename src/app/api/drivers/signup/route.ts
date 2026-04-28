@@ -63,7 +63,6 @@ export async function POST(request: Request) {
       );
     }
 
-    //@ts-ignore
     const driver = await Driver.findOne({ mobile_number });
     if (driver) {
       return NextResponse.json(
@@ -73,7 +72,7 @@ export async function POST(request: Request) {
     }
 
     let identity_id_proof_url;
-    let identity_documents_files: { identity_id_proof_img_1?: any; identity_id_proof_img_2?: any }[] = [];
+    const identity_documents_files: { identity_id_proof_img_1?: any; identity_id_proof_img_2?: any }[] = [];
     let licence_file_img_1;
     let licence_file_img_2;
     let ps_noc_url;

@@ -16,10 +16,8 @@ export async function POST(request: NextRequest) {
     if (data.type === "login") {
       const phone = data.phone;
       const [driver, user, customer] = await Promise.all([
-        //@ts-ignore
         Driver.findOne({ mobile_number: phone }),
         User.findOne({ mobile_number: phone }),
-        //@ts-ignore
         Customer.findOne({ mobile_number: phone }),
       ]);
 

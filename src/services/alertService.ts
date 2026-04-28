@@ -474,7 +474,6 @@ export class PriorityAlertService {
         return false;
       }
 
-      // @ts-expect-error: Mongoose type mismatch
       const driver = await Driver.findById(driverId);
       if (!driver) {
         return false;
