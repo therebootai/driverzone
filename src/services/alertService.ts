@@ -701,6 +701,38 @@ export class PriorityAlertService {
         },
       );
 
+      // Notify all assigned drivers that the alert expired
+      const bookingIdStr = alert.booking_id?.toString() || "";
+      for (const assignedDriver of alert.assignedDrivers) {
+        const driverIdStr = assignedDriver.driverId?.toString();
+        if (!driverIdStr) continue;
+
+        try {
+          socketService.emit(EVENTS.ALERT_CANCELLED, {
+            type: EVENTS.ALERT_CANCELLED,
+            alertId: (alert._id as any).toString(),
+            alertSlug: alert.alert_id,
+            bookingId: bookingIdStr,
+            message: "Ride alert has expired",
+          }, `driver:${driverIdStr}`);
+
+          const driver = await Driver.findById(assignedDriver.driverId);
+          if (driver && driver.fcmToken) {
+            await sendPushNotification({
+              token: driver.fcmToken,
+              data: {
+                type: "alert_cancelled",
+                alertId: (alert._id as any).toString(),
+                bookingId: bookingIdStr,
+                message: "Ride alert has expired",
+              },
+            });
+          }
+        } catch (notifyErr) {
+          console.error("Error notifying driver of expiry:", notifyErr);
+        }
+      }
+
       // Clear timeout
       this.clearAlertTimeout((alert._id as any).toString());
     } catch (error) {
@@ -754,6 +786,34 @@ export class PriorityAlertService {
         }
 
         await alert.save();
+
+        // Notify the timed-out driver to dismiss their alert UI
+        try {
+          const booking = await Booking.findById(alert.booking_id);
+          const bookingIdStr = booking ? booking._id.toString() : alert.booking_id.toString();
+          socketService.emit(EVENTS.ALERT_CANCELLED, {
+            type: EVENTS.ALERT_CANCELLED,
+            alertId: alertId,
+            alertSlug: alert.alert_id,
+            bookingId: bookingIdStr,
+            message: "Ride request timed out",
+          }, `driver:${driverId}`);
+
+          const timedOutDriver = await Driver.findById(driverId);
+          if (timedOutDriver && timedOutDriver.fcmToken) {
+            await sendPushNotification({
+              token: timedOutDriver.fcmToken,
+              data: {
+                type: "alert_cancelled",
+                alertId: alertId,
+                bookingId: bookingIdStr,
+                message: "Ride request timed out",
+              },
+            });
+          }
+        } catch (notifyErr) {
+          console.error("Error notifying timed-out driver:", notifyErr);
+        }
 
         // Move to next driver
         await this.moveToNextDriver(alert);
@@ -834,7 +894,7 @@ export class PriorityAlertService {
       const otherDrivers = alert.assignedDrivers.filter(
         (d: any) =>
           d.driverId.toString() !== acceptedDriverId &&
-          d.response === "pending",
+          (d.response === "pending" || d.response === "timeout"),
       );
 
       for (const assignedDriver of otherDrivers) {
