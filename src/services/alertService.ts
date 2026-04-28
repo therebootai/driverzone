@@ -45,7 +45,7 @@ export class PriorityAlertService {
 
       // Check if alert already exists
       let alert = await Alert.findOne({ booking_id: booking._id });
-      
+
       if (alert) {
         // If alert exists but not active, reset it to allow re-triggering
         if (alert.status !== "active") {
@@ -55,7 +55,7 @@ export class PriorityAlertService {
           alert.assignedDrivers = [] as any;
           alert.expiresAt = new Date(Date.now() + 5 * 60 * 1000);
           await alert.save();
-          this.processAlert(((alert as any)._id).toString());
+          this.processAlert((alert as any)._id.toString());
         }
         return alert;
       }
@@ -76,13 +76,17 @@ export class PriorityAlertService {
       await alert.save();
 
       // Start the alert process
-      this.processAlert(((alert as any)._id).toString());
+      this.processAlert((alert as any)._id.toString());
 
       // Notify admin of new active alert
-      socketService.emit(EVENTS.BOOKING_CREATED, { 
-        bookingId: booking._id, 
-        alertId: alert._id 
-      }, "admin");
+      socketService.emit(
+        EVENTS.BOOKING_CREATED,
+        {
+          bookingId: booking._id,
+          alertId: alert._id,
+        },
+        "admin",
+      );
 
       return alert;
     } catch (error) {
@@ -107,11 +111,14 @@ export class PriorityAlertService {
       // Find available drivers within radius
       // Exclude ALL drivers who have already been assigned to this alert.
       // This forces the system to move to the next nearby driver if the first one doesn't respond.
-      const excludedDriverIds = alert.assignedDrivers
-        .map((d: any) => d.driverId);
+      const excludedDriverIds = alert.assignedDrivers.map(
+        (d: any) => d.driverId,
+      );
 
       // Populate package_type to check for hills_tour
-      const populatedBooking = await Booking.findById(booking._id || booking).populate("package_type").lean();
+      const populatedBooking = await Booking.findById(booking._id || booking)
+        .populate("package_type")
+        .lean();
       const packageType = populatedBooking?.package_type as any;
       const bookingPackageType = packageType?.package_type;
 
@@ -181,7 +188,14 @@ export class PriorityAlertService {
 
       // Filter by vehicle category type
       // Only apply if the booking category exists in the driver enum
-      const driverCategories = ["SUV", "Hatchback", "Sedan", "Mini", "Van", "Others"];
+      const driverCategories = [
+        "SUV",
+        "Hatchback",
+        "Sedan",
+        "Mini",
+        "Van",
+        "Others",
+      ];
       const categoryLookup = bookingCategory
         ? bookingCategory.charAt(0).toUpperCase() + bookingCategory.slice(1)
         : null;
@@ -192,23 +206,39 @@ export class PriorityAlertService {
       // Filter by vehicle transmission type
       if (bookingTransmission) {
         const normalizedTransmission =
-          bookingTransmission.charAt(0).toUpperCase() + bookingTransmission.slice(1);
+          bookingTransmission.charAt(0).toUpperCase() +
+          bookingTransmission.slice(1);
         // "Automatic+Manual" drivers can handle either
-        filter.vehicle_transmission_type = { $in: [normalizedTransmission, "Automatic+Manual"] };
+        filter.vehicle_transmission_type = {
+          $in: [normalizedTransmission, "Automatic+Manual"],
+        };
       }
 
       // Diagnostic logging
-      const onlineDriversCount = await Driver.countDocuments({ isOnline: true });
-      const onlineAndVerifiedCount = await Driver.countDocuments({ isOnline: true, verified: true });
-      const onlineVerifiedWithTokenCount = await Driver.countDocuments({ isOnline: true, verified: true, fcmToken: { $exists: true, $ne: "" } });
-      console.log(`[AlertService] Diagnostic: Online: ${onlineDriversCount}, Verified: ${onlineAndVerifiedCount}, With Token: ${onlineVerifiedWithTokenCount}`);
+      const onlineDriversCount = await Driver.countDocuments({
+        isOnline: true,
+      });
+      const onlineAndVerifiedCount = await Driver.countDocuments({
+        isOnline: true,
+        verified: true,
+      });
+      const onlineVerifiedWithTokenCount = await Driver.countDocuments({
+        isOnline: true,
+        verified: true,
+        fcmToken: { $exists: true, $ne: "" },
+      });
+      console.log(
+        `[AlertService] Diagnostic: Online: ${onlineDriversCount}, Verified: ${onlineAndVerifiedCount}, With Token: ${onlineVerifiedWithTokenCount}`,
+      );
 
       // Use any to bypass "union type too complex" error
       const drivers = (await (Driver as any)
         .find(filter)
         .exec()) as DriverDocument[];
-      
-      console.log(`[AlertService] Found ${drivers.length} potential drivers after DB query (status/token filters)`);
+
+      console.log(
+        `[AlertService] Found ${drivers.length} potential drivers after DB query (status/token filters)`,
+      );
 
       // Calculate distances and filter by radius
       const driversWithDistance = drivers
@@ -247,7 +277,7 @@ export class PriorityAlertService {
       // Only send alert to the first driver initially
       if (drivers.length > 0) {
         const firstDriver = drivers[0];
-        
+
         // Add driver to assigned list
         alert.assignedDrivers.push({
           driverId: firstDriver._id,
@@ -270,27 +300,35 @@ export class PriorityAlertService {
 
         // Also emit via socket for instant delivery if driver is connected
         const socketBooking = alert.booking_id;
-        const socketPopulatedBooking = await Booking.findById(socketBooking._id || socketBooking).populate("package_type").lean();
+        const socketPopulatedBooking = await Booking.findById(
+          socketBooking._id || socketBooking,
+        )
+          .populate("package_type")
+          .lean();
         const socketPackageType = socketPopulatedBooking?.package_type as any;
 
-        socketService.emit(EVENTS.RIDE_REQUEST, {
-          type: EVENTS.RIDE_REQUEST,
-          alertId: (alert._id as any).toString(),
-          alertSlug: alert.alert_id,
-          bookingId: (socketBooking._id || socketBooking).toString(),
-          pickupAddress: socketBooking.pickupAddress,
-          dropAddress: socketBooking.dropAddress,
-          fare: socketBooking.fare,
-          vehicleType: socketBooking.vehicleType || "",
-          tripType: socketBooking.tripType || "",
-          serviceCategory: socketPackageType?.package_type || "",
-          paymentMethod: socketBooking.paymentMethod || "",
-          stopAddress: socketBooking.stopAddress || "",
-          customerName: socketBooking.customerDetails?.name || "Customer",
-          customerMobile: socketBooking.customerDetails?.mobile_number || "",
-          dropZoneName: socketPackageType?.drop_zone?.name || "",
-          expiresAt: alert.expiresAt,
-        }, `driver:${firstDriver._id}`);
+        socketService.emit(
+          EVENTS.RIDE_REQUEST,
+          {
+            type: EVENTS.RIDE_REQUEST,
+            alertId: (alert._id as any).toString(),
+            alertSlug: alert.alert_id,
+            bookingId: (socketBooking._id || socketBooking).toString(),
+            pickupAddress: socketBooking.pickupAddress,
+            dropAddress: socketBooking.dropAddress,
+            fare: socketBooking.fare,
+            vehicleType: socketBooking.vehicleType || "",
+            tripType: socketBooking.tripType || "",
+            serviceCategory: socketPackageType?.package_type || "",
+            paymentMethod: socketBooking.paymentMethod || "",
+            stopAddress: socketBooking.stopAddress || "",
+            customerName: socketBooking.customerDetails?.name || "Customer",
+            customerMobile: socketBooking.customerDetails?.mobile_number || "",
+            dropZoneName: socketPackageType?.drop_zone?.name || "",
+            expiresAt: alert.expiresAt,
+          },
+          `driver:${firstDriver._id}`,
+        );
 
         alert.currentDriverIndex = 0;
         await alert.save();
@@ -319,7 +357,9 @@ export class PriorityAlertService {
       }
 
       // Populate package_type to extract serviceCategory and dropZoneName
-      const populatedBooking = await Booking.findById(booking._id).populate("package_type").lean();
+      const populatedBooking = await Booking.findById(booking._id)
+        .populate("package_type")
+        .lean();
       const packageType = populatedBooking?.package_type as any;
 
       let dropZoneName = "";
@@ -353,7 +393,10 @@ export class PriorityAlertService {
           dropZoneName,
           distance: booking.distance?.toString() || "",
           tripDuration: booking.duration?.toString() || "",
-          duration: (alert.expiresAt.getTime() - Date.now() > 0 ? Math.floor((alert.expiresAt.getTime() - Date.now()) / 1000) : 30).toString(),
+          duration: (alert.expiresAt.getTime() - Date.now() > 0
+            ? Math.floor((alert.expiresAt.getTime() - Date.now()) / 1000)
+            : 30
+          ).toString(),
         },
         android: {
           priority: "high" as const,
@@ -371,19 +414,27 @@ export class PriorityAlertService {
 
       try {
         await sendPushNotification(payload);
-        console.log(`Notification sent to driver ${driver.driver_name} (${driver._id})`);
+        console.log(
+          `Notification sent to driver ${driver.driver_name} (${driver._id})`,
+        );
       } catch (error: any) {
         const errorMsg = error?.message || String(error);
         console.error(`FCM SEND ERROR for driver ${driver._id}:`, errorMsg);
-        
+
         // Handle stale/invalid tokens (404 Not Found in FCM v1)
-        if (errorMsg.includes("Requested entity was not found") || 
-            errorMsg.includes("registration-token-not-registered") ||
-            errorMsg.includes("404")) {
-          console.warn(`Cleaning up invalid FCM token for driver ${driver._id}`);
+        if (
+          errorMsg.includes("Requested entity was not found") ||
+          errorMsg.includes("registration-token-not-registered") ||
+          errorMsg.includes("404")
+        ) {
+          console.warn(
+            `Cleaning up invalid FCM token for driver ${driver._id}`,
+          );
           // Use the actual Drivers model for update
           const DriverModel = (await import("@/models/Drivers")).default;
-          await DriverModel.findByIdAndUpdate(driver._id, { $unset: { fcmToken: "" } });
+          await DriverModel.findByIdAndUpdate(driver._id, {
+            $unset: { fcmToken: "" },
+          });
         }
       }
     } catch (error) {
@@ -423,7 +474,7 @@ export class PriorityAlertService {
         return false;
       }
 
-      // @ts-ignore
+      // @ts-expect-error: Mongoose type mismatch
       const driver = await Driver.findById(driverId);
       if (!driver) {
         return false;
@@ -432,7 +483,8 @@ export class PriorityAlertService {
       // Update driver's alert status
       if (
         driver.activeAlerts &&
-        driver.activeAlerts.bookingId?.toString() === alert.booking_id?.toString()
+        driver.activeAlerts.bookingId?.toString() ===
+          alert.booking_id?.toString()
       ) {
         driver.activeAlerts.status =
           response === "accepted" ? "accepted" : "rejected";
@@ -506,42 +558,58 @@ export class PriorityAlertService {
       this.clearAllAlertTimeouts((alert._id as any).toString());
 
       // Notify relevant parties via socket
-      socketService.emit(EVENTS.BOOKING_ACCEPTED, {
-        type: EVENTS.BOOKING_ACCEPTED,
-        bookingId: alert.booking_id.toString(),
-        status: "assigned",
-        driverDetails: {
-          _id: driver._id,
-          driver_name: driver.driver_name,
-          mobile_number: driver.mobile_number,
-          vehicle_number: driver.vehicle_number,
-          currentLocation: driver.currentLocation,
-        }
-      }, `ride:${alert.booking_id}`);
+      socketService.emit(
+        EVENTS.BOOKING_ACCEPTED,
+        {
+          type: EVENTS.BOOKING_ACCEPTED,
+          bookingId: alert.booking_id.toString(),
+          status: "assigned",
+          driverDetails: {
+            _id: driver._id,
+            driver_name: driver.driver_name,
+            mobile_number: driver.mobile_number,
+            vehicle_number: driver.vehicle_number,
+            currentLocation: driver.currentLocation,
+          },
+        },
+        `ride:${alert.booking_id}`,
+      );
 
       // Notify admin
-      socketService.emit(EVENTS.BOOKING_UPDATED, {
-        type: EVENTS.BOOKING_UPDATED,
-        bookingId: alert.booking_id.toString(),
-        status: "assigned",
-      }, "admin");
+      socketService.emit(
+        EVENTS.BOOKING_UPDATED,
+        {
+          type: EVENTS.BOOKING_UPDATED,
+          bookingId: alert.booking_id.toString(),
+          status: "assigned",
+        },
+        "admin",
+      );
 
       // Notify other drivers that ride is taken
       await this.notifyOtherDrivers(alert, (driver._id as any).toString());
 
       // Notify customer and admin of acceptance
-      socketService.emit(EVENTS.BOOKING_ACCEPTED, {
-        bookingId: alert.booking_id,
-        driverId: driver._id,
-        driverName: driver.driver_name,
-        driverPhone: driver.mobile_number,
-        vehicleNumber: driver.vehicle_details?.vehicle_number
-      }, `ride:${alert.booking_id}`);
-      
-      socketService.emit(EVENTS.BOOKING_UPDATED, {
-        bookingId: alert.booking_id,
-        status: "assigned"
-      }, "admin");
+      socketService.emit(
+        EVENTS.BOOKING_ACCEPTED,
+        {
+          bookingId: alert.booking_id,
+          driverId: driver._id,
+          driverName: driver.driver_name,
+          driverPhone: driver.mobile_number,
+          vehicleNumber: driver.vehicle_details?.vehicle_number,
+        },
+        `ride:${alert.booking_id}`,
+      );
+
+      socketService.emit(
+        EVENTS.BOOKING_UPDATED,
+        {
+          bookingId: alert.booking_id,
+          status: "assigned",
+        },
+        "admin",
+      );
     } catch (error) {
       console.error("Error handling driver acceptance:", error);
     }
@@ -569,33 +637,42 @@ export class PriorityAlertService {
               status: "pending",
             };
             await driver.save();
-            
+
             // Send push notification to the next driver
             await this.sendDriverAlert(driver, alert);
 
             // Also emit via socket for instant delivery
             const nextBooking = alert.booking_id;
-            const retryPopulatedBooking = await Booking.findById(nextBooking._id || nextBooking).populate("package_type").lean();
+            const retryPopulatedBooking = await Booking.findById(
+              nextBooking._id || nextBooking,
+            )
+              .populate("package_type")
+              .lean();
             const retryPackageType = retryPopulatedBooking?.package_type as any;
 
-            socketService.emit(EVENTS.RIDE_REQUEST, {
-              type: EVENTS.RIDE_REQUEST,
-              alertId: (alert._id as any).toString(),
-              alertSlug: alert.alert_id,
-              bookingId: (nextBooking._id || nextBooking).toString(),
-              pickupAddress: nextBooking.pickupAddress,
-              dropAddress: nextBooking.dropAddress,
-              fare: nextBooking.fare,
-              vehicleType: nextBooking.vehicleType || "",
-              tripType: nextBooking.tripType || "",
-              serviceCategory: retryPackageType?.package_type || "",
-              paymentMethod: nextBooking.paymentMethod || "",
-              stopAddress: nextBooking.stopAddress || "",
-              customerName: nextBooking.customerDetails?.name || "Customer",
-              customerMobile: nextBooking.customerDetails?.mobile_number || "",
-              dropZoneName: retryPackageType?.drop_zone?.name || "",
-              expiresAt: alert.expiresAt,
-            }, `driver:${driver._id}`);
+            socketService.emit(
+              EVENTS.RIDE_REQUEST,
+              {
+                type: EVENTS.RIDE_REQUEST,
+                alertId: (alert._id as any).toString(),
+                alertSlug: alert.alert_id,
+                bookingId: (nextBooking._id || nextBooking).toString(),
+                pickupAddress: nextBooking.pickupAddress,
+                dropAddress: nextBooking.dropAddress,
+                fare: nextBooking.fare,
+                vehicleType: nextBooking.vehicleType || "",
+                tripType: nextBooking.tripType || "",
+                serviceCategory: retryPackageType?.package_type || "",
+                paymentMethod: nextBooking.paymentMethod || "",
+                stopAddress: nextBooking.stopAddress || "",
+                customerName: nextBooking.customerDetails?.name || "Customer",
+                customerMobile:
+                  nextBooking.customerDetails?.mobile_number || "",
+                dropZoneName: retryPackageType?.drop_zone?.name || "",
+                expiresAt: alert.expiresAt,
+              },
+              `driver:${driver._id}`,
+            );
 
             // Set timeout for next driver
             this.setResponseTimeout(
@@ -687,7 +764,9 @@ export class PriorityAlertService {
       // Update booking status - User requested to keep it pending
       const booking = await Booking.findById(alert.booking_id);
       if (booking && booking.status === "pending") {
-        console.log(`Alert ${alert._id} expired, booking ${booking._id} remains pending.`);
+        console.log(
+          `Alert ${alert._id} expired, booking ${booking._id} remains pending.`,
+        );
       }
 
       // Clear driver active alerts
@@ -708,13 +787,17 @@ export class PriorityAlertService {
         if (!driverIdStr) continue;
 
         try {
-          socketService.emit(EVENTS.ALERT_CANCELLED, {
-            type: EVENTS.ALERT_CANCELLED,
-            alertId: (alert._id as any).toString(),
-            alertSlug: alert.alert_id,
-            bookingId: bookingIdStr,
-            message: "Ride alert has expired",
-          }, `driver:${driverIdStr}`);
+          socketService.emit(
+            EVENTS.ALERT_CANCELLED,
+            {
+              type: EVENTS.ALERT_CANCELLED,
+              alertId: (alert._id as any).toString(),
+              alertSlug: alert.alert_id,
+              bookingId: bookingIdStr,
+              message: "Ride alert has expired",
+            },
+            `driver:${driverIdStr}`,
+          );
 
           const driver = await Driver.findById(assignedDriver.driverId);
           if (driver && driver.fcmToken) {
@@ -790,14 +873,20 @@ export class PriorityAlertService {
         // Notify the timed-out driver to dismiss their alert UI
         try {
           const booking = await Booking.findById(alert.booking_id);
-          const bookingIdStr = booking ? booking._id.toString() : alert.booking_id.toString();
-          socketService.emit(EVENTS.ALERT_CANCELLED, {
-            type: EVENTS.ALERT_CANCELLED,
-            alertId: alertId,
-            alertSlug: alert.alert_id,
-            bookingId: bookingIdStr,
-            message: "Ride request timed out",
-          }, `driver:${driverId}`);
+          const bookingIdStr = booking
+            ? (booking._id as any).toString()
+            : alert.booking_id.toString();
+          socketService.emit(
+            EVENTS.ALERT_CANCELLED,
+            {
+              type: EVENTS.ALERT_CANCELLED,
+              alertId: alertId,
+              alertSlug: alert.alert_id,
+              bookingId: bookingIdStr,
+              message: "Ride request timed out",
+            },
+            `driver:${driverId}`,
+          );
 
           const timedOutDriver = await Driver.findById(driverId);
           if (timedOutDriver && timedOutDriver.fcmToken) {
@@ -861,21 +950,25 @@ export class PriorityAlertService {
     try {
       const alert = await Alert.findOne({
         $or: [
-          { booking_id: mongoose.Types.ObjectId.isValid(bookingId) ? new mongoose.Types.ObjectId(bookingId) : null },
-          { booking_id: bookingId }
+          {
+            booking_id: mongoose.Types.ObjectId.isValid(bookingId)
+              ? new mongoose.Types.ObjectId(bookingId)
+              : null,
+          },
+          { booking_id: bookingId },
         ],
-        status: "active"
+        status: "active",
       });
-      
+
       if (!alert) {
         // Even if alert is not found, we should ensure any driver's activeAlerts are cleared for this booking
         await Driver.updateMany(
           { "activeAlerts.bookingId": bookingId },
-          { $set: { activeAlerts: null } }
+          { $set: { activeAlerts: null } },
         );
         return false;
       }
-      
+
       return this.cancelAlert((alert._id as any).toString());
     } catch (error) {
       console.error("Error cancelling alert by booking ID:", error);
@@ -904,21 +997,29 @@ export class PriorityAlertService {
           : alert.booking_id.toString();
 
         // Emit socket event for instant dismissal
-        socketService.emit(EVENTS.ALERT_CANCELLED, {
-          type: EVENTS.ALERT_CANCELLED,
-          alertId: (alert._id as any).toString(),
-          alertSlug: alert.alert_id,
-          bookingId: bookingIdStr,
-          message: "Ride has been accepted by another driver",
-        }, `driver:${driverIdStr}`);
+        socketService.emit(
+          EVENTS.ALERT_CANCELLED,
+          {
+            type: EVENTS.ALERT_CANCELLED,
+            alertId: (alert._id as any).toString(),
+            alertSlug: alert.alert_id,
+            bookingId: bookingIdStr,
+            message: "Ride has been accepted by another driver",
+          },
+          `driver:${driverIdStr}`,
+        );
 
         // Also emit booking:accepted so the client's existing listener handles it
-        socketService.emit(EVENTS.BOOKING_ACCEPTED, {
-          type: EVENTS.BOOKING_ACCEPTED,
-          bookingId: bookingIdStr,
-          driverId: acceptedDriverId,
-          message: "Ride taken by another driver",
-        }, `driver:${driverIdStr}`);
+        socketService.emit(
+          EVENTS.BOOKING_ACCEPTED,
+          {
+            type: EVENTS.BOOKING_ACCEPTED,
+            bookingId: bookingIdStr,
+            driverId: acceptedDriverId,
+            message: "Ride taken by another driver",
+          },
+          `driver:${driverIdStr}`,
+        );
 
         const driver = await Driver.findById(assignedDriver.driverId);
         if (driver && driver.fcmToken) {
@@ -965,22 +1066,34 @@ export class PriorityAlertService {
       await alert.save();
 
       // Notify relevant parties via socket
-      socketService.emit(EVENTS.BOOKING_CANCELLED, {
-        type: EVENTS.BOOKING_CANCELLED,
-        bookingId: alert.booking_id.toString(),
-        reason: "Cancelled by Admin/Service"
-      }, `ride:${alert.booking_id}`);
+      socketService.emit(
+        EVENTS.BOOKING_CANCELLED,
+        {
+          type: EVENTS.BOOKING_CANCELLED,
+          bookingId: alert.booking_id.toString(),
+          reason: "Cancelled by Admin/Service",
+        },
+        `ride:${alert.booking_id}`,
+      );
 
       // Also notify admin room
-      socketService.emit(EVENTS.BOOKING_CANCELLED, {
-        type: EVENTS.BOOKING_CANCELLED,
-        bookingId: alert.booking_id.toString(),
-        reason: "Cancelled by Admin/Service"
-      }, "admin");
-      
-      socketService.emit(EVENTS.ALERT_CANCELLED, {
-        alertId: alert.alert_id
-      }, "admin");
+      socketService.emit(
+        EVENTS.BOOKING_CANCELLED,
+        {
+          type: EVENTS.BOOKING_CANCELLED,
+          bookingId: alert.booking_id.toString(),
+          reason: "Cancelled by Admin/Service",
+        },
+        "admin",
+      );
+
+      socketService.emit(
+        EVENTS.ALERT_CANCELLED,
+        {
+          alertId: alert.alert_id,
+        },
+        "admin",
+      );
 
       // Notify all assigned drivers
       await this.notifyDriversOfCancellation(alert);
@@ -1017,16 +1130,19 @@ export class PriorityAlertService {
         // Notify via socket for instant dismissal
         if (assignedDriver.driverId) {
           const driverIdStr = assignedDriver.driverId.toString();
-          socketService.emit(EVENTS.ALERT_CANCELLED, {
-            type: EVENTS.ALERT_CANCELLED,
-            alertId: (alert._id as any).toString(),
-            alertSlug: alert.alert_id,
-            bookingId: alert.booking_id.toString(),
-            message: "Ride alert has been cancelled",
-          }, `driver:${driverIdStr}`);
+          socketService.emit(
+            EVENTS.ALERT_CANCELLED,
+            {
+              type: EVENTS.ALERT_CANCELLED,
+              alertId: (alert._id as any).toString(),
+              alertSlug: alert.alert_id,
+              bookingId: alert.booking_id.toString(),
+              message: "Ride alert has been cancelled",
+            },
+            `driver:${driverIdStr}`,
+          );
         }
 
-        //@ts-ignore
         const driver = await Driver.findById(assignedDriver.driverId);
         if (driver && driver.fcmToken) {
           await sendPushNotification({

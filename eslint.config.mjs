@@ -28,7 +28,6 @@ const eslintConfig = [
         "warn",
         {
           ignoreRestArgs: true,
-          ignoreFunctionTypes: true,
         },
       ],
     },
