@@ -272,11 +272,11 @@ export async function PUT(
 
     // Handle status updates specifically
     if (updateData.status) {
-      // Customers can only cancel pending or assigned bookings
+      // Customers can cancel pending, assigned, or accepted bookings
       if (updateData.status === "cancelled") {
-        if (!["pending", "assigned"].includes(existingBooking.status)) {
+        if (!["pending", "assigned", "accepted"].includes(existingBooking.status)) {
           errors.push(
-            'Booking can only be cancelled when in "pending" or "assigned" status',
+            'Booking can only be cancelled when in "pending", "assigned", or "accepted" status',
           );
         } else {
           filteredUpdateData.status = "cancelled";
@@ -469,10 +469,29 @@ export async function PUT(
         // Add actual refund logic here if needed
       }
 
-      // 3. Send additional notification to driver if assigned
-      if (updatedBooking?.driverDetails) {
-        // (Previously it was just logging, now it's handled by alertService.cancelAlertByBookingId 
-        // which calls notifyDriversOfCancellation, but we can do extra logic here if needed)
+      // 3. Clear driver's currentBooking and activeAlerts
+      if (updatedBooking?.driverDetails?._id) {
+        try {
+          await Driver.findByIdAndUpdate(updatedBooking.driverDetails._id, {
+            $set: { activeAlerts: null, currentBooking: null },
+          });
+        } catch (driverCleanupErr) {
+          console.error("Failed to clear driver currentBooking on cancellation:", driverCleanupErr);
+        }
+      }
+
+      // 4. Revert coupon usage so customer can reuse it
+      if (existingBooking.coupon) {
+        try {
+          const customerId = existingBooking.customerDetails?._id || existingBooking.customerDetails;
+          if (customerId) {
+            await Customer.findByIdAndUpdate(customerId, {
+              $pull: { used_coupons: existingBooking.coupon },
+            });
+          }
+        } catch (couponErr) {
+          console.error("Failed to revert coupon on cancellation:", couponErr);
+        }
       }
     }
 
