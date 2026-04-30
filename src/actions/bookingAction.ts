@@ -1306,11 +1306,18 @@ export async function updateBooking(
         }
 
         if (driverIdToCleanup) {
-          // If cancelled, send push notification to the driver before cleaning up currentBooking
-          // Note: alertService.cancelAlertByBookingId already handles notifying assigned drivers,
-          // but if the driver is already assigned to the BOOKING object, we might want extra notification
-          if (newStatus === "cancelled" && !updatedBooking.driverDetails) {
-            // Already handled by alertService
+          // If cancelled, emit BOOKING_CANCELLED to driver's socket room
+          if (newStatus === "cancelled") {
+            const driverIdStr = String(driverIdToCleanup);
+            socketService.emit(
+              SOCKET_EVENTS.BOOKING_CANCELLED,
+              {
+                type: SOCKET_EVENTS.BOOKING_CANCELLED,
+                bookingId: String(existingBooking._id),
+                reason: "Ride cancelled",
+              },
+              `driver:${driverIdStr}`,
+            );
           }
 
           // Cleanup driver's active state

@@ -960,7 +960,7 @@ export class PriorityAlertService {
           },
           { booking_id: bookingId },
         ],
-        status: "active",
+        status: { $in: ["active", "accepted"] },
       });
 
       if (!alert) {
