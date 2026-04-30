@@ -478,6 +478,13 @@ export class PriorityAlertService {
         return false;
       }
 
+      // Prevent timed-out drivers from accepting after their per-driver window expired
+      const driverResponse = alert.assignedDrivers[driverIndex].response;
+      if (response === "accepted" && driverResponse !== "pending") {
+        console.log(`Driver ${driverId} response is "${driverResponse}", cannot accept`);
+        return false;
+      }
+
       const driver = await Driver.findById(driverId);
       if (!driver) {
         return false;
@@ -873,39 +880,10 @@ export class PriorityAlertService {
 
         await alert.save();
 
-        // Notify the timed-out driver to dismiss their alert UI
-        try {
-          const booking = await Booking.findById(alert.booking_id);
-          const bookingIdStr = booking
-            ? (booking._id as any).toString()
-            : alert.booking_id?.toString();
-          socketService.emit(
-            EVENTS.ALERT_CANCELLED,
-            {
-              type: EVENTS.ALERT_CANCELLED,
-              alertId: alertId,
-              alertSlug: alert.alert_id,
-              bookingId: bookingIdStr,
-              message: "Ride request timed out",
-            },
-            `driver:${driverId}`,
-          );
-
-          const timedOutDriver = await Driver.findById(driverId);
-          if (timedOutDriver && timedOutDriver.fcmToken) {
-            await sendPushNotification({
-              token: timedOutDriver.fcmToken,
-              data: {
-                type: "alert_cancelled",
-                alertId: alertId,
-                bookingId: bookingIdStr,
-                message: "Ride request timed out",
-              },
-            });
-          }
-        } catch (notifyErr) {
-          console.error("Error notifying timed-out driver:", notifyErr);
-        }
+        // Do NOT send ALERT_CANCELLED to the timed-out driver — let the TripAlert
+        // stay visible until the backend's expiresAt fires or a genuine cancellation
+        // occurs. The driver can still accept/reject within the full alert window.
+        // The backend will reject stale acceptances via the guard in handleDriverResponse.
 
         // Move to next driver
         await this.moveToNextDriver(alert);
