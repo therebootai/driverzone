@@ -472,6 +472,19 @@ export async function PUT(
       // 3. Clear driver's currentBooking and activeAlerts
       if (updatedBooking?.driverDetails?._id) {
         try {
+          const driverIdStr = String(updatedBooking.driverDetails._id);
+
+          // Emit BOOKING_CANCELLED to driver's socket room so the app clears currentBooking
+          socketService.emit(
+            SOCKET_EVENTS.BOOKING_CANCELLED,
+            {
+              type: SOCKET_EVENTS.BOOKING_CANCELLED,
+              bookingId: String(existingBooking._id),
+              reason: "Ride cancelled by customer",
+            },
+            `driver:${driverIdStr}`,
+          );
+
           await Driver.findByIdAndUpdate(updatedBooking.driverDetails._id, {
             $set: { activeAlerts: null, currentBooking: null },
           });

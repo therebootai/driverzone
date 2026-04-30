@@ -48,11 +48,22 @@ export async function sendCustomerNotification({
       notification: { title, body },
       data,
     });
-  } catch (error) {
+  } catch (error: any) {
+    const errorMsg = error?.message || String(error);
     console.error(
       `Failed to send push notification to customer ${customerId}:`,
       error,
     );
+    // Clean up stale/invalid FCM tokens
+    if (
+      errorMsg.includes("Requested entity was not found") ||
+      errorMsg.includes("registration-token-not-registered")
+    ) {
+      const CustomerModel = (await import("@/models/Customers")).default;
+      await CustomerModel.findByIdAndUpdate(customerId, {
+        $unset: { fcmToken: "" },
+      });
+    }
   }
 }
 
