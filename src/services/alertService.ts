@@ -169,17 +169,21 @@ export class PriorityAlertService {
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
       await autoOfflineStaleDrivers();
 
-      // Find online drivers
+      // Find online drivers not already busy with another alert
       const filter: any = {
         isOnline: true,
         currentBooking: null,
         verified: true,
         status: true,
-        fcmToken: { $exists: true, $ne: "" }, // Ensure driver can receive push notifications
+        fcmToken: { $exists: true, $ne: "" },
         _id: { $nin: excludedDriverIds },
         "currentLocation.lat": { $exists: true },
         "currentLocation.lng": { $exists: true },
         "currentLocation.lastUpdated": { $gte: twoHoursAgo },
+        $or: [
+          { activeAlerts: null },
+          { activeAlerts: { $exists: false } },
+        ],
       };
 
       if (bookingPackageType) {
@@ -1131,6 +1135,20 @@ export class PriorityAlertService {
         // Notify via socket for instant dismissal
         if (assignedDriver.driverId) {
           const driverIdStr = assignedDriver.driverId?.toString();
+
+          // Emit BOOKING_CANCELLED to driver's room so handleRideCancelled fires
+          // and clears currentBooking (the ride:<bookingId> room emission never
+          // reaches the driver since they only join driver:<id>)
+          socketService.emit(
+            EVENTS.BOOKING_CANCELLED,
+            {
+              type: EVENTS.BOOKING_CANCELLED,
+              bookingId: alert.booking_id?.toString(),
+              reason: "Ride has been cancelled",
+            },
+            `driver:${driverIdStr}`,
+          );
+
           socketService.emit(
             EVENTS.ALERT_CANCELLED,
             {
