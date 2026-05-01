@@ -17,7 +17,8 @@ export async function createDriver(formData: FormData) {
     await connectToDatabase();
 
     const mobile_number = formData.get("mobile_number") as string;
-    const emergency_number = formData.get("emergency_number") as string | null;
+    const emergency_number_raw = formData.get("emergency_number") as string | null;
+    const emergency_number = emergency_number_raw === "" ? undefined : emergency_number_raw;
 
     // Server-side validation
     const driver_name = (formData.get("driver_name") as string)?.trim();
@@ -132,17 +133,6 @@ export async function createDriver(formData: FormData) {
       return { success: false, error: "This mobile number already exists" };
     }
 
-    if (emergency_number) {
-      const existingEmergencyMobileNumer = await Drivers.findOne({
-        emergency_number,
-      });
-      if (existingEmergencyMobileNumer) {
-        return {
-          success: false,
-          error: "This Emergency mobile number already exists",
-        };
-      }
-    }
 
     async function handleSingleFile(fieldName: string) {
       const file = formData.get(fieldName) as File | null;
@@ -392,18 +382,9 @@ export async function updateDriver(driverId: string, formData: FormData) {
       driver.mobile_number = mobile_number;
     }
 
-    if (emergency_number && emergency_number !== driver.emergency_number) {
-      const existingEmergency = await Drivers.findOne({
-        emergency_number,
-        _id: { $ne: driver._id },
-      });
-      if (existingEmergency) {
-        return {
-          success: false,
-          error: "This Emergency mobile number already exists",
-        };
-      }
-      driver.emergency_number = emergency_number;
+    const emergency_number_val = (emergency_number === "" || emergency_number === null) ? undefined : emergency_number;
+    if (emergency_number_val !== driver.emergency_number) {
+      driver.emergency_number = emergency_number_val;
     }
 
     // Helper to update simple text fields
@@ -411,7 +392,7 @@ export async function updateDriver(driverId: string, formData: FormData) {
       const value = formData.get(key);
       if (value !== null) {
         // @ts-expect-error dynamic field assignment on Mongoose doc
-        driver[field] = value === "" ? "" : value;
+        driver[field] = value === "" ? undefined : value;
       }
     };
 

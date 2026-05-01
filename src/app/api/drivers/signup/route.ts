@@ -12,7 +12,8 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const driver_name = formData.get("driver_name") as string;
     const mobile_number = formData.get("mobile_number") as string;
-    const emergency_number = formData.get("emergency_number") as string;
+    const emergency_number_raw = formData.get("emergency_number") as string;
+    const emergency_number = emergency_number_raw === "" ? undefined : emergency_number_raw;
     const address = formData.get("address") as string;
     const city_area = formData.get("city_area") as string;
     const landmark = formData.get("landmark") as string;

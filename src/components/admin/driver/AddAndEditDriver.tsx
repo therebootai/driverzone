@@ -82,14 +82,14 @@ const AddAndEditDriver = ({
       return;
     }
 
-    if (emergencyNumber && !/^\d{10}$/.test(emergencyNumber)) {
-      setMessage("Emergency number must be a valid 10-digit number");
+    if (!emergencyNumber || !/^\d{10}$/.test(emergencyNumber)) {
+      setMessage("Valid 10-digit emergency number is required");
       setIsSubmitting(false);
       return;
     }
 
-    if (pinCode && !/^\d{6}$/.test(pinCode)) {
-      setMessage("PIN code must be 6 digits");
+    if (!pinCode || !/^\d{6}$/.test(pinCode)) {
+      setMessage("Valid 6-digit PIN code is required");
       setIsSubmitting(false);
       return;
     }
@@ -225,6 +225,7 @@ const AddAndEditDriver = ({
               type="tel"
               required
               pattern="\d{10}"
+              maxLength={10}
               defaultValue={selectedDriver?.mobile_number || ""}
               className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="Enter 10-digit mobile number"
@@ -234,14 +235,17 @@ const AddAndEditDriver = ({
           {/* Emergency No. */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-gray-700">
-              Emergency No.
+              Emergency No.<span className="text-red-500">*</span>
             </label>
             <input
               name="emergency_number"
               type="tel"
+              required
+              pattern="\d{10}"
+              maxLength={10}
               defaultValue={selectedDriver?.emergency_number || ""}
               className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Enter emergency number"
+              placeholder="Enter 10-digit emergency number"
             />
           </div>
 
@@ -288,14 +292,17 @@ const AddAndEditDriver = ({
           {/* Pin Code */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-gray-700">
-              Pin Code
+              Pin Code<span className="text-red-500">*</span>
             </label>
             <input
               name="pin_code"
               type="text"
+              required
+              pattern="\d{6}"
+              maxLength={6}
               defaultValue={selectedDriver?.pin_code || ""}
               className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="PIN code"
+              placeholder="6-digit PIN code"
             />
           </div>
 
