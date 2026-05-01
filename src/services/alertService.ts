@@ -172,7 +172,6 @@ export class PriorityAlertService {
       // Find online drivers not already busy with another alert
       const filter: any = {
         isOnline: true,
-        currentBooking: null,
         verified: true,
         status: true,
         fcmToken: { $exists: true, $ne: "" },
@@ -181,8 +180,16 @@ export class PriorityAlertService {
         "currentLocation.lng": { $exists: true },
         "currentLocation.lastUpdated": { $gte: twoHoursAgo },
         $or: [
-          { activeAlerts: null },
-          { activeAlerts: { $exists: false } },
+          { currentBooking: null },
+          { currentBooking: { $exists: false } },
+        ],
+        $and: [
+          {
+            $or: [
+              { activeAlerts: null },
+              { activeAlerts: { $exists: false } },
+            ],
+          },
         ],
       };
 

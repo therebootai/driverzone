@@ -62,12 +62,111 @@ const AddAndEditDriver = ({
     setIsSubmitting(true);
     setMessage(null);
 
+    // Validation
+    const driverName = (formData.get("driver_name") as string)?.trim();
+    const mobileNumber = (formData.get("mobile_number") as string)?.trim();
+    const emergencyNumber = (formData.get("emergency_number") as string)?.trim();
+    const licenceNo = (formData.get("licence_no") as string)?.trim();
+    const licenceExpiry = formData.get("licence_expiry_date") as string;
+    const pinCode = (formData.get("pin_code") as string)?.trim();
+
+    if (!driverName || driverName.length < 2) {
+      setMessage("Driver name is required (min 2 characters)");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!mobileNumber || !/^\d{10}$/.test(mobileNumber)) {
+      setMessage("Valid 10-digit mobile number is required");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (emergencyNumber && !/^\d{10}$/.test(emergencyNumber)) {
+      setMessage("Emergency number must be a valid 10-digit number");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (pinCode && !/^\d{6}$/.test(pinCode)) {
+      setMessage("PIN code must be 6 digits");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!licenceNo) {
+      setMessage("Licence number is required");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!licenceExpiry) {
+      setMessage("Licence expiry date is required");
+      setIsSubmitting(false);
+      return;
+    }
+
+    const licenceExpiryDate = new Date(licenceExpiry);
+    if (isNaN(licenceExpiryDate.getTime()) || licenceExpiryDate <= new Date()) {
+      setMessage("Licence expiry date must be a valid future date");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Validate identity documents
+    let idx = 0;
+    while (formData.has(`identity_id_type_${idx}`) || formData.has(`identity_id_number_${idx}`)) {
+      const idType = (formData.get(`identity_id_type_${idx}`) as string)?.trim();
+      const idNumber = (formData.get(`identity_id_number_${idx}`) as string)?.trim();
+      if (idType && !idNumber) {
+        setMessage(`ID number is required for identity document ${idx + 1}`);
+        setIsSubmitting(false);
+        return;
+      }
+      if (idNumber && !idType) {
+        setMessage(`ID type is required for identity document ${idx + 1}`);
+        setIsSubmitting(false);
+        return;
+      }
+      idx++;
+    }
+
+    // Validate vehicle details when employment type is Driver+Car
+    if (employmentType === "Driver+Car") {
+      const carName = (formData.get("car_name") as string)?.trim();
+      const carNumber = (formData.get("car_number") as string)?.trim();
+      if (!carName) {
+        setMessage("Car name is required for Driver+Car employment type");
+        setIsSubmitting(false);
+        return;
+      }
+      if (!carNumber) {
+        setMessage("Car number is required for Driver+Car employment type");
+        setIsSubmitting(false);
+        return;
+      }
+      // Validate insurance/road_tax/pollution expiry dates if provided
+      for (const [label, field] of [
+        ["Insurance", "insurance_expiry"],
+        ["Road Tax", "road_tax_expiry"],
+        ["Pollution", "pollution_expiry"],
+      ] as const) {
+        const val = formData.get(field) as string;
+        if (val) {
+          const d = new Date(val);
+          if (isNaN(d.getTime())) {
+            setMessage(`${label} expiry date is invalid`);
+            setIsSubmitting(false);
+            return;
+          }
+        }
+      }
+    }
+
     let res;
     if (selectedDriver) {
-      // 🔁 UPDATE
       res = await updateDriver(selectedDriver.driver_id, formData);
     } else {
-      // ➕ CREATE
       res = await createDriver(formData);
     }
 
@@ -125,9 +224,10 @@ const AddAndEditDriver = ({
               name="mobile_number"
               type="tel"
               required
+              pattern="\d{10}"
               defaultValue={selectedDriver?.mobile_number || ""}
               className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Enter mobile number"
+              placeholder="Enter 10-digit mobile number"
             />
           </div>
 
@@ -334,11 +434,12 @@ const AddAndEditDriver = ({
           {/* Licence No */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-gray-700">
-              Licence No
+              Licence No<span className="text-red-500">*</span>
             </label>
             <input
               name="licence_no"
               type="text"
+              required
               defaultValue={selectedDriver?.licence_no || ""}
               className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="Enter licence number"
@@ -348,11 +449,12 @@ const AddAndEditDriver = ({
           {/* Licence Expiry Date */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-gray-700">
-              Licence Expiry Date
+              Licence Expiry Date<span className="text-red-500">*</span>
             </label>
             <input
               name="licence_expiry_date"
               type="date"
+              required
               defaultValue={
                 selectedDriver?.licence_expiry_date
                   ? new Date(selectedDriver.licence_expiry_date)
