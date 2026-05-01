@@ -65,8 +65,8 @@ export default function AddNewZone({ onClose }: { onClose?: () => void }) {
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          searchQuery
-        )}`
+          searchQuery,
+        )}`,
       );
       if (!response.ok) throw new Error("Search failed");
       const data = await response.json();
@@ -100,7 +100,7 @@ export default function AddNewZone({ onClose }: { onClose?: () => void }) {
 
       if (!coordinates || coordinates.length < 3) {
         toast.error(
-          "A zone must have at least 3 coordinates to form a polygon"
+          "A zone must have at least 3 coordinates to form a polygon",
         );
         return;
       }
@@ -139,8 +139,10 @@ export default function AddNewZone({ onClose }: { onClose?: () => void }) {
       />
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 relative gap-4">
-          <h2 className="text-xl font-semibold text-gray-900 whitespace-nowrap">Zone Map</h2>
-          
+          <h2 className="text-xl font-semibold text-gray-900 whitespace-nowrap">
+            Zone Map
+          </h2>
+
           {/* Location Search Box */}
           <div className="flex-1 max-w-md w-full relative z-[1000]">
             <div className="flex gap-2">
@@ -166,18 +168,21 @@ export default function AddNewZone({ onClose }: { onClose?: () => void }) {
                 {isSearching ? "Searching..." : "Search"}
               </button>
             </div>
-            
+
             {/* Search Results Dropdown */}
             {searchResults.length > 0 && (
-              <ul className="absolute w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1 left-0 top-full" style={{ zIndex: 1000 }}>
+              <ul
+                className="absolute w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1 left-0 top-full"
+                style={{ zIndex: 1000 }}
+              >
                 {searchResults.map((result: any) => (
                   <li
                     key={result.place_id}
                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-700 border-b last:border-b-0"
                     onClick={() => {
-                      setCenterCoordinates({ 
-                        lat: Number(result.lat), 
-                        lng: Number(result.lon) 
+                      setCenterCoordinates({
+                        lat: Number(result.lat),
+                        lng: Number(result.lon),
                       });
                       setSearchResults([]);
                       setSearchQuery(result.display_name);
@@ -234,6 +239,7 @@ export default function AddNewZone({ onClose }: { onClose?: () => void }) {
       </div>
       <button
         type="submit"
+        disabled={isPending}
         className="text-site-black bg-linear-90 from-site-saffron to-site-skin py-2 px-6 self-start rounded font-medium"
       >
         {isPending ? "Wait" : "Submit"}
