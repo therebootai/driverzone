@@ -19,6 +19,34 @@ export async function createDriver(formData: FormData) {
     const mobile_number = formData.get("mobile_number") as string;
     const emergency_number = formData.get("emergency_number") as string | null;
 
+    // Server-side validation
+    const driver_name = (formData.get("driver_name") as string)?.trim();
+    if (!driver_name || driver_name.length < 2) {
+      return { success: false, error: "Driver name is required (min 2 characters)" };
+    }
+    if (!mobile_number || !/^\d{10}$/.test(mobile_number)) {
+      return { success: false, error: "Valid 10-digit mobile number is required" };
+    }
+    if (emergency_number && !/^\d{10}$/.test(emergency_number)) {
+      return { success: false, error: "Emergency number must be a valid 10-digit number" };
+    }
+    const pin_code_val = formData.get("pin_code") as string;
+    if (pin_code_val && pin_code_val.trim() && !/^\d{6}$/.test(pin_code_val.trim())) {
+      return { success: false, error: "PIN code must be 6 digits" };
+    }
+    const licence_no = (formData.get("licence_no") as string)?.trim();
+    if (!licence_no) {
+      return { success: false, error: "Licence number is required" };
+    }
+    const licence_expiry_raw = formData.get("licence_expiry_date") as string;
+    if (!licence_expiry_raw) {
+      return { success: false, error: "Licence expiry date is required" };
+    }
+    const licence_expiry_check = new Date(licence_expiry_raw);
+    if (isNaN(licence_expiry_check.getTime()) || licence_expiry_check <= new Date()) {
+      return { success: false, error: "Licence expiry date must be a valid future date" };
+    }
+
     const driverData: any = {
       driver_name: formData.get("driver_name"),
       mobile_number,
