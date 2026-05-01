@@ -188,6 +188,8 @@ export class PriorityAlertService {
             $or: [
               { activeAlerts: null },
               { activeAlerts: { $exists: false } },
+              { "activeAlerts.bookingId": { $exists: false } },
+              { "activeAlerts.bookingId": null },
             ],
           },
         ],
@@ -492,6 +494,7 @@ export class PriorityAlertService {
         return false;
       }
 
+      
       const driver = await Driver.findById(driverId);
       if (!driver) {
         return false;
@@ -503,8 +506,7 @@ export class PriorityAlertService {
         driver.activeAlerts.bookingId?.toString() ===
           alert.booking_id?.toString()
       ) {
-        driver.activeAlerts.status =
-          response === "accepted" ? "accepted" : "rejected";
+        driver.activeAlerts = null;
 
         if (response === "rejected") {
           driver.rejectedAlerts.push({
@@ -560,13 +562,7 @@ export class PriorityAlertService {
 
       // Update driver's current booking
       driver.currentBooking = alert.booking_id;
-      // Update driver's alert status to accepted
-      if (
-        driver.activeAlerts &&
-        driver.activeAlerts.bookingId?.toString() === alert.booking_id?.toString()
-      ) {
-        driver.activeAlerts.status = "accepted";
-      }
+      driver.activeAlerts = null;
       await driver.save();
 
       await alert.save();

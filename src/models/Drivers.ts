@@ -86,7 +86,14 @@ export interface DriverDocument extends Document {
   vehicle_category_type?: string[];
 
   employment_type?: "Driver" | "Driver+Car" | "Other";
-  speciality?: Array<"in_city" | "mini_outstation" | "outstation" | "hills_tour" | "long_tour" | "drop_pickup_service">;
+  speciality?: Array<
+    | "in_city"
+    | "mini_outstation"
+    | "outstation"
+    | "hills_tour"
+    | "long_tour"
+    | "drop_pickup_service"
+  >;
   remarks?: string;
 
   vehicle_details?: VehicleDetails;
@@ -255,7 +262,7 @@ const driverSchema = new Schema<DriverDocument>(
     vehicle_category_type: {
       type: [String],
       enum: ["SUV", "Hatchback", "Sedan", "Mini", "Van", "Others"],
-      default: [],
+      default: ["SUV", "Hatchback", "Sedan"],
     },
     remarks: { type: String },
 
@@ -314,7 +321,6 @@ const driverSchema = new Schema<DriverDocument>(
       status: {
         type: String,
         enum: ["pending", "accepted", "rejected", "expired"],
-        default: "pending",
       },
     },
 
