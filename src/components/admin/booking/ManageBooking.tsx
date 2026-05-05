@@ -178,6 +178,7 @@ const ManageBooking = ({
         limit: 20,
         searchTerm: search,
         status: true, // Only active drivers
+        verified: true, // Only verified drivers
       });
 
       if (result.success) {
@@ -1020,11 +1021,10 @@ const ManageBooking = ({
                 >
                   <option value="">Select a driver</option>
                   {allDrivers
-                    .filter((driver) => driver.status)
+                    .filter((driver) => driver.status && driver.verified)
                     .map((driver) => (
                       <option key={driver._id} value={driver._id}>
-                        {driver.driver_name} (
-                        {driver.vehicle_number || "No Vehicle"})
+                        {driver.driver_name} ({driver.vehicle_number || "No Vehicle"}) - Verified
                       </option>
                     ))}
                 </select>

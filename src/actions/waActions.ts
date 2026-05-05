@@ -10,6 +10,10 @@ export async function SEND_BY_WHATSAPP({
   mobile: string;
   message: string;
 }) {
+  if (process.env.NODE_ENV !== "production") {
+    console.log("WhatsApp send skipped (Development Mode):", { mobile, message });
+    return { success: true, message: "WhatsApp send skipped in development" };
+  }
   try {
     const formattedMobile = formatMobile(mobile);
 

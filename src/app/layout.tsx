@@ -62,6 +62,8 @@ export const metadata: Metadata = {
     "DriverZone is your trusted partner for professional Driver Hire in Siliguri and Car Driver Hire in Siliguri. We specialize in providing skilled, punctual, and verified drivers for local commutes, outstation trips, and long-distance journeys. Our mission is to make every ride safe, comfortable, and hassle-free, ensuring peace of mind for all our customers.",
 };
 
+import FloatingContactButtons from "@/components/global/FloatingContactButtons";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -69,7 +71,7 @@ export default async function RootLayout({
 }>) {
   await ensureModelsRegistered();
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${pp_neue.variable} ${spline_sans.variable} antialiased`}
       >
@@ -85,7 +87,10 @@ export default async function RootLayout({
           shadow="0 0 10px #1ebc00,0 0 5px #1ebc00"
         />
 
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+          <FloatingContactButtons />
+        </AuthProvider>
         <Toaster position="top-center" reverseOrder={false} gutter={8} />
       </body>
     </html>

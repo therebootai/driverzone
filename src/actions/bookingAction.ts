@@ -10,7 +10,6 @@ import { generateCustomId } from "@/utils/generateCustomId";
 import { isValidObjectId, Types } from "mongoose";
 import { createOTP, resendOTP, verifyOTP } from "./OTPActions";
 import OTP from "@/models/OTP";
-import { SEND_BY_WHATSAPP } from "./waActions";
 import { sendPushNotification } from "./notificationAction";
 import Notification from "@/models/Notification";
 
@@ -234,18 +233,15 @@ export async function createBooking(data: any): Promise<BookingDocument> {
       coupon: isValidObjectId(data.coupon) ? data.coupon : null,
     });
 
-    // Create OTP record in OTP model for the customer
+    // Create OTP record in OTP model for the customer and send via WhatsApp
     const customer = await Customer.findById(data.customerDetails);
     if (customer && customer.mobile_number) {
-      const farFuture = new Date();
-      farFuture.setFullYear(farFuture.getFullYear() + 99); // "No expiry"
-
-      await OTP.create({
-        phone: customer.mobile_number,
-        otp: newBooking.otp,
-        type: "booking-arrival",
-        expiresAt: farFuture,
-      });
+      await createOTP(
+        null,
+        customer.mobile_number,
+        "booking-arrival",
+        newBooking.otp
+      );
     }
 
     // Automatically trigger Alert system for driver matching
@@ -267,7 +263,7 @@ export async function createBooking(data: any): Promise<BookingDocument> {
       dropZoneName,
     }, "admin");
 
-    return newBooking;
+    return JSON.parse(JSON.stringify(newBooking));
   } catch (error: any) {
     console.error("CREATE BOOKING ERROR:", error);
     throw new Error(error.message || "Failed to create booking");
@@ -744,13 +740,28 @@ export async function updateBooking(
 
     // Prevent editing completed or cancelled bookings
     if (["completed", "cancelled"].includes(existingBooking.status)) {
-      // Allow only ratings updates if the booking is already completed/cancelled
+      // Allow only ratings updates and payment collection if the booking is already completed/cancelled
       const updateKeys = Object.keys(updateData);
-      const isRatingUpdate = updateKeys.every((key) =>
-        ["customerRating", "driverRating"].includes(key),
+      
+      const allowedKeysPostCompletion = [
+        "customerRating", 
+        "driverRating", 
+        "customerTags", 
+        "updateCustomerRating", 
+        "updateDriverRating",
+        "paymentStatus",
+        "paid_amount",
+        "paymentMethod"
+      ];
+
+      const isAllowedUpdate = updateKeys.every((key) =>
+        allowedKeysPostCompletion.includes(key)
       );
 
-      if (!isRatingUpdate) {
+      // Additional check for paymentStatus
+      const isIncorrectPaymentUpdate = updateData.paymentStatus && updateData.paymentStatus !== "paid";
+
+      if (!isAllowedUpdate || isIncorrectPaymentUpdate) {
         return {
           success: false,
           error: `Cannot edit a booking that is already ${existingBooking.status}`,
@@ -803,6 +814,16 @@ export async function updateBooking(
 
       if (newStatus === "completed" && existingBooking.status !== "started") {
         validationErrors.push("Cannot complete trip until it has started");
+      }
+
+      // Enforce OTP for arrival status
+      if (newStatus === "arrived" && !options.isAdminAssignment && !options.forceStatusChange) {
+        if (!updateData.otp) {
+          validationErrors.push("OTP is required to mark as arrived");
+        } else {
+          // Force OTP validation logic below
+          options.validateOtp = true;
+        }
       }
     }
 
@@ -1434,10 +1455,10 @@ export async function sendBookingArrivalOTP(bookingId: string) {
     }
 
     // Check if booking is in correct state for arrival
-    if (booking.status !== "accepted") {
+    if (!["accepted", "assigned", "arrived"].includes(booking.status)) {
       return {
         success: false,
-        error: `Cannot send arrival OTP. Booking status is ${booking.status}. Expected: accepted`,
+        error: `Cannot send arrival OTP. Booking status is ${booking.status}. Expected: accepted, assigned, or arrived`,
       };
     }
 
@@ -1463,12 +1484,9 @@ export async function sendBookingArrivalOTP(bookingId: string) {
       otp_sent_at: new Date(),
     });
 
-    console.log(`Arrival OTP ${otp} generated for booking ${bookingId}`);
-
-    await SEND_BY_WHATSAPP({
-      mobile: customerPhone,
-      message: otp,
-    });
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`Arrival OTP ${otp} generated for booking ${bookingId}`);
+    }
 
     return {
       success: true,
@@ -1586,10 +1604,6 @@ export async function resendBookingArrivalOTP(bookingId: string) {
         otp_sent_at: new Date(),
       });
 
-      await SEND_BY_WHATSAPP({
-        mobile: customerPhone,
-        message: resendResult.data ?? "",
-      });
       return {
         success: true,
         message: "OTP resent successfully",
