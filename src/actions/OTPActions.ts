@@ -2,6 +2,7 @@
 
 import connectToDatabase, { ensureModelsRegistered } from "@/db/connection";
 import OTP from "@/models/OTP";
+import { SEND_BY_WHATSAPP } from "./waActions";
 
 await ensureModelsRegistered();
 
@@ -10,15 +11,6 @@ function generateOTP(length = 6) {
   let otp = "";
   for (let i = 0; i < length; i++) {
     otp += digits[Math.floor(Math.random() * 10)];
-  }
-  return otp;
-}
-
-function generateAlphaNumericOTP(length = 8) {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let otp = "";
-  for (let i = 0; i < length; i++) {
-    otp += chars[Math.floor(Math.random() * chars.length)];
   }
   return otp;
 }
@@ -33,6 +25,7 @@ async function createOTP(
     | "verify-account"
     | "booking-arrival"
     | "update-profile" = "login",
+  predefinedOtp?: string,
 ) {
   await connectToDatabase();
   // Clean old OTPs for this user
@@ -41,7 +34,7 @@ async function createOTP(
     verified: false,
   });
 
-  const otp = generateOTP();
+  const otp = predefinedOtp || generateOTP();
   const expiresAt = new Date();
   expiresAt.setMinutes(
     expiresAt.getMinutes() + parseInt(process.env.OTP_EXPIRY_MINUTES || "10"),
@@ -56,6 +49,23 @@ async function createOTP(
   });
 
   await otpRecord.save();
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log("Generated OTP:", otp);
+  }
+
+  // Send OTP if phone is provided
+  if (phone) {
+    try {
+      await SEND_BY_WHATSAPP({
+        mobile: phone,
+        message: otp, // Assuming the template handles the variable correctly
+      });
+    } catch (e) {
+      console.error("Failed to send WhatsApp OTP:", e);
+    }
+  }
+
   return otp;
 }
 
@@ -157,6 +167,10 @@ async function resendOTP(
 
   // Generate new OTP
   const newOtp = await createOTP(email, phone, type);
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log("Generated resend OTP:", newOtp);
+  }
 
   // Send OTP
   // if (email) {

@@ -81,7 +81,7 @@ export default function AdminHeader() {
     <nav className="bg-white border-b border-gray-400 flex flex-row justify-between items-center px-4 xl:px-8 gap-8 py-2 lg:py-4">
       <Link href={"/admin/dashboard"}>
         <Image
-          src={"/logo.png"}
+          src={"/logo-black.png"}
           alt="logo"
           width={225}
           height={60}

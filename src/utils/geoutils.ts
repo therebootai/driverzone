@@ -1,53 +1,71 @@
+import * as turf from "@turf/turf";
 
-// Calculate center point of polygon
-function calculateCenter(coordinates: number[][]) {
-  let lngSum = 0;
-  let latSum = 0;
+/**
+ * Calculates the center of a polygon.
+ * @param coordinates [[longitude, latitude], ...]
+ */
+export const calculateCenter = (coordinates: number[][]): [number, number] => {
+  try {
+    // Ensure the polygon is closed for Turf
+    const coords = [...coordinates];
+    if (coords.length > 0) {
+      const first = coords[0];
+      const last = coords[coords.length - 1];
+      if (first[0] !== last[0] || first[1] !== last[1]) {
+        coords.push(first);
+      }
+    }
+    const polygon = turf.polygon([coords]);
+    const center = turf.centerOfMass(polygon);
+    return center.geometry.coordinates as [number, number];
+  } catch (error) {
+    console.error("Error calculating center:", error);
+    return [0, 0];
+  }
+};
 
-  coordinates.forEach((coord) => {
-    lngSum += coord[0];
-    latSum += coord[1];
-  });
+/**
+ * Calculates the area of a polygon in square meters.
+ * @param coordinates [[longitude, latitude], ...]
+ */
+export const calculateArea = (coordinates: number[][]): number => {
+  try {
+    const coords = [...coordinates];
+    if (coords.length > 0) {
+      const first = coords[0];
+      const last = coords[coords.length - 1];
+      if (first[0] !== last[0] || first[1] !== last[1]) {
+        coords.push(first);
+      }
+    }
+    const polygon = turf.polygon([coords]);
+    return turf.area(polygon);
+  } catch (error) {
+    console.error("Error calculating area:", error);
+    return 0;
+  }
+};
 
-  return [lngSum / coordinates.length, latSum / coordinates.length];
-}
+/**
+ * Ray-casting algorithm to check if a point is inside a polygon.
+ * @param point [latitude, longitude]
+ * @param polygon [[longitude, latitude], ...] - MongoDB GeoJSON format
+ */
+export function isPointInPolygon(point: [number, number], polygon: number[][]) {
+  const x = point[0]; // latitude
+  const y = point[1]; // longitude
 
-// Check if point is inside polygon using ray casting algorithm
-function isPointInPolygon(point: number[], polygon: number[][]) {
-  const [x, y] = point;
   let inside = false;
-
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const [xi, yi] = polygon[i];
-    const [xj, yj] = polygon[j];
+    const xi = polygon[i][1]; // latitude
+    const yi = polygon[i][0]; // longitude
+    const xj = polygon[j][1]; // latitude
+    const yj = polygon[j][0]; // longitude
 
-    const intersect =
-      yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-
+    const intersect = ((yi > y) !== (yj > y)) &&
+        (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
     if (intersect) inside = !inside;
   }
 
   return inside;
 }
-
-// Calculate area of polygon (in square meters - approximate)
-function calculateArea(coordinates: number[][]) {
-  let area = 0;
-  const earthRadius = 6371000; // meters
-
-  if (coordinates.length < 3) return 0;
-
-  for (let i = 0; i < coordinates.length; i++) {
-    const [lng1, lat1] = coordinates[i];
-    const [lng2, lat2] = coordinates[(i + 1) % coordinates.length];
-
-    area +=
-      (lng2 - lng1) *
-      (2 + Math.sin((lat1 * Math.PI) / 180) + Math.sin((lat2 * Math.PI) / 180));
-  }
-
-  area = Math.abs((area * earthRadius * earthRadius) / 2);
-  return area;
-}
-
-export { calculateCenter, isPointInPolygon, calculateArea };

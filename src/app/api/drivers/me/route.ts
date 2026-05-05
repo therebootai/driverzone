@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     // Find active booking
     const currentBooking = await Booking.findOne({
       driverDetails: user._id,
-      status: { $in: ["accepted", "arrived", "started"] }
+      status: { $in: ["assigned", "accepted", "arrived", "started"] }
     }).populate("customerDetails package_type coupon").lean();
 
     const userWithStats = {
@@ -270,7 +270,7 @@ export async function PUT(request: NextRequest) {
     // Find active booking for updated user
     const currentBooking = await Booking.findOne({
       driverDetails: updatedUser._id,
-      status: { $in: ["accepted", "arrived", "started"] }
+      status: { $in: ["assigned", "accepted", "arrived", "started"] }
     }).populate("customerDetails package_type coupon").lean();
 
     // Emit real-time location event if present

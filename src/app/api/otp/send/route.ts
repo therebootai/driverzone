@@ -1,7 +1,6 @@
 "use server";
 
 import { createOTP } from "@/actions/OTPActions";
-import { SEND_BY_WHATSAPP } from "@/actions/waActions";
 import { ensureModelsRegistered } from "@/db/connection";
 import Driver from "@/models/Drivers";
 import Customer from "@/models/Customers";
@@ -32,8 +31,6 @@ export async function POST(request: NextRequest) {
     }
 
     const otp = await createOTP(data.email, data.phone, data.type);
-    console.log(otp);
-    await SEND_BY_WHATSAPP({ mobile: data.phone, message: otp });
     return NextResponse.json(
       { message: "OTP sent successfully", success: true },
       { status: 200 },

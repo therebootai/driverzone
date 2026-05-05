@@ -2,11 +2,11 @@ import Image from "next/image";
 
 export default function JoinDriverZone() {
   return (
-    <div className="rounded-t-[100px] bg-linear-0 from-white/0 to-site-neongreen">
+    <div className="rounded-t-[100px] bg-linear-0 from-white/0 to-site-lime">
       <div className="relative xxl:max-w-8xl mx-auto xlg:max-w-7xl lg:max-w-4xl lg:px-0 px-4 py-5 flex items-center justify-between flex-col lg:flex-row">
         <div className="flex flex-col gap-7">
           <h2 className="text-site-black font-semibold lg:text-4xl text-3xl">
-            Join Driver Zone
+            Hire a Driver
           </h2>
           <h1 className="text-site-black lg:text-6xl text-4xl">Get the App</h1>
           <p className="text-site-black lg">

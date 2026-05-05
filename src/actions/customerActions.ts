@@ -241,3 +241,32 @@ export async function deleteCustomer(customerId: string) {
     return { success: false, error: error.message || "Unknown error" };
   }
 }
+
+export async function GET_OR_CREATE_CUSTOMER_BY_PHONE(data: { name: string; mobile_number: string }) {
+  try {
+    await connectToDatabase();
+    let customer = await Customers.findOne({ mobile_number: data.mobile_number });
+    
+    if (!customer) {
+      const customer_id = await generateCustomId(Customers, "customer_id", "customerId");
+      customer = new Customers({
+        ...data,
+        customer_id,
+        reg_date: new Date().toISOString(),
+        status: true
+      });
+      await customer.save();
+    } else {
+      // Update name if it was missing or different
+      if (!customer.name || customer.name === "User") {
+        customer.name = data.name;
+        await customer.save();
+      }
+    }
+    
+    return { success: true, data: JSON.parse(JSON.stringify(customer)) };
+  } catch (error: any) {
+    console.error("Error in GET_OR_CREATE_CUSTOMER_BY_PHONE:", error);
+    return { success: false, message: error.message || "Failed to identify customer" };
+  }
+}
