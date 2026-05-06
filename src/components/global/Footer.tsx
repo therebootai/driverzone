@@ -18,8 +18,7 @@ export default function Footer() {
     { label: "Home", href: "/" },
     { label: "About Us", href: "/about" },
     { label: "Our Packages", href: "/packages" },
-    { label: "Terms & conditions", href: "/terms" },
-    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Offers & Coupon", href: "/offers" },
     { label: "Contact Us", href: "/contact" },
   ];
 
@@ -49,13 +48,15 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-4">
               <Link
-                href="/hire-driver"
+                href="/Driver Zone Customer.apk"
+                download={true}
                 className="bg-site-lime text-black px-6 py-2.5 rounded-full font-bold text-sm hover:bg-site-lime/90 transition-colors"
               >
                 Hire Driver
               </Link>
               <Link
-                href="/become-driver"
+                href="/Driver Zone Driver.apk"
+                download={true}
                 className="border border-white text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-white/10 transition-colors"
               >
                 Become a Driver
